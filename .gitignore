@@ -155,3 +155,25 @@ vite.config.ts.timestamp-*
 .nx/cache
 .nx/workspace-data
 .nx/migrate-runs
+
+# Vite
+dist-ssr
+*.local
+
+# Testes (Playwright e Vitest Browser Mode)
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+**/__screenshots__/
+.vitest/
+
+# Vercel
+.vercel
+
+# Editores e sistema
+.idea
+.DS_Store
+
+# Claude Code: preferências locais de cada pessoa
+.claude/settings.local.json

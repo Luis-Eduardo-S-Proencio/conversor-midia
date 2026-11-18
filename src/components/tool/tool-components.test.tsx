@@ -183,7 +183,16 @@ describe('FileListItem', () => {
         <FileListItem name="praia.png" state="processing" />
       </ul>,
     )
-    await expect.element(screen.getByRole('progressbar', { name: 'Convertendo praia.png' })).toBeInTheDocument()
+    await expect.element(screen.getByRole('progressbar', { name: 'Processando praia.png' })).toBeInTheDocument()
+  })
+
+  it('a barra de progresso usa o verbo da ferramenta, quando informado', async () => {
+    const screen = await render(
+      <ul>
+        <FileListItem name="praia.png" state="processing" progressLabel="Comprimindo praia.png" />
+      </ul>,
+    )
+    await expect.element(screen.getByRole('progressbar', { name: 'Comprimindo praia.png' })).toBeInTheDocument()
   })
 
   it('erro aparece como texto junto do arquivo', async () => {

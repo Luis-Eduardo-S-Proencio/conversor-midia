@@ -44,6 +44,14 @@ export const router = createBrowserRouter([
           return { Component: ConvertPage }
         },
       },
+      {
+        path: 'imagens/comprimir',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { CompressPage } = await import('../features/image-tools/compress/CompressPage')
+          return { Component: CompressPage }
+        },
+      },
       ...devRoutes,
       { path: '*', element: <NotFoundPage /> },
     ],

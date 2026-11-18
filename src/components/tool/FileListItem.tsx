@@ -1,4 +1,4 @@
-import { Check, CircleAlert, Image as ImageIcon, ImageOff, LoaderCircle, TriangleAlert } from 'lucide-react'
+import { Check, CircleAlert, Image as ImageIcon, ImageOff, Info, LoaderCircle, TriangleAlert, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Badge } from '../ui/Badge'
 import { cx } from '../ui/cx'
@@ -6,6 +6,14 @@ import { Icon } from '../ui/Icon'
 import { ProgressBar } from '../ui/ProgressBar'
 
 export type FileItemState = 'pending' | 'ready' | 'queued' | 'processing' | 'done' | 'error'
+
+export type MessageTone = 'error' | 'warning' | 'info'
+
+const MESSAGE_STYLES: Record<MessageTone, { icon: LucideIcon; color: string }> = {
+  error: { icon: CircleAlert, color: 'text-danger' },
+  warning: { icon: TriangleAlert, color: 'text-warning' },
+  info: { icon: Info, color: 'text-fg-muted' },
+}
 
 interface FileListItemProps {
   name: string
@@ -16,7 +24,9 @@ interface FileListItemProps {
   /** Texto curto do estado, como "Na fila" ou o tamanho do resultado. */
   statusLabel?: string
   message?: string
-  messageTone?: 'error' | 'warning'
+  messageTone?: MessageTone
+  /** Nome da barra de progresso para leitor de tela, com o verbo da ferramenta ("Comprimindo foto.jpg"). */
+  progressLabel?: string
   actions?: ReactNode
   /** Desligue quando uma prévia grande do mesmo arquivo já aparece acima. */
   showThumbnail?: boolean
@@ -48,6 +58,7 @@ export function FileListItem({
   statusLabel,
   message,
   messageTone = 'error',
+  progressLabel = `Processando ${name}`,
   actions,
   showThumbnail = true,
 }: FileListItemProps) {
@@ -75,10 +86,10 @@ export function FileListItem({
             <StatusBadge state={state} label={statusLabel} />
           </span>
         )}
-        {state === 'processing' && <ProgressBar label={`Convertendo ${name}`} hideLabel />}
+        {state === 'processing' && <ProgressBar label={progressLabel} hideLabel />}
         {message && (
-          <p className={cx('flex gap-1.5 text-xs', messageTone === 'warning' ? 'text-warning' : 'text-danger')}>
-            <Icon icon={messageTone === 'warning' ? TriangleAlert : CircleAlert} size="sm" className="mt-px size-3.5" />
+          <p className={cx('flex gap-1.5 text-xs', MESSAGE_STYLES[messageTone].color)}>
+            <Icon icon={MESSAGE_STYLES[messageTone].icon} size="sm" className="mt-px size-3.5" />
             <span>{message}</span>
           </p>
         )}

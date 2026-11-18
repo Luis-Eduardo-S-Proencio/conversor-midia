@@ -18,6 +18,17 @@ export const IMAGE_FORMATS: Record<ImageFormat, ImageFormatInfo> = {
 export const OUTPUT_FORMATS: readonly ImageFormat[] = ['jpeg', 'png', 'webp']
 
 /**
+ * Formato para comprimir: o canvas só tem compressão com perdas em JPG e WEBP. PNG (e WEBP, onde o
+ * navegador não gera WEBP) vira WEBP ou, se opaco, JPG. Com transparência e sem WEBP não há como
+ * reduzir sem perdê-la: `null`.
+ */
+export function compressionFormat(input: ImageFormat, hasAlpha: boolean, canEncodeWebp: boolean): ImageFormat | null {
+  if (input === 'jpeg') return 'jpeg'
+  if (canEncodeWebp) return 'webp'
+  return hasAlpha ? null : 'jpeg'
+}
+
+/**
  * Formato de saída sugerido: JPG, o mais compatível. Se todas as imagens já forem JPG,
  * WEBP (menor), ou PNG quando o navegador não consegue gerar WEBP.
  */

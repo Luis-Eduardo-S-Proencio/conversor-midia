@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { IMAGE_FORMATS, defaultTargetFormat } from './formats'
+import { IMAGE_FORMATS, compressionFormat, defaultTargetFormat } from './formats'
 
 describe('IMAGE_FORMATS', () => {
   it('descreve tipo, extensão, qualidade e transparência de cada formato', () => {
@@ -22,5 +22,24 @@ describe('defaultTargetFormat', () => {
 
   it('é JPG sem imagens', () => {
     expect(defaultTargetFormat([], true)).toBe('jpeg')
+  })
+})
+
+describe('compressionFormat', () => {
+  it('JPG continua JPG', () => {
+    expect(compressionFormat('jpeg', false, true)).toBe('jpeg')
+    expect(compressionFormat('jpeg', false, false)).toBe('jpeg')
+  })
+
+  it('PNG e WEBP viram WEBP quando o navegador gera WEBP (mantém a transparência)', () => {
+    expect(compressionFormat('png', true, true)).toBe('webp')
+    expect(compressionFormat('webp', true, true)).toBe('webp')
+  })
+
+  it('sem WEBP: opacos viram JPG; com transparência não há como reduzir', () => {
+    expect(compressionFormat('png', false, false)).toBe('jpeg')
+    expect(compressionFormat('webp', false, false)).toBe('jpeg')
+    expect(compressionFormat('png', true, false)).toBeNull()
+    expect(compressionFormat('webp', true, false)).toBeNull()
   })
 })

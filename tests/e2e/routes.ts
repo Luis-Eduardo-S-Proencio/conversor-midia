@@ -5,6 +5,7 @@ export const PUBLIC_ROUTES = [
   { path: '/videos', heading: 'Ferramentas de vídeo' },
   { path: '/sobre', heading: 'Sobre o Media Tools' },
   { path: '/imagens/converter', heading: 'Converter imagem' },
+  { path: '/imagens/comprimir', heading: 'Comprimir imagem' },
   { path: '/endereco-que-nao-existe', heading: 'Página não encontrada' },
 ] as const
 

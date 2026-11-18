@@ -34,16 +34,16 @@ export default defineConfig({
         baseURL: PREVIEW_URL,
       },
     },
-    // Os codificadores de imagem variam entre motores: a conversão também roda no Firefox e no WebKit.
+    // Os codificadores de imagem variam entre motores: as ferramentas de imagem também rodam no Firefox e no WebKit.
     {
       name: 'firefox',
-      testMatch: /convert/,
+      testMatch: /convert|compress/,
       timeout: 60_000, // o Firefox abre páginas mais devagar neste ambiente, sobretudo em paralelo
       use: { ...devices['Desktop Firefox'], viewport: { width: 1280, height: 800 }, baseURL: PREVIEW_URL },
     },
     {
       name: 'webkit',
-      testMatch: /convert/,
+      testMatch: /convert|compress/,
       use: { ...devices['Desktop Safari'], viewport: { width: 1280, height: 800 }, baseURL: PREVIEW_URL },
     },
     {

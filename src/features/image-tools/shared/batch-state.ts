@@ -3,13 +3,20 @@ import { IMAGE_LIMITS, type InspectedImage } from '../../../core/image/inspect'
 import { batchLimitMessage } from '../../../core/image/messages'
 
 /**
- * Estado da tela de conversão: só metadados. Os arquivos e os resultados (Blobs) ficam fora
- * do estado do React, em referências do hook, para não pesar nas renderizações.
+ * Estado de uma ferramenta de imagens em lote: só metadados. Os arquivos e os resultados (Blobs)
+ * ficam fora do estado do React, em referências do hook, para não pesar nas renderizações.
  */
 
-export type ItemStatus = 'inspecting' | 'ready' | 'rejected' | 'queued' | 'converting' | 'done' | 'failed'
+export type ItemStatus = 'inspecting' | 'ready' | 'rejected' | 'queued' | 'processing' | 'done' | 'failed'
 
-export interface ConvertItem {
+export interface BatchOutputInfo {
+  name: string
+  size: number
+  /** Observação sobre o resultado (ex.: "mantida a original"). */
+  note?: string
+}
+
+export interface BatchItem {
   id: string
   name: string
   size: number
@@ -19,43 +26,43 @@ export interface ConvertItem {
   previewUrl?: string
   /** Motivo da recusa ou da falha, já em texto para o usuário. */
   message?: string
-  output?: { name: string; size: number }
+  output?: BatchOutputInfo
 }
 
-export interface ConvertState {
-  items: ConvertItem[]
+export interface BatchState {
+  items: BatchItem[]
   /** Arquivos que não couberam no limite do lote. */
   notice?: string
-  /** Progresso da conversão em andamento. */
+  /** Progresso do processamento em andamento. */
   run?: { total: number; completed: number }
 }
 
-export const INITIAL_CONVERT_STATE: ConvertState = { items: [] }
+export const INITIAL_BATCH_STATE: BatchState = { items: [] }
 
-export type ConvertAction =
+export type BatchAction =
   | { type: 'added'; files: Array<{ id: string; name: string; size: number }>; overflow: number }
   | { type: 'inspected'; id: string; image: InspectedImage }
   | { type: 'previewed'; id: string; thumbnailUrl: string; previewUrl: string }
   | { type: 'rejected'; id: string; message: string }
   | { type: 'removed'; id: string }
   | { type: 'queued'; ids: string[] }
-  | { type: 'converting'; id: string }
-  | { type: 'converted'; id: string; output: { name: string; size: number } }
+  | { type: 'processing'; id: string }
+  | { type: 'processed'; id: string; output: BatchOutputInfo }
   | { type: 'failed'; id: string; message: string }
   | { type: 'finished' }
   | { type: 'cancelled' }
   | { type: 'invalidated' }
   | { type: 'reset' }
 
-function patch(state: ConvertState, id: string, changes: Partial<ConvertItem>): ConvertState {
+function patch(state: BatchState, id: string, changes: Partial<BatchItem>): BatchState {
   return { ...state, items: state.items.map((item) => (item.id === id ? { ...item, ...changes } : item)) }
 }
 
-function advance(run: ConvertState['run']): ConvertState['run'] {
+function advance(run: BatchState['run']): BatchState['run'] {
   return run && { ...run, completed: run.completed + 1 }
 }
 
-export function convertReducer(state: ConvertState, action: ConvertAction): ConvertState {
+export function batchReducer(state: BatchState, action: BatchAction): BatchState {
   switch (action.type) {
     case 'added':
       return {
@@ -78,9 +85,9 @@ export function convertReducer(state: ConvertState, action: ConvertAction): Conv
         run: { total: action.ids.length, completed: 0 },
         items: state.items.map((item) => (action.ids.includes(item.id) ? { ...item, status: 'queued' } : item)),
       }
-    case 'converting':
-      return patch(state, action.id, { status: 'converting' })
-    case 'converted':
+    case 'processing':
+      return patch(state, action.id, { status: 'processing' })
+    case 'processed':
       return { ...patch(state, action.id, { status: 'done', output: action.output }), run: advance(state.run) }
     case 'failed':
       return { ...patch(state, action.id, { status: 'failed', message: action.message }), run: advance(state.run) }
@@ -91,7 +98,7 @@ export function convertReducer(state: ConvertState, action: ConvertAction): Conv
         ...state,
         run: undefined,
         items: state.items.map((item) =>
-          item.status === 'queued' || item.status === 'converting' ? { ...item, status: 'ready' } : item,
+          item.status === 'queued' || item.status === 'processing' ? { ...item, status: 'ready' } : item,
         ),
       }
     case 'invalidated':
@@ -100,39 +107,39 @@ export function convertReducer(state: ConvertState, action: ConvertAction): Conv
         items: state.items.map((item) => (item.status === 'done' ? { ...item, status: 'ready', output: undefined } : item)),
       }
     case 'reset':
-      return INITIAL_CONVERT_STATE
+      return INITIAL_BATCH_STATE
   }
 }
 
-export interface ConvertSummary {
+export interface BatchSummary {
   inspecting: number
   ready: number
   done: number
   failed: number
-  isConverting: boolean
-  /** Há algo para converter e nada sendo preparado. */
-  canConvert: boolean
-  /** A conversão terminou e há resultados para baixar. */
+  isProcessing: boolean
+  /** Há algo para processar e nada sendo preparado. */
+  canStart: boolean
+  /** O processamento terminou e há resultados para baixar. */
   hasResults: boolean
   hasTransparency: boolean
   formats: ImageFormat[]
 }
 
-export function summarize(items: readonly ConvertItem[]): ConvertSummary {
+export function summarizeBatch(items: readonly BatchItem[]): BatchSummary {
   const count = (status: ItemStatus) => items.filter((item) => item.status === status).length
   const inspecting = count('inspecting')
   const ready = count('ready')
   const done = count('done')
-  const isConverting = items.some((item) => item.status === 'queued' || item.status === 'converting')
+  const isProcessing = items.some((item) => item.status === 'queued' || item.status === 'processing')
   const valid = items.filter((item) => item.status !== 'rejected' && item.image)
   return {
     inspecting,
     ready,
     done,
     failed: count('failed'),
-    isConverting,
-    canConvert: ready > 0 && inspecting === 0 && !isConverting,
-    hasResults: done > 0 && ready === 0 && inspecting === 0 && !isConverting,
+    isProcessing,
+    canStart: ready > 0 && inspecting === 0 && !isProcessing,
+    hasResults: done > 0 && ready === 0 && inspecting === 0 && !isProcessing,
     hasTransparency: valid.some((item) => item.image?.hasAlpha),
     formats: valid.flatMap((item) => (item.image ? [item.image.format] : [])),
   }

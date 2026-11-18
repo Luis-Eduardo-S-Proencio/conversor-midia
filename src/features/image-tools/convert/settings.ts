@@ -1,4 +1,9 @@
 import type { ImageFormat } from '../../../core/image/formats'
+import type { BatchLabels } from '../shared/constants'
+
+export const CONVERT_LABELS: BatchLabels = { action: 'Converter', progress: 'Convertendo', done: 'convertida', noun: 'Conversão' }
+
+export const CONVERT_ZIP_NAME = 'imagens-convertidas.zip'
 
 export type BackgroundChoice = 'white' | 'black'
 
@@ -23,12 +28,3 @@ export interface ConvertPreferences {
 }
 
 export const DEFAULT_PREFERENCES: ConvertPreferences = { quality: 85, background: 'white' }
-
-/** Maior lado da prévia (arquivo único) e da miniatura (lista), em pixels. */
-export const PREVIEW_SIZE = 1024
-export const THUMBNAIL_SIZE = 96
-
-export const ZIP_NAME = 'imagens-convertidas.zip'
-
-/** JPEG primeiro: o iPhone converte fotos HEIC da galeria para o primeiro tipo desta lista. */
-export const ACCEPTED_TYPES = 'image/jpeg,image/png,image/webp'

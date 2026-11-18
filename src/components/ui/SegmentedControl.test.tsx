@@ -55,6 +55,14 @@ describe('SegmentedControl', () => {
     expect(onChange).toHaveBeenLastCalledWith('jpg')
   })
 
+  it('clicar na opção já marcada não avisa mudança, como no rádio nativo', async () => {
+    const onChange = vi.fn()
+    const screen = await render(<Harness onChange={onChange} />)
+    await screen.getByRole('radio', { name: 'PNG' }).click()
+    await expect.element(screen.getByRole('radio', { name: 'PNG' })).toHaveFocus()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('vai ao início e ao fim com Home e End', async () => {
     const screen = await render(<Harness />)
     await screen.getByRole('radio', { name: 'PNG' }).click()

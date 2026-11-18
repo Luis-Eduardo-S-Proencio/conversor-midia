@@ -1,70 +1,27 @@
 import { readFile, writeFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
-import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { unzipSync } from 'fflate'
-import { readImageHeader } from '../../src/core/image/header'
-import { detectImageType } from '../../src/core/image/signature'
 import { pngBytes } from '../../src/test/image-bytes'
-import { WCAG_TAGS } from './routes.ts'
+import {
+  button,
+  download,
+  expectColor,
+  expectImage,
+  expectNoAxeViolations,
+  fileInput,
+  fixture,
+  hasOffscreenCanvas,
+  openImageTool,
+  pixelAt,
+} from './image-tool.ts'
 
-const fixture = (name: string) => fileURLToPath(new URL(`../fixtures/images/${name}`, import.meta.url))
-
-const hasOffscreenCanvas = (page: Page) => page.evaluate(() => typeof OffscreenCanvas !== 'undefined')
-
-const UNSUPPORTED_ENGINE =
-  'Este motor não tem OffscreenCanvas (ex.: WebKit do Playwright no Windows). O Safari real tem e precisa ser testado em macOS ou iOS.'
-
-async function openTool(page: Page) {
-  await page.goto('/imagens/converter')
-  await expect(page.getByRole('heading', { level: 1, name: 'Converter imagem' })).toBeVisible()
-  test.skip(!(await hasOffscreenCanvas(page)), UNSUPPORTED_ENGINE)
-}
-
-const fileInput = (page: Page) => page.locator('input[type="file"]').first()
-
-/** Só o botão visível: as ações existem no painel (desktop) e na barra fixa (celular). */
-const button = (page: Page, name: string) => page.getByRole('button', { name, exact: true })
-
-async function download(page: Page, trigger: Locator) {
-  const [file] = await Promise.all([page.waitForEvent('download'), trigger.click()])
-  return { name: file.suggestedFilename(), bytes: new Uint8Array(await readFile(await file.path())) }
-}
-
-/** Decodifica o arquivo baixado no próprio navegador e lê a cor de um pixel. */
-async function pixelAt(page: Page, bytes: Uint8Array, x: number, y: number): Promise<number[]> {
-  return page.evaluate(
-    async ({ data, x, y }) => {
-      const bitmap = await createImageBitmap(new Blob([new Uint8Array(data)]))
-      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
-      const context = canvas.getContext('2d')
-      if (!context) throw new Error('canvas indisponível')
-      context.drawImage(bitmap, 0, 0)
-      return Array.from(context.getImageData(x, y, 1, 1).data)
-    },
-    { data: Array.from(bytes), x, y },
-  )
-}
-
-function expectColor(actual: number[], expected: [number, number, number]) {
-  expected.forEach((channel, index) => expect(Math.abs((actual[index] ?? -1) - channel)).toBeLessThanOrEqual(16))
-}
-
-function expectImage(bytes: Uint8Array, format: 'jpeg' | 'png' | 'webp', width: number, height: number) {
-  expect(detectImageType(bytes)).toEqual({ kind: 'supported', format })
-  expect(readImageHeader(bytes, format, bytes.length)).toMatchObject({ status: 'ok', header: { width, height } })
-}
-
-async function expectNoAxeViolations(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
-  expect(results.violations.map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(' ')).join(' | ')}`)).toEqual([])
-}
+const openTool = (page: Page) => openImageTool(page, '/imagens/converter', 'Converter imagem')
 
 test.describe('Converter imagem', () => {
   test('sem os recursos necessários, a página explica que o navegador não é compatível', async ({ page }) => {
     await page.goto('/imagens/converter')
     test.skip(await hasOffscreenCanvas(page), 'este motor tem os recursos necessários')
-    await expect(page.getByText(/não tem os recursos necessários para converter imagens/)).toBeVisible()
+    await expect(page.getByText(/não tem os recursos necessários para processar imagens/)).toBeVisible()
     await expect(page.locator('input[type="file"]')).toHaveCount(0)
   })
 

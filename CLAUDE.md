@@ -8,12 +8,12 @@ Este arquivo é a fonte das regras do projeto. Os **métodos** de trabalho (chec
 Scaffold, Design System, navegação e páginas institucionais prontos (Início, Imagens, Vídeos, Sobre, página não encontrada). Funcionam **Converter imagem** (`/imagens/converter`) e **Comprimir imagem** (`/imagens/comprimir`), ambas sobre a base comum `features/image-tools/shared/`; as demais aparecem como "Em breve" no catálogo (`src/app/tool-catalog.ts`). Ainda sem teste em aparelho real: roteiro em `docs/roteiro-teste-aparelhos.md`. Confirme o que existe no disco antes de assumir.
 
 ## Funcionalidades
-- **Imagens (primeira versão)**: converter entre JPG/JPEG, PNG e WEBP; comprimir; redimensionar; recortar, girar e espelhar; processar vários arquivos; baixar os resultados.
+- **Imagens (primeira versão)**: converter JPG/JPEG, PNG e WEBP para JPG, PNG, WEBP, GIF, BMP, TIFF, ICO e PDF; comprimir; redimensionar; recortar, girar e espelhar; processar vários arquivos; baixar os resultados.
 - **Vídeos (etapa futura)**: converter formatos; comprimir; recortar trechos; remover início e fim; redimensionar resolução; extrair áudio.
-- Fora de escopo agora: autenticação, banco de dados, backend, SVG como entrada, HEIC, qualquer formato fora da lista acima. Só entram mediante pedido explícito.
+- Fora de escopo agora: autenticação, banco de dados, backend, SVG como entrada, HEIC, qualquer formato fora da lista acima (entrada só JPG, PNG e WEBP). Só entram mediante pedido explícito. AVIF, HEIC e JPEG XL como saída exigem codificador em WebAssembly (dependência pesada; HEIC também tem questão de patentes): decidir quando pedidos.
 
 ## Tecnologias
-React 19 · TypeScript 7 (estrito) · Vite 8 · Tailwind CSS 4 · React Router 8 (aplicação de página única) · lucide-react · fontes Inter e JetBrains Mono hospedadas no site (`@fontsource-variable`) · Canvas API (`OffscreenCanvas` e `createImageBitmap` onde houver suporte) · Web Workers · fflate (ZIP do download em lote, carregado sob demanda dentro do Worker) · Vitest 5 (Node + modo navegador com Playwright) · Playwright · oxlint · GitHub · Vercel (hospedagem estática). FFmpeg.wasm **somente** na etapa de vídeo.
+React 19 · TypeScript 7 (estrito) · Vite 8 · Tailwind CSS 4 · React Router 8 (aplicação de página única) · lucide-react · fontes Inter e JetBrains Mono hospedadas no site (`@fontsource-variable`) · Canvas API (`OffscreenCanvas` e `createImageBitmap` onde houver suporte) · codificadores próprios de GIF, BMP, TIFF, ICO e PDF em TypeScript (`core/image/encode`, sem dependência) · Web Workers · fflate (ZIP do download em lote, carregado sob demanda dentro do Worker) · Vitest 5 (Node + modo navegador com Playwright) · Playwright · oxlint · GitHub · Vercel (hospedagem estática). FFmpeg.wasm **somente** na etapa de vídeo.
 
 Navegadores suportados (piso herdado do Tailwind 4): Safari/iOS 16.4+, Chrome/Edge 111+, Firefox 128+.
 
@@ -40,6 +40,7 @@ src/
     brand/             # logotipo e sua geometria
   core/                # TypeScript puro, sem DOM nem React: formatação
     image/             # formatos, assinatura de bytes, cabeçalho, inspeção com limites, nomes de saída, mensagens
+      encode/          # codificadores próprios (GIF, BMP, TIFF, ICO, PDF), lendo os pixels em faixas
   styles/              # tokens.css (valores), base.css, index.css
   test/                # configuração dos testes de navegador e construtores de bytes de imagem
   features/
@@ -98,7 +99,8 @@ Testes unitários ficam ao lado do código. Mudar esta estrutura é decisão arq
 - Liberar memória por arquivo processado; não manter Blobs/bitmaps grandes em estado reativo do React.
 
 ## Estratégia de testes
-- **Vitest**: lógica pura (assinaturas de bytes, dimensões, nomes de saída, filas, mapeamento de erros) no projeto `unit`; componentes e qualquer coisa que dependa de Canvas no projeto `browser` (Chromium real). jsdom não é usado: **não** validar conversão com mock.
+- **Vitest**: lógica pura (assinaturas de bytes, dimensões, nomes de saída, filas, mapeamento de erros, codificadores) no projeto `unit`; componentes e qualquer coisa que dependa de Canvas no projeto `browser` (Chromium real). jsdom não é usado: **não** validar conversão com mock.
+- Formatos escritos pelo app são conferidos por leitores independentes (`src/test/format-readers.ts`) e, onde o navegador lê o formato (GIF, BMP, ICO), também pela decodificação dele.
 - **Playwright**: fluxo real (selecionar → processar → baixar → conferir o arquivo). Verificar formato real (assinatura), dimensões e pixels da saída, não só "baixou".
 - Casos obrigatórios: conversões entre formatos, arquivo inválido/corrompido/vazio, arquivo grande, erro no processamento, múltiplos arquivos.
 - O WebKit do Playwright no Windows não tem `OffscreenCanvas`: lá os testes de conversão se pulam sozinhos e só a mensagem de navegador incompatível é conferida. O Safari real tem o recurso e precisa de teste em macOS ou iOS.

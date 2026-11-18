@@ -1,4 +1,4 @@
-import { IMAGE_FORMATS, type ImageFormat } from './formats'
+import { OUTPUT_FORMAT_INFO, type OutputFormat } from './formats'
 
 const MAX_BASE_LENGTH = 120
 const FALLBACK_BASE = 'imagem'
@@ -27,8 +27,8 @@ function safeBaseName(inputName: string): string {
 }
 
 /** Nome do arquivo convertido: "foto.png" → "foto.jpg". Sempre exibido como texto, nunca como HTML. */
-export function outputFileName(inputName: string, format: ImageFormat): string {
-  return `${safeBaseName(inputName)}.${IMAGE_FORMATS[format].extension}`
+export function outputFileName(inputName: string, format: OutputFormat): string {
+  return `${safeBaseName(inputName)}.${OUTPUT_FORMAT_INFO[format].extension}`
 }
 
 function splitExtension(name: string): [base: string, extension: string] {

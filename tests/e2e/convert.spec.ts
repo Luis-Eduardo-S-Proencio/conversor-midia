@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { unzipSync } from 'fflate'
+import { decodeGif, readIco, readPdf, readTiff } from '../../src/test/format-readers'
 import { pngBytes } from '../../src/test/image-bytes'
 import {
   button,
@@ -267,5 +268,80 @@ test.describe('Converter imagem', () => {
         .filter(({ height }) => height > 1 && height < 44),
     )
     expect(small).toEqual([])
+  })
+})
+
+test.describe('Converter imagem para formatos escritos pelo app', () => {
+  // Os codificadores próprios rodam no Worker: conferidos nos dois motores que os executam aqui.
+  const skipOtherProjects = (project: string) =>
+    test.skip(!['desktop', 'firefox'].includes(project), 'codificadores próprios: conferidos no Chromium e no Firefox')
+
+  async function convertQuadrantsTo(page: Page, label: string) {
+    await openTool(page)
+    await fileInput(page).setInputFiles(fixture('quadrantes.png'))
+    await page.getByRole('radio', { name: label, exact: true }).click()
+    await button(page, 'Converter').click()
+    await expect(page.getByRole('heading', { name: 'Imagem convertida' })).toBeFocused()
+    return download(page, button(page, 'Baixar imagem'))
+  }
+
+  test('GIF: o navegador lê, com as cores e a transparência', async ({ page }, testInfo) => {
+    skipOtherProjects(testInfo.project.name)
+    const result = await convertQuadrantsTo(page, 'GIF')
+    expect(result.name).toBe('quadrantes.gif')
+    expect(decodeGif(result.bytes)).toMatchObject({ width: 64, height: 64 })
+    expectColor(await pixelAt(page, result.bytes, 16, 16), [255, 0, 0])
+    expect((await pixelAt(page, result.bytes, 48, 48))[3]).toBe(0)
+  })
+
+  test('BMP: o navegador lê; a transparência vira o fundo branco', async ({ page }, testInfo) => {
+    skipOtherProjects(testInfo.project.name)
+    const result = await convertQuadrantsTo(page, 'BMP')
+    expect(result.name).toBe('quadrantes.bmp')
+    expect(String.fromCharCode(result.bytes[0] ?? 0, result.bytes[1] ?? 0)).toBe('BM')
+    expectColor(await pixelAt(page, result.bytes, 16, 16), [255, 0, 0])
+    expectColor(await pixelAt(page, result.bytes, 48, 48), [255, 255, 255])
+  })
+
+  test('TIFF: RGBA sem perdas, pixel a pixel', async ({ page }, testInfo) => {
+    skipOtherProjects(testInfo.project.name)
+    const result = await convertQuadrantsTo(page, 'TIFF')
+    expect(result.name).toBe('quadrantes.tiff')
+    const tiff = readTiff(result.bytes)
+    expect([tiff.width, tiff.height, tiff.samplesPerPixel]).toEqual([64, 64, 4])
+    const pixel = (x: number, y: number) => Array.from(tiff.pixels.subarray((y * 64 + x) * 4, (y * 64 + x) * 4 + 4))
+    expect(pixel(16, 16)).toEqual([255, 0, 0, 255])
+    expect(pixel(48, 48)[3]).toBe(0)
+  })
+
+  test('ICO: tamanhos de 16, 32 e 48 px, legíveis pelo navegador', async ({ page }, testInfo) => {
+    skipOtherProjects(testInfo.project.name)
+    const result = await convertQuadrantsTo(page, 'ICO')
+    expect(result.name).toBe('quadrantes.ico')
+    const entries = readIco(result.bytes)
+    expect(entries.map((entry) => entry.width)).toEqual([16, 32, 48])
+    const largest = entries[2]?.data ?? new Uint8Array()
+    expectColor(await pixelAt(page, largest, 12, 12), [255, 0, 0])
+    expect((await pixelAt(page, largest, 36, 36))[3]).toBe(0)
+  })
+
+  test('PDF: uma página do tamanho da imagem, com a imagem legível dentro', async ({ page }, testInfo) => {
+    skipOtherProjects(testInfo.project.name)
+    const result = await convertQuadrantsTo(page, 'PDF')
+    expect(result.name).toBe('quadrantes.pdf')
+    const pdf = readPdf(result.bytes)
+    expect(pdf.image).toMatchObject({ width: 64, height: 64, filter: 'DCTDecode' })
+    expect(pdf.mediaBox).toEqual([0, 0, 48, 48])
+    expectColor(await pixelAt(page, pdf.image.bytes, 16, 16), [255, 0, 0])
+    expectColor(await pixelAt(page, pdf.image.bytes, 48, 48), [255, 255, 255])
+  })
+
+  test('a 320 px, os oito formatos cabem sem rolagem lateral', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'mobile', 'reflow conferido no celular')
+    await page.setViewportSize({ width: 320, height: 700 })
+    await openTool(page)
+    await fileInput(page).setInputFiles(fixture('foto.jpg'))
+    await expect(page.getByRole('radio', { name: 'PDF' })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
   })
 })

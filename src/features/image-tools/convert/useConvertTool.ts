@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { IMAGE_FORMATS, defaultTargetFormat } from '../../../core/image/formats'
+import { OUTPUT_FORMAT_INFO, defaultTargetFormat } from '../../../core/image/formats'
 import { outputFileName } from '../../../core/image/output-name'
 import { useImageBatch } from '../shared/useImageBatch'
 import { BACKGROUND_COLORS, CONVERT_LABELS, DEFAULT_PREFERENCES, type ConvertPreferences, type ConvertSettings } from './settings'
@@ -47,8 +47,8 @@ export function useConvertTool() {
     setPreferences((current) => ({ ...current, target: undefined }))
   }, [resetBatch])
 
-  // Converter transparência para JPG: a prévia já mostra o fundo que o arquivo terá.
-  const backdrop = IMAGE_FORMATS[settings.target].supportsAlpha ? undefined : BACKGROUND_COLORS[settings.background]
+  // Formato sem transparência (JPG, BMP, PDF): a prévia já mostra o fundo que o arquivo terá.
+  const backdrop = OUTPUT_FORMAT_INFO[settings.target].supportsAlpha ? undefined : BACKGROUND_COLORS[settings.background]
 
   return { batch: { ...batch, reset }, settings, updateSettings, convert, backdrop }
 }

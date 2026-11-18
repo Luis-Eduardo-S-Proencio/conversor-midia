@@ -15,7 +15,24 @@ export const IMAGE_FORMATS: Record<ImageFormat, ImageFormatInfo> = {
   webp: { label: 'WEBP', mimeType: 'image/webp', extension: 'webp', lossy: true, supportsAlpha: true },
 }
 
-export const OUTPUT_FORMATS: readonly ImageFormat[] = ['jpeg', 'png', 'webp']
+/**
+ * Formatos que a ferramenta gera: os de imagem que o navegador lê e codifica, mais os que o
+ * próprio app escreve a partir dos pixels (`core/image/encode`).
+ */
+export type OutputFormat = ImageFormat | 'gif' | 'bmp' | 'tiff' | 'ico' | 'pdf'
+
+export const OUTPUT_FORMAT_INFO: Record<OutputFormat, ImageFormatInfo> = {
+  ...IMAGE_FORMATS,
+  // Transparência só total ou nenhuma: pixels quase invisíveis viram transparentes.
+  gif: { label: 'GIF', mimeType: 'image/gif', extension: 'gif', lossy: false, supportsAlpha: true },
+  bmp: { label: 'BMP', mimeType: 'image/bmp', extension: 'bmp', lossy: false, supportsAlpha: false },
+  tiff: { label: 'TIFF', mimeType: 'image/tiff', extension: 'tiff', lossy: false, supportsAlpha: true },
+  ico: { label: 'ICO', mimeType: 'image/x-icon', extension: 'ico', lossy: false, supportsAlpha: true },
+  // A imagem vai dentro do PDF em JPG: tem qualidade e não tem transparência.
+  pdf: { label: 'PDF', mimeType: 'application/pdf', extension: 'pdf', lossy: true, supportsAlpha: false },
+}
+
+export const OUTPUT_FORMATS: readonly OutputFormat[] = ['jpeg', 'png', 'webp', 'gif', 'bmp', 'tiff', 'ico', 'pdf']
 
 /**
  * Formato para comprimir: o canvas só tem compressão com perdas em JPG e WEBP. PNG (e WEBP, onde o

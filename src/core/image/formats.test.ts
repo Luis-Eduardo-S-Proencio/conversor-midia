@@ -1,11 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { IMAGE_FORMATS, compressionFormat, defaultTargetFormat } from './formats'
+import { IMAGE_FORMATS, OUTPUT_FORMATS, OUTPUT_FORMAT_INFO, compressionFormat, defaultTargetFormat } from './formats'
 
 describe('IMAGE_FORMATS', () => {
   it('descreve tipo, extensão, qualidade e transparência de cada formato', () => {
     expect(IMAGE_FORMATS.jpeg).toMatchObject({ label: 'JPG', mimeType: 'image/jpeg', extension: 'jpg', lossy: true, supportsAlpha: false })
     expect(IMAGE_FORMATS.png).toMatchObject({ label: 'PNG', mimeType: 'image/png', extension: 'png', lossy: false, supportsAlpha: true })
     expect(IMAGE_FORMATS.webp).toMatchObject({ label: 'WEBP', mimeType: 'image/webp', extension: 'webp', lossy: true, supportsAlpha: true })
+  })
+})
+
+describe('OUTPUT_FORMATS', () => {
+  it('gera os formatos de imagem lidos pelo navegador e outros escritos pelo próprio app', () => {
+    expect(OUTPUT_FORMATS).toEqual(['jpeg', 'png', 'webp', 'gif', 'bmp', 'tiff', 'ico', 'pdf'])
+  })
+
+  it('descreve cada formato de saída: qualidade só onde há compressão com perdas', () => {
+    expect(OUTPUT_FORMAT_INFO.jpeg).toEqual(IMAGE_FORMATS.jpeg)
+    expect(OUTPUT_FORMAT_INFO.gif).toMatchObject({ label: 'GIF', mimeType: 'image/gif', extension: 'gif', lossy: false, supportsAlpha: true })
+    expect(OUTPUT_FORMAT_INFO.bmp).toMatchObject({ label: 'BMP', mimeType: 'image/bmp', extension: 'bmp', lossy: false, supportsAlpha: false })
+    expect(OUTPUT_FORMAT_INFO.tiff).toMatchObject({ label: 'TIFF', mimeType: 'image/tiff', extension: 'tiff', lossy: false, supportsAlpha: true })
+    expect(OUTPUT_FORMAT_INFO.ico).toMatchObject({ label: 'ICO', mimeType: 'image/x-icon', extension: 'ico', lossy: false, supportsAlpha: true })
+    // O PDF guarda a imagem em JPG: tem qualidade e não tem transparência.
+    expect(OUTPUT_FORMAT_INFO.pdf).toMatchObject({ label: 'PDF', mimeType: 'application/pdf', extension: 'pdf', lossy: true, supportsAlpha: false })
   })
 })
 

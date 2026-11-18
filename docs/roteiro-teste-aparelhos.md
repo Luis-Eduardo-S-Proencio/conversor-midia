@@ -26,29 +26,31 @@ Marque ✔ ou ✘ e anote o que estranhar.
 3. A prévia aparece. Converta para PNG e baixe. Anote onde o arquivo foi parar: no iPhone, app Arquivos › Transferências; no Android, pasta Download.
 4. A foto tirada em pé continua em pé no resultado.
 5. WEBP: no iPhone, a opção fica desativada com explicação. No Android, gera um `.webp`.
-6. Selecione as 5 fotos de uma vez, converta e toque em "Baixar todas (.zip)". O ZIP abre no aparelho.
-7. Só no endereço https: "Salvar na galeria" abre a folha de compartilhamento, e a imagem salva aparece na galeria.
-8. Foto grande: anote o tempo até a prévia e o tempo da conversão. A página não pode recarregar sozinha nem travar. Toque em "Cancelar" no meio de uma conversão; depois, converta de novo.
+6. Converta a mesma foto para PDF e para GIF e abra os arquivos baixados. O PDF abre no leitor do aparelho com a foto inteira na página; o GIF abre como imagem.
+7. Selecione as 5 fotos de uma vez, converta e toque em "Baixar todas (.zip)". O ZIP abre no aparelho.
+8. Só no endereço https: "Salvar na galeria" abre a folha de compartilhamento, e a imagem salva aparece na galeria.
+9. Foto grande: anote o tempo até a prévia e o tempo da conversão. A página não pode recarregar sozinha nem travar. Toque em "Cancelar" no meio de uma conversão; depois, converta de novo.
 
 **Comprimir** (`/imagens/comprimir`)
 
-9. Foto da câmera no nível Média: o resultado fica menor, com o tamanho e a porcentagem na lista.
-10. Print de tela (PNG): no Android, sai em WEBP menor. No iPhone, sai em JPG.
-11. Comprima de novo um arquivo que já foi comprimido: aparece "Já estava otimizada: mantida a original".
+10. Foto da câmera no nível Média: o resultado fica menor, com o tamanho e a porcentagem na lista.
+11. Print de tela (PNG): no Android, sai em WEBP menor. No iPhone, sai em JPG.
+12. Comprima de novo um arquivo que já foi comprimido: aparece "Já estava otimizada: mantida a original".
 
 **Uso geral**
 
-12. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado.
-13. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar.").
-14. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
+13. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado.
+14. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar.").
+15. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
 
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.
 
 - O Safari não gera WEBP. Por isso, no iPhone, a conversão para WEBP fica indisponível e a compressão de PNG sai em JPG.
-- Um PNG que declara canal de transparência não é comprimido no Safari, mesmo que todos os pixels sejam opacos. O app lê a declaração do arquivo e não confere pixel a pixel. **Avise se isso acontecer com prints de tela comuns** (item 10): dá para melhorar.
-- O limite é de 50 milhões de pixels. Fotos "50 MP" de alguns Android têm 8160 × 6144 (50,1 milhões) e são recusadas com explicação. **Anote se acontecer** (item 8): o limite pode ser revisto.
+- Um PNG que declara canal de transparência não é comprimido no Safari, mesmo que todos os pixels sejam opacos. O app lê a declaração do arquivo e não confere pixel a pixel. **Avise se isso acontecer com prints de tela comuns** (item 11): dá para melhorar.
+- O limite é de 50 milhões de pixels. Fotos "50 MP" de alguns Android têm 8160 × 6144 (50,1 milhões) e são recusadas com explicação. **Anote se acontecer** (item 9): o limite pode ser revisto.
+- BMP e TIFF não têm compressão: uma foto de 12 MP vira um arquivo de uns 35 MB. É do formato.
 - Converter e comprimir removem metadados, como localização e data. A exceção é quando a original é mantida.
 
 ## 5. Resultado

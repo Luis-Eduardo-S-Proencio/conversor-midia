@@ -13,7 +13,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   {
     id: 'image-convert',
     title: 'Converter imagem',
-    description: 'Entre JPG, PNG e WEBP',
+    description: 'Para JPG, PNG, WEBP, GIF, PDF e mais',
     icon: ArrowLeftRight,
     to: '/imagens/converter',
     popular: true,

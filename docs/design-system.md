@@ -78,7 +78,7 @@ Lucide, sempre pelo componente `Icon` ([`src/components/ui/Icon.tsx`](../src/com
 | `buttonClasses` | `components/ui/button-classes.ts` | link com aparência de botão |
 | `Badge` | `components/ui/Badge.tsx` | rótulos curtos de estado ("Em breve", "Pronto") |
 | `Field`, `Input` | `components/ui/Field.tsx`, `Input.tsx` | campo com rótulo, dica e erro ligados por ARIA; `unit` para "px" |
-| `SegmentedControl` | `components/ui/SegmentedControl.tsx` | escolha única entre 2 a 5 opções (formato de saída); setas, Home e End |
+| `SegmentedControl` | `components/ui/SegmentedControl.tsx` | escolha única entre poucas opções; setas, Home e End. Com mais de 5 opções (ex.: os 8 formatos de saída), `columns={4}` quebra em linhas e cabe em 320 px |
 | `Slider` | `components/ui/Slider.tsx` | valor contínuo com leitura formatada (qualidade) |
 | `ProgressBar` | `components/ui/ProgressBar.tsx` | progresso determinado (`value`) ou indeterminado |
 | `Alert` | `components/ui/Alert.tsx` | mensagens; `error` usa `role="alert"`, os demais `status`; `live={false}` para textos fixos |

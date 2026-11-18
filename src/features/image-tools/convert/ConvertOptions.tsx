@@ -1,5 +1,5 @@
 import { Info } from 'lucide-react'
-import { IMAGE_FORMATS, OUTPUT_FORMATS } from '../../../core/image/formats'
+import { OUTPUT_FORMATS, OUTPUT_FORMAT_INFO, type OutputFormat } from '../../../core/image/formats'
 import { Icon } from '../../../components/ui/Icon'
 import { SegmentedControl } from '../../../components/ui/SegmentedControl'
 import { Slider } from '../../../components/ui/Slider'
@@ -9,6 +9,18 @@ const BACKGROUND_OPTIONS: ReadonlyArray<{ value: BackgroundChoice; label: string
   { value: 'white', label: 'Branco' },
   { value: 'black', label: 'Preto' },
 ]
+
+/** O que muda em cada formato além de "outro tipo de arquivo". */
+const FORMAT_NOTES: Partial<Record<OutputFormat, string>> = {
+  gif: 'GIF tem no máximo 256 cores: em fotos, as cores perdem detalhes.',
+  bmp: 'BMP não tem compressão: o arquivo fica bem maior.',
+  tiff: 'TIFF sem compressão: não perde qualidade, mas o arquivo fica bem maior.',
+  ico: 'Ícone com tamanhos de 16 a 256 px, para favicon e atalhos. Imagens não quadradas ganham margens transparentes.',
+  pdf: 'Cada imagem vira um PDF de uma página, do tamanho da imagem.',
+}
+
+const noTransparencyNote = (target: OutputFormat) =>
+  target === 'pdf' ? 'No PDF, a imagem vai em JPG, sem transparência.' : `${OUTPUT_FORMAT_INFO[target].label} não tem transparência.`
 
 interface ConvertOptionsProps {
   settings: ConvertSettings
@@ -22,10 +34,11 @@ interface ConvertOptionsProps {
 
 /** Só as opções que fazem sentido para o formato escolhido. */
 export function ConvertOptions({ settings, onChange, webpSupported, hasTransparency, disabled = false }: ConvertOptionsProps) {
-  const format = IMAGE_FORMATS[settings.target]
+  const format = OUTPUT_FORMAT_INFO[settings.target]
+  const note = FORMAT_NOTES[settings.target]
   const formatOptions = OUTPUT_FORMATS.map((value) => ({
     value,
-    label: IMAGE_FORMATS[value].label,
+    label: OUTPUT_FORMAT_INFO[value].label,
     disabled: value === 'webp' && webpSupported === false,
   }))
 
@@ -38,11 +51,13 @@ export function ConvertOptions({ settings, onChange, webpSupported, hasTranspare
           value={settings.target}
           onChange={(target) => onChange({ target })}
           disabled={disabled}
+          columns={4}
           mono
         />
         {webpSupported === false && (
           <p className="text-xs text-fg-subtle">Este navegador não consegue gerar WEBP. Escolha JPG ou PNG.</p>
         )}
+        {note && <p className="text-xs text-fg-subtle">{note}</p>}
       </div>
 
       {format.lossy && (
@@ -67,7 +82,7 @@ export function ConvertOptions({ settings, onChange, webpSupported, hasTranspare
             onChange={(background) => onChange({ background })}
             disabled={disabled}
           />
-          <p className="text-xs text-fg-subtle">JPG não tem transparência.</p>
+          <p className="text-xs text-fg-subtle">{noTransparencyNote(settings.target)}</p>
         </div>
       )}
 

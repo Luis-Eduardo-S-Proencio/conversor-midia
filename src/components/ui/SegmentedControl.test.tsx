@@ -73,6 +73,14 @@ describe('SegmentedControl', () => {
     await expect.element(screen.getByRole('radio', { name: 'JPG' })).toBeChecked()
   })
 
+  it('com muitas opções, quebra em linhas de quatro', async () => {
+    const options = ['a', 'b', 'c', 'd', 'e', 'f'].map((value) => ({ value, label: value.toUpperCase() }))
+    const screen = await render(<SegmentedControl label="Formato" options={options} value="a" onChange={() => {}} columns={4} />)
+    const [first, , , , fifth] = screen.getByRole('radio').elements().map((radio) => radio.getBoundingClientRect())
+    expect(fifth?.left).toBe(first?.left) // a quinta opção começa a segunda linha
+    expect(fifth?.top).toBeGreaterThan(first?.top ?? 0)
+  })
+
   it('pula opções desativadas', async () => {
     const screen = await render(
       <SegmentedControl

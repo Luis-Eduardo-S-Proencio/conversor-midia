@@ -1,0 +1,118 @@
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* No Tailwind v4 a borda padrão é currentColor; aqui ela vira a borda discreta da marca. */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-soft);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-accent-subtle);
+    color: var(--color-fg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Fundo quadriculado para pré-visualizar transparência */
+@utility bg-checker {
+  background: repeating-conic-gradient(var(--color-checker-a) 0 25%, var(--color-checker-b) 0 50%) 0 0 / 16px 16px;
+}
+
+/*
+ * Trilha e alça do Slider: pseudo-elementos que utilitários não alcançam.
+ * O preenchimento vem da variável --fill, definida pelo componente.
+ */
+@layer components {
+  .slider {
+    appearance: none;
+    width: 100%;
+    height: 1.5rem;
+    margin: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .slider:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* Com toque, a área de arraste ganha os 44 px de alvo; a trilha continua fina e centralizada. */
+  @media (pointer: coarse) {
+    .slider {
+      height: 2.75rem;
+    }
+  }
+
+  .slider::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      to right,
+      var(--color-accent) var(--fill, 0%),
+      var(--color-border) var(--fill, 0%)
+    );
+  }
+
+  .slider::-moz-range-track {
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-border);
+  }
+
+  .slider::-moz-range-progress {
+    height: 6px;
+    border-radius: 9999px;
+    background: var(--color-accent);
+  }
+
+  .slider::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    margin-top: -7px;
+    border: 2px solid var(--color-accent);
+    border-radius: 9999px;
+    background: var(--color-fg);
+  }
+
+  .slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-accent);
+    border-radius: 9999px;
+    background: var(--color-fg);
+  }
+}

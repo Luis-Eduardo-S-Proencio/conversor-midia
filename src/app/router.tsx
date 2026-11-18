@@ -1,0 +1,59 @@
+import { createBrowserRouter, type RouteObject } from 'react-router'
+import { AppShell } from '../components/layout/AppShell'
+import type { RouteHandle } from '../components/layout/route-handle'
+import { AboutPage } from '../pages/AboutPage'
+import { ErrorPage } from '../pages/ErrorPage'
+import { HomePage } from '../pages/HomePage'
+import { ImagesPage } from '../pages/ImagesPage'
+import { NotFoundPage } from '../pages/NotFoundPage'
+import { RouteLoading } from '../pages/RouteLoading'
+import { VideosPage } from '../pages/VideosPage'
+
+// A vitrine de componentes só existe em desenvolvimento: no build, import.meta.env.DEV vira
+// `false` e a rota e seu código saem do pacote.
+const devRoutes: RouteObject[] = import.meta.env.DEV
+  ? [
+      {
+        path: 'design-system',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { DesignSystemPage } = await import('../pages/dev/DesignSystemPage')
+          return { Component: DesignSystemPage }
+        },
+      },
+    ]
+  : []
+
+export const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <AppShell />,
+    errorElement: <ErrorPage />,
+    HydrateFallback: RouteLoading,
+    children: [
+      { index: true, element: <HomePage /> },
+      { path: 'imagens', element: <ImagesPage /> },
+      { path: 'videos', element: <VideosPage /> },
+      { path: 'sobre', element: <AboutPage /> },
+      {
+        // Ferramentas carregam sob demanda: o código e o Worker não pesam na página inicial.
+        path: 'imagens/converter',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { ConvertPage } = await import('../features/image-tools/convert/ConvertPage')
+          return { Component: ConvertPage }
+        },
+      },
+      {
+        path: 'imagens/comprimir',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { CompressPage } = await import('../features/image-tools/compress/CompressPage')
+          return { Component: CompressPage }
+        },
+      },
+      ...devRoutes,
+      { path: '*', element: <NotFoundPage /> },
+    ],
+  },
+])

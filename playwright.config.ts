@@ -34,6 +34,18 @@ export default defineConfig({
         baseURL: PREVIEW_URL,
       },
     },
+    // Os codificadores de imagem variam entre motores: a conversão também roda no Firefox e no WebKit.
+    {
+      name: 'firefox',
+      testMatch: /convert/,
+      timeout: 60_000, // o Firefox abre páginas mais devagar neste ambiente, sobretudo em paralelo
+      use: { ...devices['Desktop Firefox'], viewport: { width: 1280, height: 800 }, baseURL: PREVIEW_URL },
+    },
+    {
+      name: 'webkit',
+      testMatch: /convert/,
+      use: { ...devices['Desktop Safari'], viewport: { width: 1280, height: 800 }, baseURL: PREVIEW_URL },
+    },
     {
       name: 'vitrine',
       testMatch: /design-system/,

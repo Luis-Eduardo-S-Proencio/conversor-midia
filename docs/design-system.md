@@ -83,11 +83,14 @@ Lucide, sempre pelo componente `Icon` ([`src/components/ui/Icon.tsx`](../src/com
 | `ProgressBar` | `components/ui/ProgressBar.tsx` | progresso determinado (`value`) ou indeterminado |
 | `Alert` | `components/ui/Alert.tsx` | mensagens; `error` usa `role="alert"`, os demais `status`; `live={false}` para textos fixos |
 | `NavList`, `NavCard` | `components/ui/` | listas de destinos e categorias; item sem `to` aparece como "Em breve" |
-| `Dropzone` | `components/tool/Dropzone.tsx` | seleção de arquivos: botão real + arrastar e soltar como atalho |
-| `FilePreview` | `components/tool/FilePreview.tsx` | imagem sobre quadriculado; quem cria a Object URL a revoga |
+| `Dropzone` | `components/tool/Dropzone.tsx` | estado vazio da ferramenta: botão real + arrastar e soltar como atalho |
+| `FilePickerButton` | `components/tool/FilePickerButton.tsx` | botão que abre o seletor do sistema (ex.: "Adicionar" com a lista já aberta) |
+| `usePageFileDrop` | `components/tool/usePageFileDrop.ts` | aceita arquivos soltos em qualquer ponto da página e impede o navegador de abri-los |
+| `FilePreview` | `components/tool/FilePreview.tsx` | prévia grande; `backdrop` mostra o fundo que o resultado terá (JPG); quem cria a Object URL a revoga |
+| `FileListItem` | `components/tool/FileListItem.tsx` | um arquivo na lista: miniatura decorativa, linha técnica, estado, erro ou aviso e ações |
 | `FileInfo` | `components/tool/FileInfo.tsx` | nome + linha técnica do arquivo |
 | `ResultSummary` | `components/tool/ResultSummary.tsx` | antes, depois e variação de tamanho |
-| `DownloadActions` | `components/tool/DownloadActions.tsx` | baixar e, em toque com suporte, "Salvar na galeria" |
+| `DownloadActions` | `components/tool/DownloadActions.tsx` | baixar um arquivo ou o pacote (`bundle`, ex.: ZIP) e, em toque, "Salvar na galeria"; lê os arquivos só no clique (`getFiles`) |
 | `AppShell`, `TopNav`, `BottomNav`, `Footer` | `components/layout/` | estrutura comum (já montada pelo roteador) |
 | `Container`, `PageHeader`, `ActionBar` | `components/layout/` | largura e margens, título da página, ação principal da ferramenta |
 
@@ -100,6 +103,7 @@ Componentes de `ui/` e `tool/` não processam arquivos: recebem dados por props.
 **Página.** `Container` + `PageHeader` (h1 único) + conteúdo. Defina o título da aba com `<title>Nome · Media Tools</title>` dentro da página.
 
 **Ferramenta.** Toda ferramenta segue cinco etapas: seleção → pré-visualização → opções → processamento → resultado. Cada fluxo cobre os estados vazio, pronto, processando, sucesso, erro e rejeitado ([Skill `frontend-design`](../.claude/skills/frontend-design/SKILL.md)). Mostre só as opções da ferramenta; opções dependentes aparecem quando necessárias (ex.: cor de fundo ao converter para JPG).
+- **Implementação de referência:** `features/image-tools/convert/`. Arquivo único mostra prévia grande; vários, lista de `FileListItem`. Opções e resultado ficam num painel à direita a partir de 1024 px; a ação principal aparece no painel (desktop) e na `ActionBar` (celular). Ao terminar, o foco vai para o resultado; ao esvaziar a lista, para "Selecionar imagens". Uma região `role="status"` anuncia só início e fim (não cada arquivo), incluindo quantos foram recusados.
 - Rota da ferramenta declara `handle: { hideBottomNav: true }`: no celular, a barra inferior dá lugar à `ActionBar` com a ação principal.
 - Cabeçalho com caminho de volta: no PWA instalado não existe o botão voltar do navegador.
 - A partir de 1024 px: prévia à esquerda, painel de opções à direita.

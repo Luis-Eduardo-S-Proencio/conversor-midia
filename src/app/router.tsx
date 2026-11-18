@@ -6,6 +6,7 @@ import { ErrorPage } from '../pages/ErrorPage'
 import { HomePage } from '../pages/HomePage'
 import { ImagesPage } from '../pages/ImagesPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { RouteLoading } from '../pages/RouteLoading'
 import { VideosPage } from '../pages/VideosPage'
 
 // A vitrine de componentes só existe em desenvolvimento: no build, import.meta.env.DEV vira
@@ -28,11 +29,21 @@ export const router = createBrowserRouter([
     path: '/',
     element: <AppShell />,
     errorElement: <ErrorPage />,
+    HydrateFallback: RouteLoading,
     children: [
       { index: true, element: <HomePage /> },
       { path: 'imagens', element: <ImagesPage /> },
       { path: 'videos', element: <VideosPage /> },
       { path: 'sobre', element: <AboutPage /> },
+      {
+        // Ferramentas carregam sob demanda: o código e o Worker não pesam na página inicial.
+        path: 'imagens/converter',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { ConvertPage } = await import('../features/image-tools/convert/ConvertPage')
+          return { Component: ConvertPage }
+        },
+      },
       ...devRoutes,
       { path: '*', element: <NotFoundPage /> },
     ],

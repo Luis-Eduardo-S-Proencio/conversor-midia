@@ -1,8 +1,8 @@
 import { Upload } from 'lucide-react'
-import { useId, useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { Button } from '../ui/Button'
+import { useId, useRef, useState, type DragEvent, type ReactNode, type Ref } from 'react'
 import { cx } from '../ui/cx'
 import { Icon } from '../ui/Icon'
+import { FilePickerButton } from './FilePickerButton'
 
 interface DropzoneProps {
   /** Filtro do seletor do sistema (ex.: "image/jpeg,image/png"). Não substitui a validação do conteúdo. */
@@ -14,6 +14,8 @@ interface DropzoneProps {
   hint?: ReactNode
   disabled?: boolean
   className?: string
+  /** Permite levar o foco ao botão (ex.: ao recomeçar, quando o botão anterior some). */
+  buttonRef?: Ref<HTMLButtonElement>
 }
 
 function carriesFiles(event: DragEvent): boolean {
@@ -33,15 +35,14 @@ export function Dropzone({
   hint,
   disabled = false,
   className,
+  buttonRef,
 }: DropzoneProps) {
-  const inputRef = useRef<HTMLInputElement>(null)
   const dragDepth = useRef(0)
   const [dragging, setDragging] = useState(false)
   const hintId = useId()
 
-  function deliver(list: FileList | null) {
-    if (!list || list.length === 0) return
-    const files = Array.from(list)
+  function deliver(files: File[]) {
+    if (files.length === 0) return
     onFiles(multiple ? files : files.slice(0, 1))
   }
 
@@ -68,7 +69,7 @@ export function Dropzone({
     event.preventDefault()
     dragDepth.current = 0
     setDragging(false)
-    if (!disabled) deliver(event.dataTransfer.files)
+    if (!disabled) deliver(Array.from(event.dataTransfer.files))
   }
 
   return (
@@ -88,27 +89,17 @@ export function Dropzone({
         <Icon icon={Upload} />
       </span>
       <p className="hidden font-semibold text-fg pointer-fine:block">{dragLabel}</p>
-      <Button
+      <FilePickerButton
+        ref={buttonRef}
         variant="primary"
-        disabled={disabled}
-        aria-describedby={hint ? hintId : undefined}
-        onClick={() => inputRef.current?.click()}
-      >
-        {buttonLabel}
-      </Button>
-      <input
-        ref={inputRef}
-        type="file"
         accept={accept}
         multiple={multiple}
         disabled={disabled}
-        hidden
-        onChange={(event) => {
-          deliver(event.currentTarget.files)
-          // Permite escolher o mesmo arquivo de novo.
-          event.currentTarget.value = ''
-        }}
-      />
+        aria-describedby={hint ? hintId : undefined}
+        onFiles={deliver}
+      >
+        {buttonLabel}
+      </FilePickerButton>
       {hint && (
         <p id={hintId} className="text-xs text-fg-subtle">
           {hint}

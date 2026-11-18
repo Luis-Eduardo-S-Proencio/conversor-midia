@@ -90,7 +90,7 @@ export function SegmentedControl<T extends string>({
               onClick={() => select(index)}
               onKeyDown={(event) => handleKeyDown(event, index)}
               className={cx(
-                'h-8 min-w-16 rounded-sm border px-3 text-sm font-medium transition-colors pointer-coarse:h-10',
+                'h-8 min-w-16 rounded-sm border px-3 text-sm font-medium transition-colors pointer-coarse:h-11',
                 'disabled:cursor-not-allowed disabled:opacity-50',
                 mono && 'font-mono',
                 // No alto contraste do Windows fundo e borda somem; o sublinhado mantém a seleção visível.

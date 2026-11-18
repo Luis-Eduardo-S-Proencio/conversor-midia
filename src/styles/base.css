@@ -69,6 +69,13 @@
     opacity: 0.5;
   }
 
+  /* Com toque, a área de arraste ganha os 44 px de alvo; a trilha continua fina e centralizada. */
+  @media (pointer: coarse) {
+    .slider {
+      height: 2.75rem;
+    }
+  }
+
   .slider::-webkit-slider-runnable-track {
     height: 6px;
     border-radius: 9999px;

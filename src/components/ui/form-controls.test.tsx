@@ -48,6 +48,11 @@ describe('Slider', () => {
     await expect.element(screen.getByText('80%')).toBeVisible()
   })
 
+  it('o valor visível não é uma segunda região de status (evita anúncio duplo)', async () => {
+    const screen = await render(<QualityHarness />)
+    expect(screen.getByRole('status').elements()).toHaveLength(0)
+  })
+
   it('responde ao teclado e atualiza o valor exibido', async () => {
     const screen = await render(<QualityHarness />)
     const slider = screen.getByRole('slider', { name: 'Qualidade' })

@@ -226,7 +226,7 @@ export function DesignSystemPage() {
             <FileInfo name="praia-2026.webp" format="webp" width={3024} height={4032} sizeBytes={1_992_294} />
             <ResultSummary beforeBytes={9_017_753} afterBytes={1_992_294} />
             <ResultSummary beforeBytes={1_000_000} afterBytes={1_120_000} />
-            <DownloadActions file={SAMPLE_FILE} downloadLabel="Baixar exemplo" />
+            <DownloadActions getFiles={() => [SAMPLE_FILE]} downloadLabel="Baixar exemplo" />
           </Panel>
         </Section>
 

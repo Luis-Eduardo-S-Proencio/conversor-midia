@@ -42,9 +42,11 @@ export function Slider({
       hint={hint}
       className={className}
       trailing={
-        <output htmlFor={id} className="font-mono text-sm tabular-nums text-fg-muted">
+        // Só visual: o leitor de tela já ouve o valor pelo aria-valuetext do slider.
+        // (Um <output> seria região de status e anunciaria cada mudança duas vezes.)
+        <span aria-hidden="true" className="font-mono text-sm tabular-nums text-fg-muted">
           {valueText}
-        </output>
+        </span>
       }
     >
       {(control) => (

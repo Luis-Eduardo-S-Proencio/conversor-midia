@@ -10,7 +10,14 @@ export interface ToolEntry extends NavListItem {
 }
 
 export const IMAGE_TOOLS: readonly ToolEntry[] = [
-  { id: 'image-convert', title: 'Converter imagem', description: 'Entre JPG, PNG e WEBP', icon: ArrowLeftRight, popular: true },
+  {
+    id: 'image-convert',
+    title: 'Converter imagem',
+    description: 'Entre JPG, PNG e WEBP',
+    icon: ArrowLeftRight,
+    to: '/imagens/converter',
+    popular: true,
+  },
   { id: 'image-compress', title: 'Comprimir imagem', description: 'Arquivo menor, qualidade sob controle', icon: Minimize2, popular: true },
   { id: 'image-resize', title: 'Redimensionar imagem', description: 'Largura e altura em pixels', icon: Scaling, popular: true },
   { id: 'image-crop', title: 'Recortar imagem', description: 'Mantenha só a área que importa', icon: Crop, popular: true },

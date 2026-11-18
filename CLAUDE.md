@@ -5,7 +5,7 @@ Plataforma web **gratuita** para converter, comprimir e editar imagens e vídeos
 Este arquivo é a fonte das regras do projeto. Os **métodos** de trabalho (checklists, procedimentos) estão nas Skills de `.claude/skills/` e **não são repetidos aqui**.
 
 ## Estado atual
-Scaffold, Design System, navegação e páginas institucionais prontos (Início, Imagens, Vídeos, Sobre, página não encontrada). **Converter imagem** funciona em `/imagens/converter` e é o modelo para as próximas ferramentas; as demais aparecem como "Em breve" no catálogo (`src/app/tool-catalog.ts`). Confirme o que existe no disco antes de assumir.
+Scaffold, Design System, navegação e páginas institucionais prontos (Início, Imagens, Vídeos, Sobre, página não encontrada). Funcionam **Converter imagem** (`/imagens/converter`) e **Comprimir imagem** (`/imagens/comprimir`), ambas sobre a base comum `features/image-tools/shared/`; as demais aparecem como "Em breve" no catálogo (`src/app/tool-catalog.ts`). Ainda sem teste em aparelho real: roteiro em `docs/roteiro-teste-aparelhos.md`. Confirme o que existe no disco antes de assumir.
 
 ## Funcionalidades
 - **Imagens (primeira versão)**: converter entre JPG/JPEG, PNG e WEBP; comprimir; redimensionar; recortar, girar e espelhar; processar vários arquivos; baixar os resultados.
@@ -23,7 +23,7 @@ Navegadores suportados (piso herdado do Tailwind 4): Safari/iOS 16.4+, Chrome/Ed
 - `npm run build` / `npm run preview`: build de produção e prévia local.
 - `npm run typecheck` · `npm run lint` (oxlint, avisos reprovam).
 - `npm test`: Vitest, projetos `unit` (Node, `*.test.ts`) e `browser` (Chromium real, `*.test.tsx`).
-- `npm run test:e2e`: Playwright no build de produção (Chromium em 360, 768 e 1280 px; a conversão também no Firefox e no WebKit) e na vitrine.
+- `npm run test:e2e`: Playwright no build de produção (Chromium em 360, 768 e 1280 px; as ferramentas de imagem também no Firefox e no WebKit) e na vitrine. O `preview` aplica os cabeçalhos do `vercel.json`, então a CSP é testada localmente.
 - `npm run icons`: regenera favicon e ícones do PWA a partir da geometria do logotipo.
 - `npm run fixtures`: regenera as imagens de teste em `tests/fixtures/images/`.
 - Primeira vez: `npx playwright install chromium firefox webkit`.
@@ -43,12 +43,16 @@ src/
   styles/              # tokens.css (valores), base.css, index.css
   test/                # configuração dos testes de navegador e construtores de bytes de imagem
   features/
-    image-tools/convert/  # ferramenta Converter imagem (estado, hook, telas)
+    image-tools/
+      shared/          # base das ferramentas de imagem: estado do lote, fila, tela (ImageToolPage)
+      convert/         # Converter imagem: opções e regra de formato
+      compress/        # Comprimir imagem: níveis e regra de compressão (compress-file.ts)
   workers/             # Worker de imagens, protocolo tipado e cliente com fila e cancelamento
 scripts/               # geração de ícones e de fixtures
-tests/e2e/             # Playwright (tsconfig.e2e.json: reaproveita src/core para conferir downloads)
+tests/e2e/             # Playwright; image-tool.ts reúne os auxiliares (tsconfig.e2e.json reaproveita src/core)
 tests/fixtures/images/ # imagens de teste pequenas, geradas por script
-docs/design-system.md  # regras de uso da identidade e dos componentes
+docs/                  # design-system.md (identidade e componentes), roteiro-teste-aparelhos.md
+vercel.json            # rotas da SPA e cabeçalhos de segurança (CSP etc.)
 ```
 Testes unitários ficam ao lado do código. Mudar esta estrutura é decisão arquitetural (ver abaixo).
 
@@ -83,7 +87,8 @@ Testes unitários ficam ao lado do código. Mudar esta estrutura é decisão arq
 - Proibido sem exceção justificada: `dangerouslySetInnerHTML`, `innerHTML`, `eval`, `new Function`, `document.write`.
 - Nome de arquivo, mensagens e metadados são texto não confiável: nunca como HTML.
 - Sem segredos no cliente (tudo no bundle é público; inclui `VITE_*`). Não registrar informação sensível em logs.
-- Hospedagem com cabeçalhos de segurança (CSP restritiva, `nosniff`, `Referrer-Policy`, `Permissions-Policy`) em `vercel.json`. COOP/COEP só se o FFmpeg multi-thread for adotado.
+- Hospedagem com cabeçalhos de segurança (CSP restritiva, `nosniff`, `Referrer-Policy`, `Permissions-Policy`) em `vercel.json`, conferidos por `tests/e2e/security.spec.ts`. COOP/COEP só se o FFmpeg multi-thread for adotado.
+- A CSP não permite `data:`: o build não embute `.woff2` (`assetsInlineLimit` em `vite.config.ts`). Recurso novo (fonte, Worker, imagem) precisa caber na CSP ou ela deve ser ajustada conscientemente.
 - Nenhuma afirmação de "aplicação segura": relate escopo e limites da verificação.
 
 ## Desempenho

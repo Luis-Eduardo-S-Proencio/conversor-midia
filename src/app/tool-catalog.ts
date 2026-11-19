@@ -34,7 +34,14 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
     to: '/imagens/redimensionar',
     popular: true,
   },
-  { id: 'image-crop', title: 'Recortar imagem', description: 'Mantenha só a área que importa', icon: Crop, popular: true },
+  {
+    id: 'image-crop',
+    title: 'Recortar imagem',
+    description: 'Mantenha só a área que importa',
+    icon: Crop,
+    to: '/imagens/recortar',
+    popular: true,
+  },
   { id: 'image-rotate-flip', title: 'Girar e espelhar', description: 'Corrija a orientação da foto', icon: RotateCw, to: '/imagens/girar' },
 ]
 

@@ -1,3 +1,4 @@
+import type { CropRect } from '../core/image/crop'
 import type { OutputFormat } from '../core/image/formats'
 import type { ProcessingErrorCode } from '../core/image/messages'
 import type { Orientation } from '../core/image/orientation'
@@ -15,7 +16,7 @@ interface ConvertBase {
   background: string
 }
 
-/** Medidas ou orientação, nunca as duas: cada ferramenta faz uma só coisa com a imagem. */
+/** Medidas, orientação ou recorte, nunca mais de um: cada ferramenta faz uma só coisa com a imagem. */
 export type ConvertJob = ConvertBase &
   (
     | {
@@ -25,11 +26,19 @@ export type ConvertJob = ConvertBase &
          */
         resize?: Dimensions
         orientation?: never
+        crop?: never
       }
     | {
         /** Giro e espelhamento sobre a imagem como ela aparece (orientação EXIF já aplicada). */
         orientation: Orientation
         resize?: never
+        crop?: never
+      }
+    | {
+        /** Área a manter, em pixels da imagem como ela aparece (orientação EXIF já aplicada). */
+        crop: CropRect
+        resize?: never
+        orientation?: never
       }
   )
 

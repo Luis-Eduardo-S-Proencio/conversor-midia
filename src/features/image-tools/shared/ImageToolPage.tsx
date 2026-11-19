@@ -15,6 +15,7 @@ import { supportsImageWorker } from '../../../workers/image-client'
 import { BatchActions } from './BatchActions'
 import { BatchFiles } from './BatchFiles'
 import { BatchResult } from './BatchResult'
+import type { BatchItem } from './batch-state'
 import { ACCEPTED_TYPES, type BatchLabels } from './constants'
 import type { ImageBatch } from './useImageBatch'
 
@@ -41,6 +42,10 @@ interface ImageToolPageProps {
   backdrop?: string
   /** Giro e espelhamento escolhidos, mostrados na prévia e nas miniaturas. */
   orientation?: Orientation
+  /** Uma imagem por vez (use junto com `useImageBatch(labels, { singleImage: true })`). */
+  singleImage?: boolean
+  /** Prévia própria da ferramenta para o arquivo único (ex.: a área de recorte). */
+  renderPreview?: (item: BatchItem) => ReactNode
 }
 
 /**
@@ -58,6 +63,8 @@ export function ImageToolPage({
   zipName,
   backdrop,
   orientation,
+  singleImage = false,
+  renderPreview,
 }: ImageToolPageProps) {
   const { items, summary } = batch
   const optionsHeadingId = useId()
@@ -132,9 +139,10 @@ export function ImageToolPage({
             buttonRef={pickerButton}
             accept={ACCEPTED_TYPES}
             onFiles={batch.addFiles}
-            buttonLabel="Selecionar imagens"
-            dragLabel="Arraste imagens para cá"
-            hint="JPG, PNG ou WEBP · até 50 MB por arquivo · até 20 arquivos"
+            multiple={!singleImage}
+            buttonLabel={singleImage ? 'Selecionar imagem' : 'Selecionar imagens'}
+            dragLabel={singleImage ? 'Arraste uma imagem para cá' : 'Arraste imagens para cá'}
+            hint={singleImage ? 'JPG, PNG ou WEBP · até 50 MB' : 'JPG, PNG ou WEBP · até 50 MB por arquivo · até 20 arquivos'}
           />
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
@@ -145,6 +153,8 @@ export function ImageToolPage({
               headingRef={filesHeading}
               backdrop={backdrop}
               orientation={orientation}
+              singleImage={singleImage}
+              renderPreview={renderPreview}
               progressVerb={labels.progress}
               onAdd={batch.addFiles}
               onRemove={handleRemove}

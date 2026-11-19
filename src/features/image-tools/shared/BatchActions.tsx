@@ -47,7 +47,7 @@ export function BatchActions({ summary, progress, labels, icon, size, onStart, o
           stacked
         />
         <Button variant="ghost" size={size} block onClick={onReset}>
-          {labels.action} outras
+          {labels.again ?? `${labels.action} outras`}
         </Button>
       </div>
     )

@@ -26,6 +26,11 @@ describe('batchReducer', () => {
     expect(state.notice).toBe('2 arquivos ficaram de fora: o limite é de 20 arquivos por vez.')
   })
 
+  it('ferramenta de uma imagem por vez: o aviso usa o limite dela', () => {
+    const state = apply({ type: 'added', files: [{ id: 'a', name: 'a.png', size: 10 }], overflow: 1, limit: 1 })
+    expect(state.notice).toBe('1 arquivo ficou de fora: esta ferramenta trabalha com uma imagem por vez.')
+  })
+
   it('percorre o fluxo completo de um arquivo, guardando a observação do resultado', () => {
     const state = apply(
       added('a'),

@@ -15,7 +15,7 @@ const errorCode = (error: unknown) => (error instanceof ImageJobError ? error.co
 type PrepareResult = 'ready' | 'rejected' | 'cancelled'
 
 /** Resumo para o leitor de tela depois de preparar os arquivos: inclui as recusas, que a lista mostra. */
-function preparedAnnouncement(results: readonly PrepareResult[], skipped: number, labels: BatchLabels): string {
+function preparedAnnouncement(results: readonly PrepareResult[], skipped: number, labels: BatchLabels, limit: number): string {
   const ready = results.filter((result) => result === 'ready').length
   const rejected = results.filter((result) => result === 'rejected').length
   const action = labels.action.toLowerCase()
@@ -24,7 +24,7 @@ function preparedAnnouncement(results: readonly PrepareResult[], skipped: number
   if (rejected > 0) {
     parts.push(rejected === 1 ? '1 arquivo recusado; o motivo está na lista.' : `${rejected} arquivos recusados; os motivos estão na lista.`)
   }
-  if (skipped > 0) parts.push(batchLimitMessage(skipped, IMAGE_LIMITS.maxFiles))
+  if (skipped > 0) parts.push(batchLimitMessage(skipped, limit))
   return parts.join(' ')
 }
 
@@ -38,9 +38,11 @@ function finishedAnnouncement(succeeded: number, total: number, labels: BatchLab
  * Base de toda ferramenta de imagens em lote: valida, gera prévias, processa um arquivo por vez
  * e entrega os resultados. Arquivos, resultados e URLs temporárias ficam em referências (fora do
  * estado do React) e são liberados ao remover, recomeçar ou sair da tela.
- * `labels` deve ser uma constante do módulo da ferramenta.
+ * `labels` deve ser uma constante do módulo da ferramenta. Com `singleImage`, a ferramenta trabalha
+ * com uma imagem por vez (ex.: recortar): a imagem nova substitui a atual.
  */
-export function useImageBatch(labels: BatchLabels) {
+export function useImageBatch(labels: BatchLabels, { singleImage = false }: { singleImage?: boolean } = {}) {
+  const limit = singleImage ? 1 : IMAGE_LIMITS.maxFiles
   const [state, dispatch] = useReducer(batchReducer, INITIAL_BATCH_STATE)
   const [webpSupported, setWebpSupported] = useState<boolean>()
   const [announcement, setAnnouncement] = useState('')
@@ -131,18 +133,24 @@ export function useImageBatch(labels: BatchLabels) {
   const addFiles = useCallback(
     (incoming: File[]) => {
       if (incoming.length === 0 || activeRun.current) return
-      const room = Math.max(0, IMAGE_LIMITS.maxFiles - items.current.length)
+      let room = Math.max(0, limit - items.current.length)
+      if (singleImage) {
+        // Uma imagem por vez: a nova substitui a atual, que é liberada.
+        releaseAll()
+        dispatch({ type: 'reset' })
+        room = 1
+      }
       const accepted = incoming.slice(0, room).map((file) => ({ id: nextId(), file }))
       const skipped = incoming.length - accepted.length
       for (const { id, file } of accepted) files.current.set(id, file)
-      dispatch({ type: 'added', files: accepted.map(({ id, file }) => ({ id, name: file.name, size: file.size })), overflow: skipped })
+      dispatch({ type: 'added', files: accepted.map(({ id, file }) => ({ id, name: file.name, size: file.size })), overflow: skipped, limit })
       setAnnouncement(accepted.length === 1 ? 'Preparando 1 arquivo…' : `Preparando ${accepted.length} arquivos…`)
       void Promise.all(accepted.map(({ id, file }) => prepare(id, file))).then((outcomes) => {
-        const text = preparedAnnouncement(outcomes, skipped, labels)
+        const text = preparedAnnouncement(outcomes, skipped, labels, limit)
         if (text) setAnnouncement(text)
       })
     },
-    [prepare, labels],
+    [prepare, labels, limit, singleImage, releaseAll],
   )
 
   /** Resultados sempre refletem as opções atuais: mudou alguma, os prontos voltam para a fila. */

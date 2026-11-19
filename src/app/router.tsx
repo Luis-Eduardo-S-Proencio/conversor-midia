@@ -68,6 +68,15 @@ export const router = createBrowserRouter([
           return { Component: RotatePage }
         },
       },
+      {
+        // A biblioteca de recorte (react-image-crop) só carrega aqui.
+        path: 'imagens/recortar',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { CropPage } = await import('../features/image-tools/crop/CropPage')
+          return { Component: CropPage }
+        },
+      },
       ...devRoutes,
       { path: '*', element: <NotFoundPage /> },
     ],

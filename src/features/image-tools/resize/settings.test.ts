@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETTINGS, digitsOnly, validateResize, type ResizeSettings } from './settings'
+import { DEFAULT_SETTINGS, validateResize, type ResizeSettings } from './settings'
 
 const pixels = (changes: Partial<ResizeSettings>): ResizeSettings => ({ ...DEFAULT_SETTINGS, mode: 'pixels', ...changes })
 
@@ -64,13 +64,5 @@ describe('validateResize', () => {
 
   it('a porcentagem não depende dos campos de pixels', () => {
     expect(validateResize({ ...DEFAULT_SETTINGS, percent: 25, width: '0' })).toEqual({ ok: true, request: { mode: 'percent', percent: 25 } })
-  })
-})
-
-describe('digitsOnly', () => {
-  it('deixa só os algarismos do que foi digitado ou colado', () => {
-    expect(digitsOnly('1920')).toBe('1920')
-    expect(digitsOnly('1.920 px')).toBe('1920')
-    expect(digitsOnly('abc')).toBe('')
   })
 })

@@ -40,7 +40,8 @@ export interface BatchState {
 export const INITIAL_BATCH_STATE: BatchState = { items: [] }
 
 export type BatchAction =
-  | { type: 'added'; files: Array<{ id: string; name: string; size: number }>; overflow: number }
+  /** `limit`: quantos arquivos a ferramenta aceita por vez (padrão: o limite do lote). */
+  | { type: 'added'; files: Array<{ id: string; name: string; size: number }>; overflow: number; limit?: number }
   | { type: 'inspected'; id: string; image: InspectedImage }
   /** `width` e `height`: medidas da imagem decodificada, já na posição em que aparece. */
   | { type: 'previewed'; id: string; thumbnailUrl: string; previewUrl: string; width: number; height: number }
@@ -69,7 +70,7 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
       return {
         ...state,
         items: [...state.items, ...action.files.map((file) => ({ ...file, status: 'inspecting' as const }))],
-        notice: action.overflow > 0 ? batchLimitMessage(action.overflow, IMAGE_LIMITS.maxFiles) : undefined,
+        notice: action.overflow > 0 ? batchLimitMessage(action.overflow, action.limit ?? IMAGE_LIMITS.maxFiles) : undefined,
       }
     case 'inspected':
       return patch(state, action.id, { image: action.image })

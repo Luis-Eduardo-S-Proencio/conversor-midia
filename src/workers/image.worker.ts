@@ -2,6 +2,7 @@
  * Worker de imagens: decodifica, converte, gera prévias e monta ZIP fora da thread principal.
  * Cada pedido recebe exatamente uma resposta, de sucesso ou com um código de erro estável.
  */
+import { isCropWithin, type CropRect } from '../core/image/crop'
 import { encodeBmp } from '../core/image/encode/bmp'
 import { icoHeader, icoSizes } from '../core/image/encode/ico'
 import { pdfParts } from '../core/image/encode/pdf'
@@ -235,19 +236,30 @@ function drawOriented(context: OffscreenCanvasRenderingContext2D, bitmap: ImageB
   context.setTransform(1, 0, 0, 1, 0, 0)
 }
 
-/** Medidas do resultado: as pedidas, as da imagem girada ou as da original. */
+/** Copia só a área pedida, pixel a pixel (sem reamostrar). */
+function drawCropped(context: OffscreenCanvasRenderingContext2D, bitmap: ImageBitmap, crop: CropRect) {
+  context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height)
+}
+
+/** Medidas do resultado: as pedidas, as da imagem girada, as da área recortada ou as da original. */
 function outputDimensions(job: ConvertJob, bitmap: ImageBitmap) {
   if (job.resize) return job.resize
   if (job.orientation) return orientedDimensions(bitmap, job.orientation)
+  if (job.crop) {
+    // A ferramenta valida a área sobre as medidas da prévia, que vêm desta mesma decodificação.
+    // Fora da imagem, só por erro de programação: falha em vez de gerar um arquivo errado.
+    if (!isCropWithin(job.crop, bitmap)) throw new JobError('unexpected')
+    return { width: job.crop.width, height: job.crop.height }
+  }
   return { width: bitmap.width, height: bitmap.height }
 }
 
 async function convert(job: ConvertJob): Promise<ConvertOutput> {
   const format = OUTPUT_FORMAT_INFO[job.target]
   const bitmap = await decode(job.file)
-  const { width, height } = outputDimensions(job, bitmap)
   let surface: Surface | undefined
   try {
+    const { width, height } = outputDimensions(job, bitmap)
     surface = createSurface(width, height, isPixelFormat(job.target))
     if (!format.supportsAlpha) {
       // Formato sem transparência: o fundo escolhido aparece onde a imagem era transparente.
@@ -256,6 +268,7 @@ async function convert(job: ConvertJob): Promise<ConvertOutput> {
     }
     if (job.resize) drawResized(bitmap, surface.context, { x: 0, y: 0, width, height })
     else if (job.orientation) drawOriented(surface.context, bitmap, job.orientation)
+    else if (job.crop) drawCropped(surface.context, bitmap, job.crop)
     else surface.context.drawImage(bitmap, 0, 0)
     bitmap.close() // o canvas já tem os pixels; libera a imagem decodificada antes de codificar
     const blob = await encodeAs(job, surface)

@@ -17,4 +17,12 @@ describe('catálogo de ferramentas', () => {
   it('Girar e espelhar está disponível, com rota própria', () => {
     expect(IMAGE_TOOLS.find((tool) => tool.id === 'image-rotate-flip')?.to).toBe('/imagens/girar')
   })
+
+  it('Recortar imagem está disponível, com rota própria', () => {
+    expect(IMAGE_TOOLS.find((tool) => tool.id === 'image-crop')?.to).toBe('/imagens/recortar')
+  })
+
+  it('todas as ferramentas de imagem da primeira versão estão disponíveis', () => {
+    expect(IMAGE_TOOLS.filter((tool) => !tool.to)).toEqual([])
+  })
 })

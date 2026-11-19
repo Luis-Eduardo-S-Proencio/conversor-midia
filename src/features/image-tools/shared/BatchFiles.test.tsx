@@ -29,6 +29,33 @@ describe('BatchFiles', () => {
     await expect.element(screen.getByRole('progressbar', { name: 'Comprimindo foto.jpg' })).toBeInTheDocument()
   })
 
+  it('várias imagens: o botão adiciona mais', async () => {
+    const screen = await renderFiles([{ id: 'a', name: 'foto.jpg', size: 1000, status: 'ready', image }])
+    await expect.element(screen.getByRole('button', { name: 'Adicionar' })).toBeVisible()
+  })
+
+  it('uma imagem por vez: o botão troca a imagem, e a ferramenta pode mostrar a própria prévia', async () => {
+    const item: BatchItem = { id: 'a', name: 'foto.jpg', size: 1000, status: 'ready', image, previewUrl: 'blob:prévia' }
+    const screen = await render(
+      <BatchFiles
+        items={[item]}
+        busy={false}
+        singleImage
+        renderPreview={(previewed) => <p>Área de recorte de {previewed.name}</p>}
+        headingRef={createRef()}
+        progressVerb="Recortando"
+        onAdd={() => {}}
+        onRemove={() => {}}
+        onClear={() => {}}
+        onDownload={() => {}}
+      />,
+    )
+    await expect.element(screen.getByRole('button', { name: 'Trocar imagem' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Adicionar' }).elements()).toHaveLength(0)
+    await expect.element(screen.getByText('Área de recorte de foto.jpg')).toBeVisible()
+    expect(screen.getByRole('img', { name: /Pré-visualização/ }).elements()).toHaveLength(0)
+  })
+
   it('observação do resultado aparece junto do arquivo, sem tom de erro', async () => {
     const screen = await renderFiles([
       { id: 'a', name: 'foto.jpg', size: 1000, status: 'done', image, output: { name: 'foto.jpg', size: 1000, note: 'Mantida a original.' } },

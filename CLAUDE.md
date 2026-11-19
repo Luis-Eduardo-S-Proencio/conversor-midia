@@ -5,7 +5,7 @@ Plataforma web **gratuita** para converter, comprimir e editar imagens e vídeos
 Este arquivo é a fonte das regras do projeto. Os **métodos** de trabalho (checklists, procedimentos) estão nas Skills de `.claude/skills/` e **não são repetidos aqui**.
 
 ## Estado atual
-Scaffold, Design System, navegação e páginas institucionais prontos (Início, Imagens, Vídeos, Sobre, página não encontrada). Funcionam **Converter imagem** (`/imagens/converter`), **Comprimir imagem** (`/imagens/comprimir`), **Redimensionar imagem** (`/imagens/redimensionar`) e **Girar e espelhar** (`/imagens/girar`), todas sobre a base comum `features/image-tools/shared/`; as demais aparecem como "Em breve" no catálogo (`src/app/tool-catalog.ts`). Ainda sem teste em aparelho real: roteiro em `docs/roteiro-teste-aparelhos.md`. Confirme o que existe no disco antes de assumir.
+Scaffold, Design System, navegação e páginas institucionais prontos (Início, Imagens, Vídeos, Sobre, página não encontrada). Todas as ferramentas de imagem da primeira versão funcionam, sobre a base comum `features/image-tools/shared/`: **Converter** (`/imagens/converter`), **Comprimir** (`/imagens/comprimir`), **Redimensionar** (`/imagens/redimensionar`), **Girar e espelhar** (`/imagens/girar`) e **Recortar** (`/imagens/recortar`, uma imagem por vez). As de vídeo aparecem como "Em breve" no catálogo (`src/app/tool-catalog.ts`). Ainda sem teste em aparelho real: roteiro em `docs/roteiro-teste-aparelhos.md`. Confirme o que existe no disco antes de assumir.
 
 ## Funcionalidades
 - **Imagens (primeira versão)**: converter JPG/JPEG, PNG e WEBP para JPG, PNG, WEBP, BMP, TIFF, ICO e PDF; comprimir; redimensionar; recortar, girar e espelhar; processar vários arquivos; baixar os resultados.
@@ -13,7 +13,7 @@ Scaffold, Design System, navegação e páginas institucionais prontos (Início,
 - Fora de escopo agora: autenticação, banco de dados, backend, SVG como entrada, HEIC, qualquer formato fora da lista acima (entrada só JPG, PNG e WEBP). Só entram mediante pedido explícito. AVIF, HEIC e JPEG XL como saída exigem codificador em WebAssembly (dependência pesada; HEIC também tem questão de patentes): decidir quando pedidos.
 
 ## Tecnologias
-React 19 · TypeScript 7 (estrito) · Vite 8 · Tailwind CSS 4 · React Router 8 (aplicação de página única) · lucide-react · fontes Inter e JetBrains Mono hospedadas no site (`@fontsource-variable`) · Canvas API (`OffscreenCanvas` e `createImageBitmap` onde houver suporte) · codificadores próprios de BMP, TIFF, ICO e PDF em TypeScript (`core/image/encode`, sem dependência) · Web Workers · fflate (ZIP do download em lote, carregado sob demanda dentro do Worker) · Vitest 5 (Node + modo navegador com Playwright) · Playwright · oxlint · GitHub · Vercel (hospedagem estática). FFmpeg.wasm **somente** na etapa de vídeo.
+React 19 · TypeScript 7 (estrito) · Vite 8 · Tailwind CSS 4 · React Router 8 (aplicação de página única) · lucide-react · fontes Inter e JetBrains Mono hospedadas no site (`@fontsource-variable`) · Canvas API (`OffscreenCanvas` e `createImageBitmap` onde houver suporte) · codificadores próprios de BMP, TIFF, ICO e PDF em TypeScript (`core/image/encode`, sem dependência) · Web Workers · fflate (ZIP do download em lote, carregado sob demanda dentro do Worker) · react-image-crop (área de recorte na tela, só na página de recortar) · Vitest 5 (Node + modo navegador com Playwright) · Playwright · oxlint · GitHub · Vercel (hospedagem estática). FFmpeg.wasm **somente** na etapa de vídeo.
 
 Navegadores suportados (piso herdado do Tailwind 4): Safari/iOS 16.4+, Chrome/Edge 111+, Firefox 128+.
 
@@ -39,17 +39,18 @@ src/
     tool/              # padrão das ferramentas (Dropzone, FilePreview, DownloadActions...), sem processamento
     brand/             # logotipo e sua geometria
   core/                # TypeScript puro, sem DOM nem React: formatação
-    image/             # formatos, assinatura de bytes, cabeçalho, inspeção com limites, nomes de saída, mensagens, medidas de redimensionamento, orientação (giros e espelhos)
+    image/             # formatos, assinatura de bytes, cabeçalho, inspeção com limites, nomes de saída, mensagens, medidas de redimensionamento, orientação (giros e espelhos), área de recorte
       encode/          # codificadores próprios (BMP, TIFF, ICO, PDF), lendo os pixels em faixas
   styles/              # tokens.css (valores), base.css, index.css
   test/                # configuração dos testes de navegador e construtores de bytes de imagem
   features/
     image-tools/
-      shared/          # base das ferramentas de imagem: estado do lote, fila, tela (ImageToolPage)
+      shared/          # base das ferramentas de imagem: estado do lote, fila, tela (ImageToolPage), modo de uma imagem por vez
       convert/         # Converter imagem: opções e regra de formato
       compress/        # Comprimir imagem: níveis e regra de compressão (compress-file.ts)
       resize/          # Redimensionar imagem: porcentagem ou pixels, validação dos campos e regra por arquivo (resize-file.ts)
       rotate/          # Girar e espelhar: giros de 90° e espelhos, a mesma orientação para o lote (rotate-file.ts)
+      crop/            # Recortar imagem: área sobre a prévia (CropArea, com react-image-crop), campos e regra por arquivo (crop-file.ts)
   workers/             # Worker de imagens, protocolo tipado e cliente com fila e cancelamento
 scripts/               # geração de ícones e de fixtures
 tests/e2e/             # Playwright; image-tool.ts reúne os auxiliares (tsconfig.e2e.json reaproveita src/core)
@@ -85,6 +86,7 @@ Testes unitários ficam ao lado do código. Mudar esta estrutura é decisão arq
 - Recodificar via canvas remove metadados (EXIF/GPS); PNG/WEBP com transparência → JPEG exige cor de fundo definida; confirme na saída que o formato pedido foi realmente gerado (alguns navegadores trocam para PNG em silêncio).
 - Medidas para decidir (tamanho final, recorte): as de `item.image` depois da prévia, que são as da imagem decodificada e já orientada, como o Worker a verá. O cabeçalho de PNG e WEBP não informa a orientação.
 - Girar e espelhar: as 8 orientações vêm de `core/image/orientation.ts`, que dá as medidas, a matriz do canvas (só 0, 1 e −1: sem reamostrar) e o CSS da prévia. A prévia e o arquivo usam a mesma conta, conferida em teste.
+- Recortar: a área é guardada em pixels inteiros da imagem orientada (`core/image/crop.ts`); a tela a desenha em porcentagem sobre a prévia reduzida. O Worker copia exatamente a área e recusa área fora da imagem.
 - Reduzir imagem no Worker: sempre por `drawResized` (em `image.worker.ts`), inclusive prévias e ICO. Num passo só, o Firefox, que não tem `imageSmoothingQuality`, cria listras falsas (moiré). Uma sonda decide: onde um passo só sai bom (Chromium), um passo; senão, etapas de metade. Testes E2E de moiré no Chromium e no Firefox.
 - Não persistir arquivos do usuário (localStorage, IndexedDB, cache) sem decisão explícita.
 - Skills: `security-auditor` (segurança), `performance-optimization` (memória).
@@ -117,7 +119,7 @@ Testes unitários ficam ao lado do código. Mudar esta estrutura é decisão arq
 - **Identidade visual definida** (Media Tools: escura, azul discreto, Inter e JetBrains Mono, ícones Lucide, logotipo "Recorte"). Regras em `docs/design-system.md`; valores só em `src/styles/tokens.css`, que removem a paleta padrão do Tailwind. Contraste dos tokens verificado em `tokens.test.ts`. Skills: `frontend-design`, `accessibility-review`.
 
 ## Política de dependências
-Antes de instalar qualquer pacote, justificar ao usuário: o problema, por que a API nativa não basta, tamanho (KB comprimidos), manutenção, licença, scripts de instalação e se é dependência de produção ou de desenvolvimento. Preferir a plataforma (Canvas, Blob, URL, `CompressionStream`). Versões e lockfile versionados; `npm audit` na adoção. Instalar com `npm install --before=<data de 2 semanas atrás>` para evitar versões recém-publicadas. Sem CDN de terceiros sem necessidade. Risco aceito: alerta de ReDoS no `picomatch` (GHSA-fc5q-39xc-vjpf), só em desenvolvimento (Vite/Vitest), sem versão corrigida em 17/11/2026 e sem entrada de visitante; reavaliar quando houver correção. ZIP do download em lote: `fflate` (MIT, sem dependências). Pendências já previstas, **a decidir quando chegar a hora**: interface de recorte, FFmpeg.wasm.
+Antes de instalar qualquer pacote, justificar ao usuário: o problema, por que a API nativa não basta, tamanho (KB comprimidos), manutenção, licença, scripts de instalação e se é dependência de produção ou de desenvolvimento. Preferir a plataforma (Canvas, Blob, URL, `CompressionStream`). Versões e lockfile versionados; `npm audit` na adoção. Instalar com `npm install --before=<data de 2 semanas atrás>` para evitar versões recém-publicadas. Sem CDN de terceiros sem necessidade. Em 19/11/2026 o `npm audit` não aponta vulnerabilidades (o alerta de ReDoS no `picomatch`, GHSA-fc5q-39xc-vjpf, aceito em 17/11 por ser só de desenvolvimento, não aparece mais). ZIP do download em lote: `fflate` (MIT, sem dependências). Área de recorte: `react-image-crop` (ISC, sem dependências nem scripts de instalação, 4,9 KB + 1,1 KB de CSS comprimidos, carregada só em `/imagens/recortar`), adotada em 19/11/2026 com aprovação: gestos de mouse, toque e teclado prontos; textos traduzidos e aparência pelos tokens (`crop/crop-area.css`). Pendência já prevista, **a decidir quando chegar a hora**: FFmpeg.wasm.
 
 ## Vídeo (desenvolvimento futuro)
 - Feature isolada (`features/video-tools`), Worker próprio, carregamento sob demanda; FFmpeg fora do bundle inicial; core hospedado no próprio site e versão fixa.

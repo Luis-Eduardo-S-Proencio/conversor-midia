@@ -1,0 +1,60 @@
+/*
+ * Área de recorte (react-image-crop) com a aparência do Media Tools. Carregado só na página de
+ * recortar, depois do CSS da biblioteca; as cores vêm dos tokens (src/styles/tokens.css).
+ */
+.crop-area .ReactCrop {
+  --rc-border-color: var(--color-fg);
+  --rc-focus-color: var(--color-accent-soft);
+  --rc-drag-handle-bg-colour: var(--color-fg);
+  --rc-drag-handle-size: 14px;
+  --rc-drag-handle-mobile-size: 20px;
+  --rc-drag-bar-size: 12px;
+}
+
+/* Borda contínua e parada: a da biblioteca anda sem parar (o Design System só anima opacidade e posição). */
+.crop-area .ReactCrop--no-animate .ReactCrop__crop-selection {
+  outline: 1px solid var(--rc-border-color);
+}
+
+/* Foco visível como no resto do site. */
+.crop-area .ReactCrop .ReactCrop__crop-selection:focus-visible,
+.crop-area .ReactCrop .ReactCrop__drag-handle:focus-visible {
+  outline: 2px solid var(--rc-focus-color);
+  outline-offset: 2px;
+}
+
+/* Ponto claro com borda escura: aparece sobre foto clara ou escura. */
+.crop-area .ReactCrop .ReactCrop__drag-handle {
+  border: 1px solid var(--color-bg);
+  border-radius: 2px;
+}
+
+/* A área de toque é maior que o ponto visível: 24 px com mouse e 44 px com toque. */
+.crop-area .ReactCrop .ReactCrop__drag-handle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+}
+
+@media (pointer: coarse) {
+  .crop-area .ReactCrop .ReactCrop__drag-handle::after {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Alto contraste do Windows: as cores somem; a borda e os pontos usam as cores do sistema. */
+@media (forced-colors: active) {
+  .crop-area .ReactCrop--no-animate .ReactCrop__crop-selection {
+    outline-color: Highlight;
+  }
+
+  .crop-area .ReactCrop .ReactCrop__drag-handle {
+    background-color: Highlight;
+    border-color: Canvas;
+  }
+}

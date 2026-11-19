@@ -302,6 +302,49 @@ describe('Girar e espelhar (Chromium real)', () => {
   })
 })
 
+describe('Recortar (Chromium real)', () => {
+  const cropPng = async (file: Blob, crop: { x: number; y: number; width: number; height: number }) =>
+    client.run({ kind: 'convert', file, target: 'png', quality: 0.92, background: '#ffffff', crop })
+
+  it('recorta exatamente a área pedida, pixel a pixel', async () => {
+    const result = await cropPng(await makeImage(64, 64, quadrants), { x: 32, y: 0, width: 32, height: 32 })
+    expect([result.width, result.height]).toEqual([32, 32])
+    const output = await inspect(result.blob)
+    expect([output.width, output.height]).toEqual([32, 32])
+    for (const [x, y] of [[0, 0], [31, 0], [0, 31], [31, 31]] as const) expect(output.pixel(x, y)).toEqual([0, 255, 0, 255])
+  })
+
+  it('área que atravessa os quadrantes mantém cada cor e a transparência no lugar', async () => {
+    const output = await inspect((await cropPng(await makeImage(64, 64, quadrants), { x: 16, y: 16, width: 32, height: 32 })).blob)
+    expect(output.pixel(8, 8)).toEqual([255, 0, 0, 255])
+    expect(output.pixel(24, 8)).toEqual([0, 255, 0, 255])
+    expect(output.pixel(8, 24)).toEqual([0, 0, 255, 255])
+    expect(output.pixel(24, 24)[3]).toBe(0)
+  })
+
+  it('foto com orientação EXIF: a área vale para a imagem como ela aparece', async () => {
+    const halves: Draw = (context, width, height) => {
+      context.fillStyle = '#ff0000'
+      context.fillRect(0, 0, width / 2, height)
+      context.fillStyle = '#0000ff'
+      context.fillRect(width / 2, 0, width / 2, height)
+    }
+    // Aparece em pé (32 × 64), com o vermelho em cima e o azul embaixo.
+    const jpeg = await makeImage(64, 32, halves, 'image/jpeg', 0.95)
+    const upright = new Blob([withExifOrientation(new Uint8Array(await jpeg.arrayBuffer()), 6)], { type: 'image/jpeg' })
+
+    const top = await inspect((await cropPng(upright, { x: 0, y: 0, width: 32, height: 28 })).blob)
+    expect([top.width, top.height]).toEqual([32, 28])
+    expectColor(top.pixel(16, 14), [255, 0, 0])
+    const bottom = await inspect((await cropPng(upright, { x: 0, y: 36, width: 32, height: 28 })).blob)
+    expectColor(bottom.pixel(16, 14), [0, 0, 255])
+  })
+
+  it('área fora da imagem é recusada, sem gerar arquivo', async () => {
+    await expect(cropPng(await makeImage(64, 64, quadrants), { x: 60, y: 0, width: 10, height: 10 })).rejects.toMatchObject({ code: 'unexpected' })
+  })
+})
+
 describe('Formatos escritos pelo app (Chromium real)', () => {
   const bytesOf = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer())
   const convertQuadrants = async (target: 'bmp' | 'tiff' | 'ico' | 'pdf', background = '#ffffff') =>

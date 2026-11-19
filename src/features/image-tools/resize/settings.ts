@@ -47,8 +47,6 @@ export interface FocusRequest {
   field: SizeField
 }
 
-export const digitsOnly = (text: string) => text.replace(/\D/g, '')
-
 const megapixelFormat = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 })
 
 type Parsed = { field: SizeField; value: number | undefined; valid: boolean }

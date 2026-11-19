@@ -37,13 +37,16 @@ export default defineConfig({
     // Os codificadores de imagem variam entre motores: as ferramentas de imagem também rodam no Firefox e no WebKit.
     {
       name: 'firefox',
-      testMatch: /convert|compress|resize|rotate/,
+      testMatch: /convert|compress|resize|rotate|crop/,
       timeout: 60_000, // o Firefox abre páginas mais devagar neste ambiente, sobretudo em paralelo
+      // Com muitos Firefox ao mesmo tempo, a suíte completa travava de vez em quando fora do código do app
+      // (envio de arquivos, download, abertura da página) e nunca isolada. Dois por vez evitam a disputa.
+      workers: 2,
       use: { ...devices['Desktop Firefox'], viewport: { width: 1280, height: 800 }, baseURL: PREVIEW_URL },
     },
     {
       name: 'webkit',
-      testMatch: /convert|compress|resize|rotate/,
+      testMatch: /convert|compress|resize|rotate|crop/,
       use: { ...devices['Desktop Safari'], viewport: { width: 1280, height: 800 }, baseURL: PREVIEW_URL },
     },
     {

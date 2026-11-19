@@ -15,4 +15,6 @@ export interface BatchLabels {
   done: string
   /** Substantivo feminino da operação: "Conversão" (o anúncio de cancelamento diz "Conversão cancelada."). */
   noun: string
+  /** Botão para recomeçar depois do resultado; o padrão é "Converter outras". */
+  again?: string
 }

@@ -48,7 +48,8 @@ export function rejectionMessage(reason: RejectionReason): string {
 /** Aviso para arquivos que excederam o limite do lote. */
 export function batchLimitMessage(skipped: number, maxFiles: number): string {
   const subject = skipped === 1 ? '1 arquivo ficou' : `${skipped} arquivos ficaram`
-  return `${subject} de fora: o limite é de ${maxFiles} arquivos por vez.`
+  const reason = maxFiles === 1 ? 'esta ferramenta trabalha com uma imagem por vez' : `o limite é de ${maxFiles} arquivos por vez`
+  return `${subject} de fora: ${reason}.`
 }
 
 const PROCESSING_MESSAGES: Record<ProcessingErrorCode, string> = {

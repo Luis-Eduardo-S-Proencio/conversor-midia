@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PROCESSING_ERROR_CODES, processingErrorMessage, rejectionMessage, webpFallbackNote } from './messages'
+import { PROCESSING_ERROR_CODES, batchLimitMessage, processingErrorMessage, rejectionMessage, webpFallbackNote } from './messages'
 
 describe('rejectionMessage', () => {
   it('explica cada motivo de recusa em linguagem simples', () => {
@@ -35,6 +35,17 @@ describe('processingErrorMessage', () => {
 
   it('falta de memória do aparelho sugere uma saída', () => {
     expect(processingErrorMessage('canvas-unavailable')).toMatch(/memória/)
+  })
+})
+
+describe('batchLimitMessage', () => {
+  it('diz quantos ficaram de fora e por quê', () => {
+    expect(batchLimitMessage(1, 20)).toBe('1 arquivo ficou de fora: o limite é de 20 arquivos por vez.')
+    expect(batchLimitMessage(3, 20)).toBe('3 arquivos ficaram de fora: o limite é de 20 arquivos por vez.')
+  })
+
+  it('ferramenta de uma imagem por vez explica isso, sem "1 arquivos"', () => {
+    expect(batchLimitMessage(2, 1)).toBe('2 arquivos ficaram de fora: esta ferramenta trabalha com uma imagem por vez.')
   })
 })
 

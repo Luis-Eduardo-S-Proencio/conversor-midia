@@ -1,5 +1,5 @@
-import { Download, Plus, X } from 'lucide-react'
-import { useId, type RefObject } from 'react'
+import { Download, Plus, RefreshCw, X } from 'lucide-react'
+import { useId, type ReactNode, type RefObject } from 'react'
 import { FileListItem, type FileItemState, type MessageTone } from '../../../components/tool/FileListItem'
 import { FilePickerButton } from '../../../components/tool/FilePickerButton'
 import { FilePreview } from '../../../components/tool/FilePreview'
@@ -58,6 +58,10 @@ interface BatchFilesProps {
   backdrop?: string
   /** Giro e espelhamento escolhidos: prévia e miniaturas já mostram o resultado. */
   orientation?: Orientation
+  /** Ferramenta de uma imagem por vez: o botão troca a imagem em vez de adicionar outras. */
+  singleImage?: boolean
+  /** Prévia própria da ferramenta para o arquivo único (ex.: a área de recorte), no lugar da prévia comum. */
+  renderPreview?: (item: BatchItem) => ReactNode
   /** Gerúndio da ferramenta ("Comprimindo"), para o nome da barra de progresso. */
   progressVerb: string
   onAdd: (files: File[]) => void
@@ -74,6 +78,8 @@ export function BatchFiles({
   headingRef,
   backdrop,
   orientation,
+  singleImage = false,
+  renderPreview,
   progressVerb,
   onAdd,
   onRemove,
@@ -91,9 +97,15 @@ export function BatchFiles({
           {items.length === 1 ? '1 arquivo' : `${items.length} arquivos`}
         </h2>
         <div className="flex flex-wrap gap-2">
-          <FilePickerButton accept={ACCEPTED_TYPES} icon={Plus} onFiles={onAdd} disabled={busy || items.length >= IMAGE_LIMITS.maxFiles}>
-            Adicionar
-          </FilePickerButton>
+          {singleImage ? (
+            <FilePickerButton accept={ACCEPTED_TYPES} icon={RefreshCw} multiple={false} onFiles={onAdd} disabled={busy}>
+              Trocar imagem
+            </FilePickerButton>
+          ) : (
+            <FilePickerButton accept={ACCEPTED_TYPES} icon={Plus} onFiles={onAdd} disabled={busy || items.length >= IMAGE_LIMITS.maxFiles}>
+              Adicionar
+            </FilePickerButton>
+          )}
           <Button variant="ghost" onClick={onClear} disabled={busy}>
             Limpar
           </Button>
@@ -106,14 +118,17 @@ export function BatchFiles({
         </Alert>
       )}
 
-      {single?.previewUrl && (
-        <FilePreview
-          src={single.previewUrl}
-          alt={`Pré-visualização de ${single.name}`}
-          backdrop={single.image?.hasAlpha ? backdrop : undefined}
-          orientation={orientation}
-        />
-      )}
+      {single?.previewUrl &&
+        (renderPreview ? (
+          renderPreview(single)
+        ) : (
+          <FilePreview
+            src={single.previewUrl}
+            alt={`Pré-visualização de ${single.name}`}
+            backdrop={single.image?.hasAlpha ? backdrop : undefined}
+            orientation={orientation}
+          />
+        ))}
 
       <ul className="grid gap-px overflow-hidden rounded-lg border border-border bg-border">
         {items.map((item) => (

@@ -7,6 +7,7 @@ import { Dropzone } from './Dropzone'
 import { FileInfo } from './FileInfo'
 import { FileListItem } from './FileListItem'
 import { FilePickerButton } from './FilePickerButton'
+import { FilePreview } from './FilePreview'
 import { ResultSummary } from './ResultSummary'
 
 const png = (name: string) => new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], name, { type: 'image/png' })
@@ -69,6 +70,53 @@ describe('Dropzone', () => {
     const input = fileInput(screen.container)
     await userEvent.upload(input, png('a.png'))
     expect(input.value).toBe('')
+  })
+})
+
+/** Carregar e decodificar a imagem pode passar de 1 s com a máquina ocupada pelos outros testes. */
+const IMAGE_LOAD = { timeout: 5_000 }
+
+/** PNG de verdade com as medidas pedidas, servido por URL temporária (como a prévia gerada pelo Worker). */
+async function pngUrl(width: number, height: number): Promise<string> {
+  const canvas = new OffscreenCanvas(width, height)
+  canvas.getContext('2d')?.fillRect(0, 0, width, height)
+  return URL.createObjectURL(await canvas.convertToBlob({ type: 'image/png' }))
+}
+
+describe('FilePreview', () => {
+  it('sem orientação, a imagem aparece como é', async () => {
+    const screen = await render(<FilePreview src={await pngUrl(200, 100)} alt="Pré-visualização de faixa.png" />)
+    const image = screen.getByRole('img', { name: 'Pré-visualização de faixa.png' })
+    await expect.poll(() => image.element().getBoundingClientRect().width, IMAGE_LOAD).toBe(200)
+    expect(image.element().getBoundingClientRect().height).toBe(100)
+  })
+
+  it('girada 90°: aparece em pé, com largura e altura trocadas, inteira dentro da área da prévia', async () => {
+    const screen = await render(
+      <FilePreview src={await pngUrl(200, 100)} alt="Pré-visualização de faixa.png" orientation={{ quarterTurns: 1, mirrored: false }} />,
+    )
+    const image = screen.getByRole('img', { name: 'Pré-visualização de faixa.png' })
+    // O retângulo na tela já inclui o giro.
+    await expect.poll(() => Math.round(image.element().getBoundingClientRect().height), IMAGE_LOAD).toBe(200)
+    const box = image.element().getBoundingClientRect()
+    expect(Math.round(box.width)).toBe(100)
+
+    const frame = screen.container.firstElementChild?.getBoundingClientRect()
+    if (!frame) throw new Error('área da prévia ausente')
+    expect(box.left).toBeGreaterThanOrEqual(frame.left)
+    expect(box.right).toBeLessThanOrEqual(frame.right)
+    expect(box.top).toBeGreaterThanOrEqual(frame.top)
+    expect(box.bottom).toBeLessThanOrEqual(frame.bottom)
+  })
+
+  it('espelhada: mesmas medidas, imagem invertida', async () => {
+    const screen = await render(
+      <FilePreview src={await pngUrl(200, 100)} alt="Pré-visualização de faixa.png" orientation={{ quarterTurns: 0, mirrored: true }} />,
+    )
+    const image = screen.getByRole('img', { name: 'Pré-visualização de faixa.png' })
+    await expect.poll(() => getComputedStyle(image.element()).transform, IMAGE_LOAD).not.toBe('none')
+    const box = image.element().getBoundingClientRect()
+    expect([Math.round(box.width), Math.round(box.height)]).toEqual([200, 100])
   })
 })
 
@@ -211,5 +259,14 @@ describe('FileListItem', () => {
       </ul>,
     )
     expect(screen.container.querySelector('img')?.getAttribute('alt')).toBe('')
+  })
+
+  it('a miniatura mostra a orientação escolhida', async () => {
+    const screen = await render(
+      <ul>
+        <FileListItem name="praia.png" state="ready" thumbnailUrl="/icons/icon-192.png" orientation={{ quarterTurns: 1, mirrored: false }} />
+      </ul>,
+    )
+    expect(screen.container.querySelector('img')?.style.transform).toBe('rotate(90deg)')
   })
 })

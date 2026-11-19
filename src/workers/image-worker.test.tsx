@@ -238,6 +238,70 @@ describe('Redimensionar (Chromium real)', () => {
   })
 })
 
+describe('Girar e espelhar (Chromium real)', () => {
+  const RED = [255, 0, 0] as const
+  const GREEN = [0, 255, 0] as const
+  const BLUE = [0, 0, 255] as const
+  type Expected = readonly [number, number, number] | 'transparente'
+
+  /** Confere a cor no centro de cada quadrante do resultado (64 × 32 de origem, com o inferior direito transparente). */
+  async function expectQuadrants(orientation: { quarterTurns: 0 | 1 | 2 | 3; mirrored: boolean }, expected: Record<'tl' | 'tr' | 'bl' | 'br', Expected>) {
+    const png = await makeImage(64, 32, quadrants)
+    const result = await client.run({ kind: 'convert', file: png, target: 'png', quality: 0.92, background: '#ffffff', orientation })
+    const output = await inspect(result.blob)
+    const [w, h] = [output.width, output.height]
+    expect([result.width, result.height]).toEqual([w, h])
+    const centers = { tl: [w / 4, h / 4], tr: [(w * 3) / 4, h / 4], bl: [w / 4, (h * 3) / 4], br: [(w * 3) / 4, (h * 3) / 4] } as const
+    for (const corner of ['tl', 'tr', 'bl', 'br'] as const) {
+      const [x, y] = centers[corner]
+      const color = output.pixel(x, y)
+      const want = expected[corner]
+      if (want === 'transparente') expect(color[3], corner).toBe(0)
+      else expect(color, corner).toEqual([...want, 255])
+    }
+    return [w, h]
+  }
+
+  it('girar à direita: medidas trocadas, cada pixel no lugar exato', async () => {
+    const size = await expectQuadrants({ quarterTurns: 1, mirrored: false }, { tl: BLUE, tr: RED, bl: 'transparente', br: GREEN })
+    expect(size).toEqual([32, 64])
+  })
+
+  it('girar à esquerda', async () => {
+    const size = await expectQuadrants({ quarterTurns: 3, mirrored: false }, { tl: GREEN, tr: 'transparente', bl: RED, br: BLUE })
+    expect(size).toEqual([32, 64])
+  })
+
+  it('espelhar na horizontal e na vertical mantêm as medidas', async () => {
+    expect(await expectQuadrants({ quarterTurns: 0, mirrored: true }, { tl: GREEN, tr: RED, bl: 'transparente', br: BLUE })).toEqual([64, 32])
+    expect(await expectQuadrants({ quarterTurns: 2, mirrored: true }, { tl: BLUE, tr: 'transparente', bl: RED, br: GREEN })).toEqual([64, 32])
+  })
+
+  it('foto com orientação EXIF: o giro vale para a imagem como ela aparece', async () => {
+    const halves: Draw = (context, width, height) => {
+      context.fillStyle = '#ff0000'
+      context.fillRect(0, 0, width / 2, height)
+      context.fillStyle = '#0000ff'
+      context.fillRect(width / 2, 0, width / 2, height)
+    }
+    // Gravada deitada com EXIF 6: aparece em pé, vermelho em cima. Girada à direita, o vermelho vai para a direita.
+    const jpeg = await makeImage(64, 32, halves, 'image/jpeg', 0.95)
+    const upright = new Blob([withExifOrientation(new Uint8Array(await jpeg.arrayBuffer()), 6)], { type: 'image/jpeg' })
+    const result = await client.run({
+      kind: 'convert',
+      file: upright,
+      target: 'png',
+      quality: 0.92,
+      background: '#ffffff',
+      orientation: { quarterTurns: 1, mirrored: false },
+    })
+    const output = await inspect(result.blob)
+    expect([output.width, output.height]).toEqual([64, 32])
+    expectColor(output.pixel(48, 16), [255, 0, 0])
+    expectColor(output.pixel(16, 16), [0, 0, 255])
+  })
+})
+
 describe('Formatos escritos pelo app (Chromium real)', () => {
   const bytesOf = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer())
   const convertQuadrants = async (target: 'bmp' | 'tiff' | 'ico' | 'pdf', background = '#ffffff') =>

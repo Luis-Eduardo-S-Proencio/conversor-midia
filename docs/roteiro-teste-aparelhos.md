@@ -1,6 +1,6 @@
 # Roteiro de teste em aparelhos reais
 
-Os testes automáticos rodam no Chromium, no Firefox e no WebKit do Windows, com o celular **simulado**. Ficam de fora o Safari de verdade, o seletor de fotos, a galeria, a memória de um celular e o toque real. Este roteiro cobre esses pontos em cerca de 25 minutos por aparelho. Faça em pelo menos um iPhone (Safari) e um Android (Chrome).
+Os testes automáticos rodam no Chromium, no Firefox e no WebKit do Windows, com o celular **simulado**. Ficam de fora o Safari de verdade, o seletor de fotos, a galeria, a memória de um celular e o toque real. Este roteiro cobre esses pontos em cerca de 30 minutos por aparelho. Faça em pelo menos um iPhone (Safari) e um Android (Chrome).
 
 ## 1. Abrir o site no celular
 
@@ -44,21 +44,27 @@ Marque ✔ ou ✘ e anote o que estranhar.
 15. Em Pixels, com o cadeado fechado, preencha só a largura com 1080 e redimensione as 5 fotos de uma vez. Todas saem com 1080 px de largura, sem deformar. Uma foto que já seja mais estreita volta com o aviso "Já cabe no tamanho pedido".
 16. Foto grande a 50%: anote o tempo. Se a conversão dessa foto falhou por falta de memória (item 9), veja se o redimensionamento funciona.
 
+**Girar e espelhar** (`/imagens/girar`)
+
+17. Toque em "Direita": a prévia gira na hora. Toque em "Ajustar" e baixe. A foto baixada aparece girada na galeria e em outros apps, com o mesmo nome.
+18. Uma selfie espelhada: "Horizontal" desfaz o espelho, e o texto que aparecer na foto fica legível.
+19. Selecione as 5 fotos, toque em "Esquerda" e ajuste todas de uma vez: todas saem giradas para o mesmo lado.
+
 **Uso geral**
 
-17. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels, os campos abrem o teclado numérico.
-18. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar.").
-19. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
+20. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels, os campos abrem o teclado numérico.
+21. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar."), e cada toque em girar ou espelhar diz como a imagem ficou.
+22. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
 
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.
 
-- O Safari não gera WEBP. Por isso, no iPhone, a conversão para WEBP fica indisponível, a compressão de PNG sai em JPG e um WEBP redimensionado sai em JPG (ou em PNG, se tiver transparência).
+- O Safari não gera WEBP. Por isso, no iPhone, a conversão para WEBP fica indisponível, a compressão de PNG sai em JPG e um WEBP redimensionado ou girado sai em JPG (ou em PNG, se tiver transparência).
 - Um PNG que declara canal de transparência não é comprimido no Safari, mesmo que todos os pixels sejam opacos. O app lê a declaração do arquivo e não confere pixel a pixel. **Avise se isso acontecer com prints de tela comuns** (item 11): dá para melhorar.
 - O limite é de 50 milhões de pixels. Fotos "50 MP" de alguns Android têm 8160 × 6144 (50,1 milhões) e são recusadas com explicação. **Anote se acontecer** (item 9): o limite pode ser revisto.
 - BMP e TIFF não têm compressão: uma foto de 12 MP vira um arquivo de uns 35 MB. É do formato.
-- Converter, comprimir e redimensionar removem metadados, como localização e data. A exceção é quando a original é mantida.
+- Converter, comprimir, redimensionar, girar e espelhar removem metadados, como localização e data. A exceção é quando a original é mantida.
 
 ## 5. Resultado
 

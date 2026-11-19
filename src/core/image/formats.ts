@@ -44,10 +44,10 @@ export function compressionFormat(input: ImageFormat, hasAlpha: boolean, canEnco
 }
 
 /**
- * Formato para redimensionar: o mesmo da original. Onde o navegador não gera WEBP (Safari), WEBP
- * vira PNG se tiver transparência (para não perdê-la) ou JPG se for opaco.
+ * Formato das ferramentas que não trocam o formato (redimensionar, girar e espelhar): o mesmo da original.
+ * Onde o navegador não gera WEBP (Safari), WEBP vira PNG se tiver transparência (para não perdê-la) ou JPG.
  */
-export function resizeFormat(input: ImageFormat, hasAlpha: boolean, canEncodeWebp: boolean): ImageFormat {
+export function preservedFormat(input: ImageFormat, hasAlpha: boolean, canEncodeWebp: boolean): ImageFormat {
   if (input !== 'webp' || canEncodeWebp) return input
   return hasAlpha ? 'png' : 'jpeg'
 }

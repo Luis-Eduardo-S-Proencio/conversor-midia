@@ -8,6 +8,7 @@ import { Button, IconButton } from '../../../components/ui/Button'
 import { formatBytes, formatFileMeta } from '../../../core/format'
 import { IMAGE_FORMATS } from '../../../core/image/formats'
 import { IMAGE_LIMITS } from '../../../core/image/inspect'
+import type { Orientation } from '../../../core/image/orientation'
 import type { BatchItem } from './batch-state'
 import { ACCEPTED_TYPES } from './constants'
 
@@ -55,6 +56,8 @@ interface BatchFilesProps {
   headingRef: RefObject<HTMLHeadingElement | null>
   /** Cor de fundo que o resultado terá onde a imagem é transparente (prévia do arquivo único). */
   backdrop?: string
+  /** Giro e espelhamento escolhidos: prévia e miniaturas já mostram o resultado. */
+  orientation?: Orientation
   /** Gerúndio da ferramenta ("Comprimindo"), para o nome da barra de progresso. */
   progressVerb: string
   onAdd: (files: File[]) => void
@@ -64,7 +67,19 @@ interface BatchFilesProps {
 }
 
 /** Arquivo único com prévia grande; vários, em lista com miniaturas. Erros aparecem por arquivo. */
-export function BatchFiles({ items, busy, notice, headingRef, backdrop, progressVerb, onAdd, onRemove, onClear, onDownload }: BatchFilesProps) {
+export function BatchFiles({
+  items,
+  busy,
+  notice,
+  headingRef,
+  backdrop,
+  orientation,
+  progressVerb,
+  onAdd,
+  onRemove,
+  onClear,
+  onDownload,
+}: BatchFilesProps) {
   const headingId = useId()
   const [first] = items
   const single = items.length === 1 && first?.previewUrl ? first : undefined
@@ -96,6 +111,7 @@ export function BatchFiles({ items, busy, notice, headingRef, backdrop, progress
           src={single.previewUrl}
           alt={`Pré-visualização de ${single.name}`}
           backdrop={single.image?.hasAlpha ? backdrop : undefined}
+          orientation={orientation}
         />
       )}
 
@@ -106,6 +122,7 @@ export function BatchFiles({ items, busy, notice, headingRef, backdrop, progress
             name={item.name}
             thumbnailUrl={single ? undefined : item.thumbnailUrl}
             showThumbnail={!single}
+            orientation={orientation}
             progressLabel={`${progressVerb} ${item.name}`}
             {...describeItem(item)}
             actions={

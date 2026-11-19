@@ -7,6 +7,7 @@ export const PUBLIC_ROUTES = [
   { path: '/imagens/converter', heading: 'Converter imagem' },
   { path: '/imagens/comprimir', heading: 'Comprimir imagem' },
   { path: '/imagens/redimensionar', heading: 'Redimensionar imagem' },
+  { path: '/imagens/girar', heading: 'Girar e espelhar' },
   { path: '/endereco-que-nao-existe', heading: 'Página não encontrada' },
 ] as const
 

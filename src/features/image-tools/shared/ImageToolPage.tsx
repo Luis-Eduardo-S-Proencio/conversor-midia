@@ -10,6 +10,7 @@ import { usePageFileDrop } from '../../../components/tool/usePageFileDrop'
 import { Alert } from '../../../components/ui/Alert'
 import { Button } from '../../../components/ui/Button'
 import { Icon } from '../../../components/ui/Icon'
+import type { Orientation } from '../../../core/image/orientation'
 import { supportsImageWorker } from '../../../workers/image-client'
 import { BatchActions } from './BatchActions'
 import { BatchFiles } from './BatchFiles'
@@ -38,13 +39,26 @@ interface ImageToolPageProps {
   zipName: string
   /** Cor que o resultado terá onde a imagem é transparente, mostrada na prévia do arquivo único. */
   backdrop?: string
+  /** Giro e espelhamento escolhidos, mostrados na prévia e nas miniaturas. */
+  orientation?: Orientation
 }
 
 /**
  * Esqueleto de toda ferramenta de imagens: seleção → prévia → opções → processamento → resultado.
  * Cuida de foco, anúncios para leitor de tela, arrastar e soltar na página e da barra de ação no celular.
  */
-export function ImageToolPage({ title, description, labels, actionIcon, batch, options, onStart, zipName, backdrop }: ImageToolPageProps) {
+export function ImageToolPage({
+  title,
+  description,
+  labels,
+  actionIcon,
+  batch,
+  options,
+  onStart,
+  zipName,
+  backdrop,
+  orientation,
+}: ImageToolPageProps) {
   const { items, summary } = batch
   const optionsHeadingId = useId()
   const filesHeading = useRef<HTMLHeadingElement>(null)
@@ -130,6 +144,7 @@ export function ImageToolPage({ title, description, labels, actionIcon, batch, o
               notice={batch.notice}
               headingRef={filesHeading}
               backdrop={backdrop}
+              orientation={orientation}
               progressVerb={labels.progress}
               onAdd={batch.addFiles}
               onRemove={handleRemove}

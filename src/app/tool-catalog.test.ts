@@ -13,4 +13,8 @@ describe('catálogo de ferramentas', () => {
     expect(resize?.to).toBe('/imagens/redimensionar')
     expect(resize?.description).toBe('Por porcentagem ou em pixels')
   })
+
+  it('Girar e espelhar está disponível, com rota própria', () => {
+    expect(IMAGE_TOOLS.find((tool) => tool.id === 'image-rotate-flip')?.to).toBe('/imagens/girar')
+  })
 })

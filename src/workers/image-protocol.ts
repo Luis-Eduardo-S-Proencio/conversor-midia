@@ -1,10 +1,11 @@
 import type { OutputFormat } from '../core/image/formats'
 import type { ProcessingErrorCode } from '../core/image/messages'
+import type { Orientation } from '../core/image/orientation'
 import type { Dimensions } from '../core/image/resize'
 
 /* Tarefas que o Worker de imagens executa. */
 
-export interface ConvertJob {
+interface ConvertBase {
   kind: 'convert'
   file: Blob
   target: OutputFormat
@@ -12,12 +13,25 @@ export interface ConvertJob {
   quality: number
   /** Cor que substitui a transparência quando o formato não a suporta (JPG, BMP, PDF). */
   background: string
-  /**
-   * Medidas do resultado, calculadas pela ferramenta sobre as medidas da prévia (imagem já orientada).
-   * Sem elas, a imagem mantém o tamanho.
-   */
-  resize?: Dimensions
 }
+
+/** Medidas ou orientação, nunca as duas: cada ferramenta faz uma só coisa com a imagem. */
+export type ConvertJob = ConvertBase &
+  (
+    | {
+        /**
+         * Medidas do resultado, calculadas pela ferramenta sobre as medidas da prévia (imagem já orientada).
+         * Sem elas, a imagem mantém o tamanho.
+         */
+        resize?: Dimensions
+        orientation?: never
+      }
+    | {
+        /** Giro e espelhamento sobre a imagem como ela aparece (orientação EXIF já aplicada). */
+        orientation: Orientation
+        resize?: never
+      }
+  )
 
 export interface PreviewJob {
   kind: 'preview'

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { IMAGE_FORMATS, OUTPUT_FORMATS, OUTPUT_FORMAT_INFO, compressionFormat, defaultTargetFormat, resizeFormat } from './formats'
+import { IMAGE_FORMATS, OUTPUT_FORMATS, OUTPUT_FORMAT_INFO, compressionFormat, defaultTargetFormat, preservedFormat } from './formats'
 
 describe('IMAGE_FORMATS', () => {
   it('descreve tipo, extensão, qualidade e transparência de cada formato', () => {
@@ -60,16 +60,16 @@ describe('compressionFormat', () => {
   })
 })
 
-describe('resizeFormat', () => {
+describe('preservedFormat (redimensionar, girar e espelhar)', () => {
   it('mantém o formato original', () => {
-    expect(resizeFormat('jpeg', false, true)).toBe('jpeg')
-    expect(resizeFormat('png', true, true)).toBe('png')
-    expect(resizeFormat('webp', true, true)).toBe('webp')
-    expect(resizeFormat('png', true, false)).toBe('png')
+    expect(preservedFormat('jpeg', false, true)).toBe('jpeg')
+    expect(preservedFormat('png', true, true)).toBe('png')
+    expect(preservedFormat('webp', true, true)).toBe('webp')
+    expect(preservedFormat('png', true, false)).toBe('png')
   })
 
   it('sem WEBP no navegador: WEBP vira PNG se tiver transparência, senão JPG', () => {
-    expect(resizeFormat('webp', true, false)).toBe('png')
-    expect(resizeFormat('webp', false, false)).toBe('jpeg')
+    expect(preservedFormat('webp', true, false)).toBe('png')
+    expect(preservedFormat('webp', false, false)).toBe('jpeg')
   })
 })

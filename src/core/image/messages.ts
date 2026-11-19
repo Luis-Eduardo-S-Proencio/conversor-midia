@@ -1,4 +1,5 @@
 import { formatBytes } from '../format'
+import { IMAGE_FORMATS, type ImageFormat } from './formats'
 
 /** Por que um arquivo foi recusado antes de qualquer processamento. */
 export type RejectionReason =
@@ -62,4 +63,9 @@ const PROCESSING_MESSAGES: Record<ProcessingErrorCode, string> = {
 
 export function processingErrorMessage(code: ProcessingErrorCode): string {
   return PROCESSING_MESSAGES[code]
+}
+
+/** Observação quando um WEBP sai em outro formato porque o navegador (Safari) não gera WEBP. */
+export function webpFallbackNote(format: ImageFormat): string {
+  return `Este navegador não gera WEBP: a imagem saiu em ${IMAGE_FORMATS[format].label}.`
 }

@@ -60,6 +60,14 @@ export const router = createBrowserRouter([
           return { Component: ResizePage }
         },
       },
+      {
+        path: 'imagens/girar',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { RotatePage } = await import('../features/image-tools/rotate/RotatePage')
+          return { Component: RotatePage }
+        },
+      },
       ...devRoutes,
       { path: '*', element: <NotFoundPage /> },
     ],

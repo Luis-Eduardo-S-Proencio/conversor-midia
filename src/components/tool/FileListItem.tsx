@@ -1,5 +1,6 @@
 import { Check, CircleAlert, Image as ImageIcon, ImageOff, Info, LoaderCircle, TriangleAlert, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { orientationCss, type Orientation } from '../../core/image/orientation'
 import { Badge } from '../ui/Badge'
 import { cx } from '../ui/cx'
 import { Icon } from '../ui/Icon'
@@ -30,6 +31,8 @@ interface FileListItemProps {
   actions?: ReactNode
   /** Desligue quando uma prévia grande do mesmo arquivo já aparece acima. */
   showThumbnail?: boolean
+  /** Giro e espelhamento escolhidos, mostrados na miniatura. */
+  orientation?: Orientation
 }
 
 function StatusBadge({ state, label }: { state: FileItemState; label: string }) {
@@ -40,8 +43,12 @@ function StatusBadge({ state, label }: { state: FileItemState; label: string }) 
   )
 }
 
-function Thumbnail({ url, state }: { url?: string; state: FileItemState }) {
-  if (url) return <img src={url} alt="" decoding="async" className="size-full object-contain" />
+function Thumbnail({ url, state, orientation }: { url?: string; state: FileItemState; orientation?: Orientation }) {
+  if (url) {
+    // A miniatura ocupa um quadrado: girada em volta do centro, continua inteira dentro dele.
+    const transform = orientation ? orientationCss(orientation) : ''
+    return <img src={url} alt="" decoding="async" className="size-full object-contain" style={transform ? { transform } : undefined} />
+  }
   if (state === 'pending') return <Icon icon={LoaderCircle} className="animate-spin" />
   return <Icon icon={state === 'error' ? ImageOff : ImageIcon} />
 }
@@ -61,6 +68,7 @@ export function FileListItem({
   progressLabel = `Processando ${name}`,
   actions,
   showThumbnail = true,
+  orientation,
 }: FileListItemProps) {
   return (
     <li
@@ -71,7 +79,7 @@ export function FileListItem({
     >
       {showThumbnail && (
         <span className="grid size-12 place-items-center overflow-hidden rounded-sm bg-checker text-fg-subtle">
-          <Thumbnail url={thumbnailUrl} state={state} />
+          <Thumbnail url={thumbnailUrl} state={state} orientation={orientation} />
         </span>
       )}
       <div className="grid min-w-0 gap-1">

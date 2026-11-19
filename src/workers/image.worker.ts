@@ -9,6 +9,7 @@ import type { PixelSource } from '../core/image/encode/pixels'
 import { encodeTiff } from '../core/image/encode/tiff'
 import { OUTPUT_FORMAT_INFO, type OutputFormat } from '../core/image/formats'
 import type { ProcessingErrorCode } from '../core/image/messages'
+import { orientationMatrix, orientedDimensions, type Orientation } from '../core/image/orientation'
 import type {
   ConvertJob,
   ConvertOutput,
@@ -227,10 +228,24 @@ async function encodeAs(job: ConvertJob, surface: Surface): Promise<Blob> {
   return encode(surface.canvas, format.mimeType, format.lossy ? job.quality : undefined)
 }
 
+/** Gira e espelha sem reamostrar: a matriz leva cada pixel exatamente para outro. */
+function drawOriented(context: OffscreenCanvasRenderingContext2D, bitmap: ImageBitmap, orientation: Orientation) {
+  context.setTransform(...orientationMatrix(orientation, bitmap))
+  context.drawImage(bitmap, 0, 0)
+  context.setTransform(1, 0, 0, 1, 0, 0)
+}
+
+/** Medidas do resultado: as pedidas, as da imagem girada ou as da original. */
+function outputDimensions(job: ConvertJob, bitmap: ImageBitmap) {
+  if (job.resize) return job.resize
+  if (job.orientation) return orientedDimensions(bitmap, job.orientation)
+  return { width: bitmap.width, height: bitmap.height }
+}
+
 async function convert(job: ConvertJob): Promise<ConvertOutput> {
   const format = OUTPUT_FORMAT_INFO[job.target]
   const bitmap = await decode(job.file)
-  const { width, height } = job.resize ?? bitmap
+  const { width, height } = outputDimensions(job, bitmap)
   let surface: Surface | undefined
   try {
     surface = createSurface(width, height, isPixelFormat(job.target))
@@ -240,6 +255,7 @@ async function convert(job: ConvertJob): Promise<ConvertOutput> {
       surface.context.fillRect(0, 0, width, height)
     }
     if (job.resize) drawResized(bitmap, surface.context, { x: 0, y: 0, width, height })
+    else if (job.orientation) drawOriented(surface.context, bitmap, job.orientation)
     else surface.context.drawImage(bitmap, 0, 0)
     bitmap.close() // o canvas já tem os pixels; libera a imagem decodificada antes de codificar
     const blob = await encodeAs(job, surface)

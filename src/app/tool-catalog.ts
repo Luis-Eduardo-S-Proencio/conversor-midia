@@ -35,7 +35,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
     popular: true,
   },
   { id: 'image-crop', title: 'Recortar imagem', description: 'Mantenha só a área que importa', icon: Crop, popular: true },
-  { id: 'image-rotate-flip', title: 'Girar e espelhar', description: 'Corrija a orientação da foto', icon: RotateCw },
+  { id: 'image-rotate-flip', title: 'Girar e espelhar', description: 'Corrija a orientação da foto', icon: RotateCw, to: '/imagens/girar' },
 ]
 
 export const VIDEO_TOOLS: readonly ToolEntry[] = [

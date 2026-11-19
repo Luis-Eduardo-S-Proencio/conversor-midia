@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PROCESSING_ERROR_CODES, processingErrorMessage, rejectionMessage } from './messages'
+import { PROCESSING_ERROR_CODES, processingErrorMessage, rejectionMessage, webpFallbackNote } from './messages'
 
 describe('rejectionMessage', () => {
   it('explica cada motivo de recusa em linguagem simples', () => {
@@ -35,5 +35,12 @@ describe('processingErrorMessage', () => {
 
   it('falta de memória do aparelho sugere uma saída', () => {
     expect(processingErrorMessage('canvas-unavailable')).toMatch(/memória/)
+  })
+})
+
+describe('webpFallbackNote', () => {
+  it('explica por que um WEBP saiu em outro formato (Safari, que não gera WEBP)', () => {
+    expect(webpFallbackNote('jpeg')).toBe('Este navegador não gera WEBP: a imagem saiu em JPG.')
+    expect(webpFallbackNote('png')).toBe('Este navegador não gera WEBP: a imagem saiu em PNG.')
   })
 })

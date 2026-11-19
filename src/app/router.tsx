@@ -52,6 +52,14 @@ export const router = createBrowserRouter([
           return { Component: CompressPage }
         },
       },
+      {
+        path: 'imagens/redimensionar',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { ResizePage } = await import('../features/image-tools/resize/ResizePage')
+          return { Component: ResizePage }
+        },
+      },
       ...devRoutes,
       { path: '*', element: <NotFoundPage /> },
     ],

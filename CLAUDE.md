@@ -5,7 +5,7 @@ Plataforma web **gratuita** para converter, comprimir e editar imagens e vídeos
 Este arquivo é a fonte das regras do projeto. Os **métodos** de trabalho (checklists, procedimentos) estão nas Skills de `.claude/skills/` e **não são repetidos aqui**.
 
 ## Estado atual
-Scaffold, Design System, navegação e páginas institucionais prontos (Início, Imagens, Vídeos, Sobre, página não encontrada). Funcionam **Converter imagem** (`/imagens/converter`) e **Comprimir imagem** (`/imagens/comprimir`), ambas sobre a base comum `features/image-tools/shared/`; as demais aparecem como "Em breve" no catálogo (`src/app/tool-catalog.ts`). Ainda sem teste em aparelho real: roteiro em `docs/roteiro-teste-aparelhos.md`. Confirme o que existe no disco antes de assumir.
+Scaffold, Design System, navegação e páginas institucionais prontos (Início, Imagens, Vídeos, Sobre, página não encontrada). Funcionam **Converter imagem** (`/imagens/converter`), **Comprimir imagem** (`/imagens/comprimir`) e **Redimensionar imagem** (`/imagens/redimensionar`), todas sobre a base comum `features/image-tools/shared/`; as demais aparecem como "Em breve" no catálogo (`src/app/tool-catalog.ts`). Ainda sem teste em aparelho real: roteiro em `docs/roteiro-teste-aparelhos.md`. Confirme o que existe no disco antes de assumir.
 
 ## Funcionalidades
 - **Imagens (primeira versão)**: converter JPG/JPEG, PNG e WEBP para JPG, PNG, WEBP, BMP, TIFF, ICO e PDF; comprimir; redimensionar; recortar, girar e espelhar; processar vários arquivos; baixar os resultados.
@@ -39,7 +39,7 @@ src/
     tool/              # padrão das ferramentas (Dropzone, FilePreview, DownloadActions...), sem processamento
     brand/             # logotipo e sua geometria
   core/                # TypeScript puro, sem DOM nem React: formatação
-    image/             # formatos, assinatura de bytes, cabeçalho, inspeção com limites, nomes de saída, mensagens
+    image/             # formatos, assinatura de bytes, cabeçalho, inspeção com limites, nomes de saída, mensagens, medidas de redimensionamento
       encode/          # codificadores próprios (BMP, TIFF, ICO, PDF), lendo os pixels em faixas
   styles/              # tokens.css (valores), base.css, index.css
   test/                # configuração dos testes de navegador e construtores de bytes de imagem
@@ -48,6 +48,7 @@ src/
       shared/          # base das ferramentas de imagem: estado do lote, fila, tela (ImageToolPage)
       convert/         # Converter imagem: opções e regra de formato
       compress/        # Comprimir imagem: níveis e regra de compressão (compress-file.ts)
+      resize/          # Redimensionar imagem: porcentagem ou pixels, validação dos campos e regra por arquivo (resize-file.ts)
   workers/             # Worker de imagens, protocolo tipado e cliente com fila e cancelamento
 scripts/               # geração de ícones e de fixtures
 tests/e2e/             # Playwright; image-tool.ts reúne os auxiliares (tsconfig.e2e.json reaproveita src/core)
@@ -81,6 +82,8 @@ Testes unitários ficam ao lado do código. Mudar esta estrutura é decisão arq
 - Arquivo do visitante é **dado não confiável**. Valide por assinatura de bytes e por decodificação real, não por extensão ou `file.type`.
 - Limites antes de decodificar: bytes, número de arquivos e dimensões (memória decodificada ≈ largura × altura × 4).
 - Recodificar via canvas remove metadados (EXIF/GPS); PNG/WEBP com transparência → JPEG exige cor de fundo definida; confirme na saída que o formato pedido foi realmente gerado (alguns navegadores trocam para PNG em silêncio).
+- Medidas para decidir (tamanho final, recorte): as de `item.image` depois da prévia, que são as da imagem decodificada e já orientada, como o Worker a verá. O cabeçalho de PNG e WEBP não informa a orientação.
+- Reduzir imagem no Worker: `drawResized` (em `image.worker.ts`) reduz em etapas de metade. Num passo só, o Firefox, que não tem `imageSmoothingQuality`, cria listras falsas (moiré); há teste E2E disso no Firefox.
 - Não persistir arquivos do usuário (localStorage, IndexedDB, cache) sem decisão explícita.
 - Skills: `security-auditor` (segurança), `performance-optimization` (memória).
 

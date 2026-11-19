@@ -16,7 +16,7 @@ const added = (...ids: string[]): BatchAction => ({
 })
 const ready = (id: string, image: InspectedImage = png): BatchAction[] => [
   { type: 'inspected', id, image },
-  { type: 'previewed', id, thumbnailUrl: `blob:t-${id}`, previewUrl: `blob:p-${id}` },
+  { type: 'previewed', id, thumbnailUrl: `blob:t-${id}`, previewUrl: `blob:p-${id}`, width: image.width, height: image.height },
 ]
 
 describe('batchReducer', () => {
@@ -42,6 +42,19 @@ describe('batchReducer', () => {
       output: { name: 'a.jpg', size: 400, note: 'Mantida a original.' },
     })
     expect(state.run).toBeUndefined()
+  })
+
+  it('a prévia troca as medidas do cabeçalho pelas da imagem decodificada, já na posição em que aparece', () => {
+    // PNG com orientação nos metadados: o cabeçalho diz 100 × 80, mas a imagem aparece em pé.
+    const state = apply(added('a'), { type: 'inspected', id: 'a', image: png }, {
+      type: 'previewed',
+      id: 'a',
+      thumbnailUrl: 'blob:t-a',
+      previewUrl: 'blob:p-a',
+      width: 80,
+      height: 100,
+    })
+    expect(state.items[0]).toMatchObject({ status: 'ready', image: { ...png, width: 80, height: 100 } })
   })
 
   it('conta o progresso do lote e uma falha não afeta os demais', () => {

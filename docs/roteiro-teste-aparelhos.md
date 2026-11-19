@@ -1,6 +1,6 @@
 # Roteiro de teste em aparelhos reais
 
-Os testes automáticos rodam no Chromium, no Firefox e no WebKit do Windows, com o celular **simulado**. Ficam de fora o Safari de verdade, o seletor de fotos, a galeria, a memória de um celular e o toque real. Este roteiro cobre esses pontos em cerca de 20 minutos por aparelho. Faça em pelo menos um iPhone (Safari) e um Android (Chrome).
+Os testes automáticos rodam no Chromium, no Firefox e no WebKit do Windows, com o celular **simulado**. Ficam de fora o Safari de verdade, o seletor de fotos, a galeria, a memória de um celular e o toque real. Este roteiro cobre esses pontos em cerca de 25 minutos por aparelho. Faça em pelo menos um iPhone (Safari) e um Android (Chrome).
 
 ## 1. Abrir o site no celular
 
@@ -37,21 +37,28 @@ Marque ✔ ou ✘ e anote o que estranhar.
 11. Print de tela (PNG): no Android, sai em WEBP menor. No iPhone, sai em JPG.
 12. Comprima de novo um arquivo que já foi comprimido: aparece "Já estava otimizada: mantida a original".
 
+**Redimensionar** (`/imagens/redimensionar`)
+
+13. Foto da câmera a 50%: o tamanho final aparece antes de processar. O arquivo baixado tem metade da largura e da altura, e o nome termina com as medidas (ex.: `-2016x1512`).
+14. A foto tirada em pé continua em pé, com a largura menor que a altura.
+15. Em Pixels, com o cadeado fechado, preencha só a largura com 1080 e redimensione as 5 fotos de uma vez. Todas saem com 1080 px de largura, sem deformar. Uma foto que já seja mais estreita volta com o aviso "Já cabe no tamanho pedido".
+16. Foto grande a 50%: anote o tempo. Se a conversão dessa foto falhou por falta de memória (item 9), veja se o redimensionamento funciona.
+
 **Uso geral**
 
-13. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado.
-14. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar.").
-15. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
+17. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels, os campos abrem o teclado numérico.
+18. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar.").
+19. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
 
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.
 
-- O Safari não gera WEBP. Por isso, no iPhone, a conversão para WEBP fica indisponível e a compressão de PNG sai em JPG.
+- O Safari não gera WEBP. Por isso, no iPhone, a conversão para WEBP fica indisponível, a compressão de PNG sai em JPG e um WEBP redimensionado sai em JPG (ou em PNG, se tiver transparência).
 - Um PNG que declara canal de transparência não é comprimido no Safari, mesmo que todos os pixels sejam opacos. O app lê a declaração do arquivo e não confere pixel a pixel. **Avise se isso acontecer com prints de tela comuns** (item 11): dá para melhorar.
 - O limite é de 50 milhões de pixels. Fotos "50 MP" de alguns Android têm 8160 × 6144 (50,1 milhões) e são recusadas com explicação. **Anote se acontecer** (item 9): o limite pode ser revisto.
 - BMP e TIFF não têm compressão: uma foto de 12 MP vira um arquivo de uns 35 MB. É do formato.
-- Converter e comprimir removem metadados, como localização e data. A exceção é quando a original é mantida.
+- Converter, comprimir e redimensionar removem metadados, como localização e data. A exceção é quando a original é mantida.
 
 ## 5. Resultado
 
@@ -62,6 +69,6 @@ Aparelho e sistema: (ex.: iPhone 13, iOS 18.2)
 Navegador e versão: (ex.: Safari; Chrome 131)
 Acesso: Vercel (https) ou rede local (http)
 Itens com problema: (número do item + o que aconteceu)
-Foto grande: resolução ___ · ___ s até a prévia · ___ s para converter
+Foto grande: resolução ___ · ___ s até a prévia · ___ s para converter · ___ s para redimensionar a 50%
 Prints ou gravação de tela dos problemas
 ```

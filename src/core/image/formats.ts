@@ -44,6 +44,15 @@ export function compressionFormat(input: ImageFormat, hasAlpha: boolean, canEnco
 }
 
 /**
+ * Formato para redimensionar: o mesmo da original. Onde o navegador não gera WEBP (Safari), WEBP
+ * vira PNG se tiver transparência (para não perdê-la) ou JPG se for opaco.
+ */
+export function resizeFormat(input: ImageFormat, hasAlpha: boolean, canEncodeWebp: boolean): ImageFormat {
+  if (input !== 'webp' || canEncodeWebp) return input
+  return hasAlpha ? 'png' : 'jpeg'
+}
+
+/**
  * Formato de saída sugerido: JPG, o mais compatível. Se todas as imagens já forem JPG,
  * WEBP (menor), ou PNG quando o navegador não consegue gerar WEBP.
  */

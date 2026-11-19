@@ -158,10 +158,37 @@ async function encodeAs(job: ConvertJob, surface: Surface): Promise<Blob> {
   return encode(surface.canvas, format.mimeType, format.lossy ? job.quality : undefined)
 }
 
+/**
+ * Desenha a imagem nas medidas do destino. Reduções fortes passam por etapas de metade: num passo só,
+ * o Firefox, que não tem `imageSmoothingQuality`, cria listras falsas (moiré); a cada metade, qualquer
+ * motor tira a média dos pixels. Cada etapa ocupa um quarto da memória da anterior e é liberada em seguida.
+ */
+function drawResized(target: Surface, bitmap: ImageBitmap) {
+  const { width, height } = target.canvas
+  let step: OffscreenCanvas | undefined
+  try {
+    for (;;) {
+      const source = step ?? bitmap
+      const stepWidth = source.width >= width * 2 ? Math.round(source.width / 2) : source.width
+      const stepHeight = source.height >= height * 2 ? Math.round(source.height / 2) : source.height
+      if (stepWidth === source.width && stepHeight === source.height) break
+      const next = createSurface(stepWidth, stepHeight)
+      next.context.imageSmoothingQuality = 'high'
+      next.context.drawImage(source, 0, 0, stepWidth, stepHeight)
+      if (step) release(step)
+      step = next.canvas
+    }
+    target.context.imageSmoothingQuality = 'high'
+    target.context.drawImage(step ?? bitmap, 0, 0, width, height)
+  } finally {
+    if (step) release(step)
+  }
+}
+
 async function convert(job: ConvertJob): Promise<ConvertOutput> {
   const format = OUTPUT_FORMAT_INFO[job.target]
   const bitmap = await decode(job.file)
-  const { width, height } = bitmap
+  const { width, height } = job.resize ?? bitmap
   let surface: Surface | undefined
   try {
     surface = createSurface(width, height, isPixelFormat(job.target))
@@ -170,7 +197,8 @@ async function convert(job: ConvertJob): Promise<ConvertOutput> {
       surface.context.fillStyle = job.background
       surface.context.fillRect(0, 0, width, height)
     }
-    surface.context.drawImage(bitmap, 0, 0)
+    if (job.resize) drawResized(surface, bitmap)
+    else surface.context.drawImage(bitmap, 0, 0)
     bitmap.close() // o canvas já tem os pixels; libera a imagem decodificada antes de codificar
     const blob = await encodeAs(job, surface)
     return { kind: 'convert', blob, width, height }

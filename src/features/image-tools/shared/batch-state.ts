@@ -42,7 +42,8 @@ export const INITIAL_BATCH_STATE: BatchState = { items: [] }
 export type BatchAction =
   | { type: 'added'; files: Array<{ id: string; name: string; size: number }>; overflow: number }
   | { type: 'inspected'; id: string; image: InspectedImage }
-  | { type: 'previewed'; id: string; thumbnailUrl: string; previewUrl: string }
+  /** `width` e `height`: medidas da imagem decodificada, já na posição em que aparece. */
+  | { type: 'previewed'; id: string; thumbnailUrl: string; previewUrl: string; width: number; height: number }
   | { type: 'rejected'; id: string; message: string }
   | { type: 'removed'; id: string }
   | { type: 'queued'; ids: string[] }
@@ -73,7 +74,22 @@ export function batchReducer(state: BatchState, action: BatchAction): BatchState
     case 'inspected':
       return patch(state, action.id, { image: action.image })
     case 'previewed':
-      return patch(state, action.id, { status: 'ready', thumbnailUrl: action.thumbnailUrl, previewUrl: action.previewUrl })
+      return {
+        ...state,
+        items: state.items.map((item) =>
+          item.id === action.id
+            ? {
+                ...item,
+                status: 'ready',
+                thumbnailUrl: action.thumbnailUrl,
+                previewUrl: action.previewUrl,
+                // O Worker decodifica do mesmo jeito ao processar: estas são as medidas reais. O cabeçalho
+                // de PNG e WEBP não informa a orientação, e o tamanho final depende dela.
+                image: item.image && { ...item.image, width: action.width, height: action.height },
+              }
+            : item,
+        ),
+      }
     case 'rejected':
       return patch(state, action.id, { status: 'rejected', message: action.message })
     case 'removed':

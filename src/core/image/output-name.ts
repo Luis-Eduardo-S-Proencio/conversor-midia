@@ -26,9 +26,12 @@ function safeBaseName(inputName: string): string {
   return RESERVED_WINDOWS_NAMES.test(base) ? `${base}_` : base
 }
 
-/** Nome do arquivo convertido: "foto.png" → "foto.jpg". Sempre exibido como texto, nunca como HTML. */
-export function outputFileName(inputName: string, format: OutputFormat): string {
-  return `${safeBaseName(inputName)}.${OUTPUT_FORMAT_INFO[format].extension}`
+/**
+ * Nome do arquivo de saída: "foto.png" → "foto.jpg". Sempre exibido como texto, nunca como HTML.
+ * `suffix` é gerado pelo app (ex.: "-2560x1440") e entra depois do limite de tamanho do nome.
+ */
+export function outputFileName(inputName: string, format: OutputFormat, suffix = ''): string {
+  return `${safeBaseName(inputName)}${suffix}.${OUTPUT_FORMAT_INFO[format].extension}`
 }
 
 function splitExtension(name: string): [base: string, extension: string] {

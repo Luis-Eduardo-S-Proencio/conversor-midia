@@ -13,6 +13,6 @@ export interface BatchLabels {
   progress: string
   /** Particípio no feminino singular: "convertida" (o plural ganha "s"). */
   done: string
-  /** Substantivo da operação: "Conversão". */
+  /** Substantivo feminino da operação: "Conversão" (o anúncio de cancelamento diz "Conversão cancelada."). */
   noun: string
 }

@@ -116,7 +116,7 @@ export function useImageBatch(labels: BatchLabels) {
       const thumbnailUrl = URL.createObjectURL(output.thumbnail)
       const previewUrl = URL.createObjectURL(output.preview)
       objectUrls.current.set(id, [thumbnailUrl, previewUrl])
-      dispatch({ type: 'previewed', id, thumbnailUrl, previewUrl })
+      dispatch({ type: 'previewed', id, thumbnailUrl, previewUrl, width: output.width, height: output.height })
       return 'ready'
     } catch (error) {
       if (isAbortError(error)) return 'cancelled'

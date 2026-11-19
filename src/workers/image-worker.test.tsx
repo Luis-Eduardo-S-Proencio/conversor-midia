@@ -154,6 +154,90 @@ describe('Worker de imagens (Chromium real)', () => {
   })
 })
 
+describe('Redimensionar (Chromium real)', () => {
+  it('desenha nas medidas pedidas antes de codificar, com as cores no lugar e a transparência mantida', async () => {
+    const png = await makeImage(64, 64, quadrants)
+    const result = await client.run({
+      kind: 'convert',
+      file: png,
+      target: 'png',
+      quality: 0.92,
+      background: '#ffffff',
+      resize: { width: 32, height: 32 },
+    })
+
+    expect([result.width, result.height]).toEqual([32, 32])
+    const output = await inspect(result.blob)
+    expect([output.width, output.height]).toEqual([32, 32])
+    expectColor(output.pixel(8, 8), [255, 0, 0])
+    expectColor(output.pixel(24, 8), [0, 255, 0])
+    expectColor(output.pixel(8, 24), [0, 0, 255])
+    expect(output.pixel(24, 24)[3]).toBe(0)
+  })
+
+  it('foto com orientação EXIF: as medidas pedidas valem para a imagem em pé', async () => {
+    const halves: Draw = (context, width, height) => {
+      context.fillStyle = '#ff0000'
+      context.fillRect(0, 0, width / 2, height)
+      context.fillStyle = '#0000ff'
+      context.fillRect(width / 2, 0, width / 2, height)
+    }
+    const jpeg = await makeImage(64, 32, halves, 'image/jpeg', 0.95)
+    const rotated = new Blob([withExifOrientation(new Uint8Array(await jpeg.arrayBuffer()), 6)], { type: 'image/jpeg' })
+
+    const result = await client.run({
+      kind: 'convert',
+      file: rotated,
+      target: 'png',
+      quality: 0.92,
+      background: '#ffffff',
+      resize: { width: 16, height: 32 },
+    })
+    const output = await inspect(result.blob)
+    expect([output.width, output.height]).toEqual([16, 32])
+    expectColor(output.pixel(8, 6), [255, 0, 0]) // a metade esquerda foi para cima
+    expectColor(output.pixel(8, 26), [0, 0, 255])
+  })
+
+  it('redução forte sem listras falsas (moiré): listras de 1 px viram cinza uniforme', async () => {
+    const stripes = await makeImage(800, 40, (context, width, height) => {
+      context.fillStyle = '#000000'
+      context.fillRect(0, 0, width, height)
+      context.fillStyle = '#ffffff'
+      for (let x = 1; x < width; x += 2) context.fillRect(x, 0, 1, height)
+    })
+    const result = await client.run({
+      kind: 'convert',
+      file: stripes,
+      target: 'png',
+      quality: 0.92,
+      background: '#ffffff',
+      resize: { width: 103, height: 5 },
+    })
+
+    const output = await inspect(result.blob)
+    const row = Array.from({ length: output.width }, (_, x) => output.pixel(x, 2)[0] ?? -1)
+    expect(Math.min(...row)).toBeGreaterThanOrEqual(115)
+    expect(Math.max(...row)).toBeLessThanOrEqual(140)
+  })
+
+  it('medidas exatas podem ampliar e deformar', async () => {
+    const png = await makeImage(32, 32, quadrants)
+    const result = await client.run({
+      kind: 'convert',
+      file: png,
+      target: 'jpeg',
+      quality: 0.92,
+      background: '#ffffff',
+      resize: { width: 64, height: 48 },
+    })
+    const output = await inspect(result.blob)
+    expect([output.width, output.height]).toEqual([64, 48])
+    expectColor(output.pixel(16, 12), [255, 0, 0])
+    expectColor(output.pixel(48, 36), [255, 255, 255]) // o quadrante transparente, no fundo escolhido
+  })
+})
+
 describe('Formatos escritos pelo app (Chromium real)', () => {
   const bytesOf = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer())
   const convertQuadrants = async (target: 'bmp' | 'tiff' | 'ico' | 'pdf', background = '#ffffff') =>

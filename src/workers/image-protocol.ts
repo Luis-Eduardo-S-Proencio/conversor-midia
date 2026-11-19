@@ -1,5 +1,6 @@
 import type { OutputFormat } from '../core/image/formats'
 import type { ProcessingErrorCode } from '../core/image/messages'
+import type { Dimensions } from '../core/image/resize'
 
 /* Tarefas que o Worker de imagens executa. */
 
@@ -11,6 +12,11 @@ export interface ConvertJob {
   quality: number
   /** Cor que substitui a transparência quando o formato não a suporta (JPG, BMP, PDF). */
   background: string
+  /**
+   * Medidas do resultado, calculadas pela ferramenta sobre as medidas da prévia (imagem já orientada).
+   * Sem elas, a imagem mantém o tamanho.
+   */
+  resize?: Dimensions
 }
 
 export interface PreviewJob {

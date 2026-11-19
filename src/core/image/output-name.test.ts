@@ -50,6 +50,15 @@ describe('outputFileName', () => {
   it('normaliza acentos para a forma composta', () => {
     expect(outputFileName('cafe\u0301.png', 'jpeg')).toBe('caf\u00e9.jpg')
   })
+
+  it('acrescenta um sufixo antes da extens\u00e3o (ex.: as medidas do resultado)', () => {
+    expect(outputFileName('foto.JPEG', 'jpeg', '-2560x1440')).toBe('foto-2560x1440.jpg')
+    expect(outputFileName('.png', 'png', '-32x32')).toBe('imagem-32x32.png')
+  })
+
+  it('o sufixo nunca \u00e9 cortado pelo limite do nome', () => {
+    expect(outputFileName(`${'a'.repeat(200)}.png`, 'png', '-10x10')).toBe(`${'a'.repeat(120)}-10x10.png`)
+  })
 })
 
 describe('uniqueFileNames', () => {

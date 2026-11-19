@@ -1,4 +1,4 @@
-import type { ImageFormat } from '../core/image/formats'
+import type { OutputFormat } from '../core/image/formats'
 import type { ProcessingErrorCode } from '../core/image/messages'
 
 /* Tarefas que o Worker de imagens executa. */
@@ -6,10 +6,10 @@ import type { ProcessingErrorCode } from '../core/image/messages'
 export interface ConvertJob {
   kind: 'convert'
   file: Blob
-  target: ImageFormat
-  /** De 0 a 1; usada só por formatos com perdas. */
+  target: OutputFormat
+  /** De 0 a 1; usada só por formatos com perdas (no PDF, pelo JPG de dentro). */
   quality: number
-  /** Cor que substitui a transparência quando o formato não a suporta (JPG). */
+  /** Cor que substitui a transparência quando o formato não a suporta (JPG, BMP, PDF). */
   background: string
 }
 

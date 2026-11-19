@@ -11,7 +11,7 @@ export function VideosPage() {
       <Container className="grid gap-8 py-10 md:py-14">
         <PageHeader
           title="Ferramentas de vídeo"
-          description="Converter, comprimir, cortar trechos e extrair áudio, também direto no navegador."
+          description="Converter, comprimir, cortar trechos, extrair áudio e criar GIF, também direto no navegador."
         />
         <Alert variant="info" live={false} title="Em breve">
           As ferramentas de vídeo chegam depois das de imagem. Vídeos exigem mais memória, por isso cada ferramenta vai

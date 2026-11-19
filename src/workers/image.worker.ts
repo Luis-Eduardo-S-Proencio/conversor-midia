@@ -2,7 +2,12 @@
  * Worker de imagens: decodifica, converte, gera prévias e monta ZIP fora da thread principal.
  * Cada pedido recebe exatamente uma resposta, de sucesso ou com um código de erro estável.
  */
-import { IMAGE_FORMATS } from '../core/image/formats'
+import { encodeBmp } from '../core/image/encode/bmp'
+import { icoHeader, icoSizes } from '../core/image/encode/ico'
+import { pdfParts } from '../core/image/encode/pdf'
+import type { PixelSource } from '../core/image/encode/pixels'
+import { encodeTiff } from '../core/image/encode/tiff'
+import { OUTPUT_FORMAT_INFO, type OutputFormat } from '../core/image/formats'
 import type { ProcessingErrorCode } from '../core/image/messages'
 import type {
   ConvertJob,
@@ -63,11 +68,14 @@ interface Surface {
   context: OffscreenCanvasRenderingContext2D
 }
 
-/** Canvas grande demais para a memória do aparelho falha ao criar ou devolve contexto nulo. */
-function createSurface(width: number, height: number): Surface {
+/**
+ * Canvas grande demais para a memória do aparelho falha ao criar ou devolve contexto nulo.
+ * `willReadFrequently` deixa os pixels na memória comum, onde lê-los (getImageData) é rápido.
+ */
+function createSurface(width: number, height: number, willReadFrequently = false): Surface {
   try {
     const canvas = new OffscreenCanvas(width, height)
-    const context = canvas.getContext('2d')
+    const context = canvas.getContext('2d', { willReadFrequently })
     if (context) return { canvas, context }
   } catch {
     // Falha de alocação: tratada abaixo com o mesmo código do contexto nulo.
@@ -93,21 +101,78 @@ async function encode(canvas: OffscreenCanvas, mimeType: string, quality?: numbe
   return blob
 }
 
+/** Formatos que o próprio app escreve a partir dos pixels do canvas (`core/image/encode`). */
+const PIXEL_ENCODERS = { bmp: encodeBmp, tiff: encodeTiff } as const
+type PixelFormat = keyof typeof PIXEL_ENCODERS
+const isPixelFormat = (format: OutputFormat): format is PixelFormat => format in PIXEL_ENCODERS
+
+function pixelSource({ canvas, context }: Surface): PixelSource {
+  return { width: canvas.width, height: canvas.height, readRows: (y, rows) => context.getImageData(0, y, canvas.width, rows).data }
+}
+
+/** Cada parte vira Blob na hora: o navegador guarda os bytes e a faixa lida pode ser liberada. */
+function blobFromParts(parts: Iterable<Uint8Array<ArrayBuffer>>, type: string): Blob {
+  const blobs: Blob[] = []
+  try {
+    for (const part of parts) blobs.push(new Blob([part]))
+  } catch (error) {
+    if (import.meta.env.DEV) console.error(error) // detalhe técnico só em desenvolvimento
+    throw new JobError('encode-failed')
+  }
+  return new Blob(blobs, { type })
+}
+
+/** ICO com os tamanhos padrão; imagens não quadradas ficam centralizadas, com margens transparentes. */
+async function encodeIco(source: OffscreenCanvas): Promise<Blob> {
+  const images: Array<{ size: number; png: Blob }> = []
+  for (const size of icoSizes(source.width, source.height)) {
+    const { canvas, context } = createSurface(size, size)
+    try {
+      const scale = Math.min(size / source.width, size / source.height)
+      const width = Math.max(1, Math.round(source.width * scale))
+      const height = Math.max(1, Math.round(source.height * scale))
+      context.imageSmoothingQuality = 'high'
+      context.drawImage(source, Math.floor((size - width) / 2), Math.floor((size - height) / 2), width, height)
+      images.push({ size, png: await encode(canvas, 'image/png') })
+    } finally {
+      release(canvas)
+    }
+  }
+  const header = icoHeader(images.map(({ size, png }) => ({ size, byteLength: png.size })))
+  return new Blob([header, ...images.map(({ png }) => png)], { type: OUTPUT_FORMAT_INFO.ico.mimeType })
+}
+
+/** PDF de uma página com a imagem em JPG, que entra no arquivo sem ser copiada. */
+async function encodePdf(canvas: OffscreenCanvas, quality: number): Promise<Blob> {
+  const jpeg = await encode(canvas, 'image/jpeg', quality)
+  const { head, tail } = pdfParts({ width: canvas.width, height: canvas.height, imageLength: jpeg.size })
+  return new Blob([head, jpeg, tail], { type: OUTPUT_FORMAT_INFO.pdf.mimeType })
+}
+
+async function encodeAs(job: ConvertJob, surface: Surface): Promise<Blob> {
+  const { target } = job
+  const format = OUTPUT_FORMAT_INFO[target]
+  if (isPixelFormat(target)) return blobFromParts(PIXEL_ENCODERS[target](pixelSource(surface)), format.mimeType)
+  if (target === 'ico') return encodeIco(surface.canvas)
+  if (target === 'pdf') return encodePdf(surface.canvas, job.quality)
+  return encode(surface.canvas, format.mimeType, format.lossy ? job.quality : undefined)
+}
+
 async function convert(job: ConvertJob): Promise<ConvertOutput> {
-  const format = IMAGE_FORMATS[job.target]
+  const format = OUTPUT_FORMAT_INFO[job.target]
   const bitmap = await decode(job.file)
   const { width, height } = bitmap
   let surface: Surface | undefined
   try {
-    surface = createSurface(width, height)
+    surface = createSurface(width, height, isPixelFormat(job.target))
     if (!format.supportsAlpha) {
-      // JPG não tem transparência: o fundo escolhido aparece onde a imagem era transparente.
+      // Formato sem transparência: o fundo escolhido aparece onde a imagem era transparente.
       surface.context.fillStyle = job.background
       surface.context.fillRect(0, 0, width, height)
     }
     surface.context.drawImage(bitmap, 0, 0)
     bitmap.close() // o canvas já tem os pixels; libera a imagem decodificada antes de codificar
-    const blob = await encode(surface.canvas, format.mimeType, format.lossy ? job.quality : undefined)
+    const blob = await encodeAs(job, surface)
     return { kind: 'convert', blob, width, height }
   } finally {
     bitmap.close()
@@ -142,14 +207,28 @@ async function preview(job: PreviewJob): Promise<PreviewOutput> {
   }
 }
 
+/**
+ * ZIP montado em fluxo: um arquivo por vez na memória, e cada pedaço do ZIP vira Blob na hora.
+ * BMP e TIFF não têm compressão; montar tudo de uma vez guardaria o lote inteiro duas vezes.
+ */
 async function zip(job: ZipJob): Promise<ZipOutput> {
-  const { zipSync } = await import('fflate')
-  const files: Record<string, [Uint8Array, { level: 0 }]> = {}
-  // Imagens já vêm comprimidas: guardar sem recomprimir (level 0) é muito mais rápido.
-  for (const entry of job.entries) files[entry.name] = [new Uint8Array(await entry.blob.arrayBuffer()), { level: 0 }]
-  // O fflate devolve Uint8Array de ArrayBuffer comum; o tipo genérico só não sabe disso.
-  const data = zipSync(files) as Uint8Array<ArrayBuffer>
-  return { kind: 'zip', blob: new Blob([data], { type: 'application/zip' }) }
+  const { Zip, ZipPassThrough } = await import('fflate')
+  const parts: Blob[] = []
+  let failure: unknown
+  const archive = new Zip((error, chunk) => {
+    if (error) failure = error
+    // O fflate entrega Uint8Array de ArrayBuffer comum; o tipo genérico só não sabe disso.
+    else parts.push(new Blob([chunk as Uint8Array<ArrayBuffer>]))
+  })
+  for (const entry of job.entries) {
+    // Guardar sem recomprimir: é muito mais rápido, e a maioria dos formatos já vem comprimida.
+    const file = new ZipPassThrough(entry.name)
+    archive.add(file)
+    file.push(new Uint8Array(await entry.blob.arrayBuffer()), true)
+  }
+  archive.end()
+  if (failure) throw failure
+  return { kind: 'zip', blob: new Blob(parts, { type: 'application/zip' }) }
 }
 
 async function run(job: ImageJob): Promise<JobOutput> {

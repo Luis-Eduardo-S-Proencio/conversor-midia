@@ -11,7 +11,7 @@ export function ConvertPage() {
   return (
     <ImageToolPage
       title="Converter imagem"
-      description="Converta entre JPG, PNG e WEBP, um ou vários arquivos de uma vez. As imagens não saem do seu dispositivo."
+      description="Transforme JPG, PNG e WEBP em JPG, PNG, WEBP, BMP, TIFF, ICO ou PDF, um ou vários arquivos de uma vez. As imagens não saem do seu dispositivo."
       labels={CONVERT_LABELS}
       actionIcon={ArrowLeftRight}
       batch={tool.batch}

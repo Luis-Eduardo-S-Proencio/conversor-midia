@@ -15,6 +15,8 @@ interface SegmentedControlProps<T extends string> {
   disabled?: boolean
   /** Rótulos técnicos (JPG, PNG) em fonte monoespaçada. */
   mono?: boolean
+  /** Muitas opções: quebra em linhas de quatro, ocupando a largura toda. Sem isso, uma linha só. */
+  columns?: 4
   className?: string
 }
 
@@ -31,6 +33,7 @@ export function SegmentedControl<T extends string>({
   onChange,
   disabled = false,
   mono = false,
+  columns,
   className,
 }: SegmentedControlProps<T>) {
   const labelId = useId()
@@ -73,7 +76,10 @@ export function SegmentedControl<T extends string>({
         role="radiogroup"
         aria-labelledby={labelId}
         aria-disabled={disabled || undefined}
-        className="grid w-full auto-cols-fr grid-flow-col gap-1 rounded-lg border border-border-strong bg-bg p-1 sm:w-auto sm:justify-self-start"
+        className={cx(
+          'grid w-full gap-1 rounded-lg border border-border-strong bg-bg p-1',
+          columns === 4 ? 'grid-cols-4' : 'auto-cols-fr grid-flow-col sm:w-auto sm:justify-self-start',
+        )}
       >
         {options.map((option, index) => {
           const checked = index === selectedIndex
@@ -91,7 +97,9 @@ export function SegmentedControl<T extends string>({
               onClick={() => select(index)}
               onKeyDown={(event) => handleKeyDown(event, index)}
               className={cx(
-                'h-8 min-w-16 rounded-sm border px-3 text-sm font-medium transition-colors pointer-coarse:h-11',
+                'h-8 rounded-sm border text-sm font-medium transition-colors pointer-coarse:h-11',
+                // Em colunas, as opções encolhem para caber em telas de 320 px.
+                columns ? 'min-w-0 px-1' : 'min-w-16 px-3',
                 'disabled:cursor-not-allowed disabled:opacity-50',
                 mono && 'font-mono',
                 // No alto contraste do Windows fundo e borda somem; o sublinhado mantém a seleção visível.

@@ -1,6 +1,7 @@
 import { unzipSync } from 'fflate'
 import { afterAll, describe, expect, it } from 'vitest'
 import { detectImageType } from '../core/image/signature'
+import { readIco, readPdf, readTiff } from '../test/format-readers'
 import { withExifOrientation } from '../test/image-bytes'
 import { createImageWorkerClient } from './image-client'
 
@@ -150,5 +151,73 @@ describe('Worker de imagens (Chromium real)', () => {
     expect(Object.keys(files)).toEqual(['praia.png', 'café da manhã.jpg'])
     expect(files['praia.png']).toEqual(new Uint8Array(await first.arrayBuffer()))
     expect(files['café da manhã.jpg']).toEqual(new Uint8Array(await second.arrayBuffer()))
+  })
+})
+
+describe('Formatos escritos pelo app (Chromium real)', () => {
+  const bytesOf = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer())
+  const convertQuadrants = async (target: 'bmp' | 'tiff' | 'ico' | 'pdf', background = '#ffffff') =>
+    client.run({ kind: 'convert', file: await makeImage(64, 64, quadrants), target, quality: 0.92, background })
+
+  it('PNG → BMP: o navegador lê; a transparência vira o fundo escolhido', async () => {
+    const result = await convertQuadrants('bmp', '#000000')
+    expect(result.blob.type).toBe('image/bmp')
+    const output = await inspect(result.blob)
+    expect([output.width, output.height]).toEqual([64, 64])
+    expect(output.pixel(16, 16)).toEqual([255, 0, 0, 255])
+    expect(output.pixel(48, 48)).toEqual([0, 0, 0, 255])
+  })
+
+  it('PNG → TIFF: RGBA com os pixels exatos; JPG → TIFF: RGB', async () => {
+    const tiff = readTiff(await bytesOf((await convertQuadrants('tiff')).blob))
+    const pixel = (x: number, y: number) => Array.from(tiff.pixels.subarray((y * 64 + x) * 4, (y * 64 + x) * 4 + 4))
+    expect([tiff.width, tiff.height, tiff.samplesPerPixel]).toEqual([64, 64, 4])
+    expect(pixel(16, 16)).toEqual([255, 0, 0, 255])
+    expect(pixel(48, 48)[3]).toBe(0)
+
+    const jpeg = await makeImage(40, 30, quadrants, 'image/jpeg', 0.9)
+    const opaque = await client.run({ kind: 'convert', file: jpeg, target: 'tiff', quality: 0.85, background: '#ffffff' })
+    expect(opaque.blob.type).toBe('image/tiff')
+    expect(readTiff(await bytesOf(opaque.blob)).samplesPerPixel).toBe(3)
+  })
+
+  it('PNG → ICO: tamanhos de 16, 32 e 48 em PNG, legíveis pelo navegador', async () => {
+    const result = await convertQuadrants('ico')
+    expect(result.blob.type).toBe('image/x-icon')
+    const entries = readIco(await bytesOf(result.blob))
+    expect(entries.map(({ width, height }) => [width, height])).toEqual([
+      [16, 16],
+      [32, 32],
+      [48, 48],
+    ])
+    for (const entry of entries) expect(detectImageType(entry.data)).toEqual({ kind: 'supported', format: 'png' })
+    const largest = await inspect(new Blob([entries[2]?.data.slice() ?? new Uint8Array()]))
+    expectColor(largest.pixel(12, 12), [255, 0, 0])
+    expect(largest.pixel(36, 36)[3]).toBe(0)
+    await expect(createImageBitmap(result.blob)).resolves.toBeDefined() // o próprio .ico também abre
+  })
+
+  it('ICO de imagem retangular: centralizada, com margens transparentes', async () => {
+    const wide = await makeImage(64, 32, (context, width, height) => {
+      context.fillStyle = '#0000ff'
+      context.fillRect(0, 0, width, height)
+    })
+    const result = await client.run({ kind: 'convert', file: wide, target: 'ico', quality: 0.85, background: '#ffffff' })
+    const [, , icon48] = readIco(await bytesOf(result.blob))
+    const output = await inspect(new Blob([icon48?.data.slice() ?? new Uint8Array()]))
+    expect(output.pixel(24, 4)[3]).toBe(0) // margem de cima
+    expectColor(output.pixel(24, 24), [0, 0, 255])
+  })
+
+  it('PNG → PDF: página do tamanho da imagem, com o JPEG legível dentro e o fundo aplicado', async () => {
+    const result = await convertQuadrants('pdf')
+    expect(result.blob.type).toBe('application/pdf')
+    const pdf = readPdf(await bytesOf(result.blob))
+    expect(pdf.image).toMatchObject({ width: 64, height: 64, filter: 'DCTDecode' })
+    expect(pdf.mediaBox).toEqual([0, 0, 48, 48])
+
+    const embedded = await inspect(new Blob([pdf.image.bytes.slice()]))
+    expectColor(embedded.pixel(16, 16), [255, 0, 0])
+    expectColor(embedded.pixel(48, 48), [255, 255, 255])
   })
 })

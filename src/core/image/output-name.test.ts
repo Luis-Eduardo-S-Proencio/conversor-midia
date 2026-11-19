@@ -8,6 +8,12 @@ describe('outputFileName', () => {
     expect(outputFileName('foto', 'webp')).toBe('foto.webp')
   })
 
+  it('usa a extensão dos formatos gerados pelo app', () => {
+    expect(outputFileName('foto.png', 'pdf')).toBe('foto.pdf')
+    expect(outputFileName('foto.png', 'tiff')).toBe('foto.tiff')
+    expect(outputFileName('logo.png', 'ico')).toBe('logo.ico')
+  })
+
   it('mantém os pontos internos do nome', () => {
     expect(outputFileName('ferias.2026.final.png', 'jpeg')).toBe('ferias.2026.final.jpg')
   })

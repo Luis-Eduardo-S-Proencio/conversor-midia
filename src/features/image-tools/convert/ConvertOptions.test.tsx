@@ -43,10 +43,10 @@ describe('ConvertOptions', () => {
     expect(onChange).toHaveBeenCalledWith({ background: 'black' })
   })
 
-  it('oferece os oito formatos de saída', async () => {
+  it('oferece os sete formatos de saída (GIF fica com os vídeos)', async () => {
     const screen = await render(<ConvertOptions settings={jpeg} onChange={() => {}} webpSupported hasTransparency={false} />)
     const names = screen.getByRole('radio').elements().map((radio) => radio.textContent)
-    expect(names).toEqual(['JPG', 'PNG', 'WEBP', 'GIF', 'BMP', 'TIFF', 'ICO', 'PDF'])
+    expect(names).toEqual(['JPG', 'PNG', 'WEBP', 'BMP', 'TIFF', 'ICO', 'PDF'])
   })
 
   it('PDF tem qualidade (a imagem vai em JPG) e pede fundo quando há transparência', async () => {
@@ -64,9 +64,8 @@ describe('ConvertOptions', () => {
     await expect.element(screen.getByText('BMP não tem compressão: o arquivo fica bem maior.')).toBeVisible()
   })
 
-  it('GIF, TIFF e ICO mantêm a transparência e explicam o que muda', async () => {
+  it('TIFF e ICO mantêm a transparência e explicam o que muda', async () => {
     const notes = {
-      gif: 'GIF tem no máximo 256 cores: em fotos, as cores perdem detalhes.',
       tiff: 'TIFF sem compressão: não perde qualidade, mas o arquivo fica bem maior.',
       ico: 'Ícone com tamanhos de 16 a 256 px, para favicon e atalhos. Imagens não quadradas ganham margens transparentes.',
     } as const

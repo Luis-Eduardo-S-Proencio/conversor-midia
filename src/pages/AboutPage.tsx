@@ -36,8 +36,8 @@ export function AboutPage() {
           </TextSection>
           <TextSection id="formatos" title="Formatos">
             <p>
-              Imagens: abre JPG, PNG e WEBP e gera JPG, PNG, WEBP, GIF, BMP, TIFF, ICO e PDF. As ferramentas de vídeo estão a
-              caminho.
+              Imagens: abre JPG, PNG e WEBP e gera JPG, PNG, WEBP, BMP, TIFF, ICO e PDF. As ferramentas de vídeo, incluindo
+              a de criar GIF, estão a caminho.
             </p>
           </TextSection>
           <TextSection id="limites" title="Limites">

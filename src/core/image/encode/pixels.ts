@@ -1,6 +1,6 @@
 /**
  * Pixels de uma imagem já desenhada, lidos por faixas de linhas. Os codificadores próprios
- * (BMP, TIFF, GIF) nunca pedem a imagem inteira de uma vez: numa foto de 48 MP, uma cópia
+ * (BMP e TIFF) nunca pedem a imagem inteira de uma vez: numa foto de 48 MP, uma cópia
  * completa custaria mais 190 MB além do canvas.
  */
 export interface PixelSource {

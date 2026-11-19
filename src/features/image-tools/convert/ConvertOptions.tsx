@@ -12,7 +12,6 @@ const BACKGROUND_OPTIONS: ReadonlyArray<{ value: BackgroundChoice; label: string
 
 /** O que muda em cada formato além de "outro tipo de arquivo". */
 const FORMAT_NOTES: Partial<Record<OutputFormat, string>> = {
-  gif: 'GIF tem no máximo 256 cores: em fotos, as cores perdem detalhes.',
   bmp: 'BMP não tem compressão: o arquivo fica bem maior.',
   tiff: 'TIFF sem compressão: não perde qualidade, mas o arquivo fica bem maior.',
   ico: 'Ícone com tamanhos de 16 a 256 px, para favicon e atalhos. Imagens não quadradas ganham margens transparentes.',

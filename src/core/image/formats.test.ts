@@ -10,13 +10,13 @@ describe('IMAGE_FORMATS', () => {
 })
 
 describe('OUTPUT_FORMATS', () => {
-  it('gera os formatos de imagem lidos pelo navegador e outros escritos pelo próprio app', () => {
-    expect(OUTPUT_FORMATS).toEqual(['jpeg', 'png', 'webp', 'gif', 'bmp', 'tiff', 'ico', 'pdf'])
+  it('gera os formatos de imagem lidos pelo navegador e outros escritos pelo próprio app; GIF fica com os vídeos', () => {
+    expect(OUTPUT_FORMATS).toEqual(['jpeg', 'png', 'webp', 'bmp', 'tiff', 'ico', 'pdf'])
+    expect(Object.keys(OUTPUT_FORMAT_INFO)).toEqual(OUTPUT_FORMATS)
   })
 
   it('descreve cada formato de saída: qualidade só onde há compressão com perdas', () => {
     expect(OUTPUT_FORMAT_INFO.jpeg).toEqual(IMAGE_FORMATS.jpeg)
-    expect(OUTPUT_FORMAT_INFO.gif).toMatchObject({ label: 'GIF', mimeType: 'image/gif', extension: 'gif', lossy: false, supportsAlpha: true })
     expect(OUTPUT_FORMAT_INFO.bmp).toMatchObject({ label: 'BMP', mimeType: 'image/bmp', extension: 'bmp', lossy: false, supportsAlpha: false })
     expect(OUTPUT_FORMAT_INFO.tiff).toMatchObject({ label: 'TIFF', mimeType: 'image/tiff', extension: 'tiff', lossy: false, supportsAlpha: true })
     expect(OUTPUT_FORMAT_INFO.ico).toMatchObject({ label: 'ICO', mimeType: 'image/x-icon', extension: 'ico', lossy: false, supportsAlpha: true })

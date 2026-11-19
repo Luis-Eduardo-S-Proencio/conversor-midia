@@ -1,7 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { unzipSync } from 'fflate'
-import { decodeGif, readIco, readPdf, readTiff } from '../../src/test/format-readers'
+import { readIco, readPdf, readTiff } from '../../src/test/format-readers'
 import { pngBytes } from '../../src/test/image-bytes'
 import {
   button,
@@ -285,15 +285,6 @@ test.describe('Converter imagem para formatos escritos pelo app', () => {
     return download(page, button(page, 'Baixar imagem'))
   }
 
-  test('GIF: o navegador lê, com as cores e a transparência', async ({ page }, testInfo) => {
-    skipOtherProjects(testInfo.project.name)
-    const result = await convertQuadrantsTo(page, 'GIF')
-    expect(result.name).toBe('quadrantes.gif')
-    expect(decodeGif(result.bytes)).toMatchObject({ width: 64, height: 64 })
-    expectColor(await pixelAt(page, result.bytes, 16, 16), [255, 0, 0])
-    expect((await pixelAt(page, result.bytes, 48, 48))[3]).toBe(0)
-  })
-
   test('BMP: o navegador lê; a transparência vira o fundo branco', async ({ page }, testInfo) => {
     skipOtherProjects(testInfo.project.name)
     const result = await convertQuadrantsTo(page, 'BMP')
@@ -336,7 +327,7 @@ test.describe('Converter imagem para formatos escritos pelo app', () => {
     expectColor(await pixelAt(page, pdf.image.bytes, 48, 48), [255, 255, 255])
   })
 
-  test('a 320 px, os oito formatos cabem sem rolagem lateral', async ({ page }, testInfo) => {
+  test('a 320 px, os sete formatos cabem sem rolagem lateral', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'mobile', 'reflow conferido no celular')
     await page.setViewportSize({ width: 320, height: 700 })
     await openTool(page)

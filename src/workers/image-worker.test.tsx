@@ -156,19 +156,8 @@ describe('Worker de imagens (Chromium real)', () => {
 
 describe('Formatos escritos pelo app (Chromium real)', () => {
   const bytesOf = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer())
-  const convertQuadrants = async (target: 'gif' | 'bmp' | 'tiff' | 'ico' | 'pdf', background = '#ffffff') =>
+  const convertQuadrants = async (target: 'bmp' | 'tiff' | 'ico' | 'pdf', background = '#ffffff') =>
     client.run({ kind: 'convert', file: await makeImage(64, 64, quadrants), target, quality: 0.92, background })
-
-  it('PNG → GIF: o navegador lê, com as cores exatas e a transparência', async () => {
-    const result = await convertQuadrants('gif')
-    expect(result.blob.type).toBe('image/gif')
-    const output = await inspect(result.blob)
-    expect([output.width, output.height]).toEqual([64, 64])
-    expect(output.pixel(16, 16)).toEqual([255, 0, 0, 255])
-    expect(output.pixel(48, 16)).toEqual([0, 255, 0, 255])
-    expect(output.pixel(16, 48)).toEqual([0, 0, 255, 255])
-    expect(output.pixel(48, 48)[3]).toBe(0)
-  })
 
   it('PNG → BMP: o navegador lê; a transparência vira o fundo escolhido', async () => {
     const result = await convertQuadrants('bmp', '#000000')

@@ -3,7 +3,6 @@
  * Cada pedido recebe exatamente uma resposta, de sucesso ou com um código de erro estável.
  */
 import { encodeBmp } from '../core/image/encode/bmp'
-import { encodeGif } from '../core/image/encode/gif'
 import { icoHeader, icoSizes } from '../core/image/encode/ico'
 import { pdfParts } from '../core/image/encode/pdf'
 import type { PixelSource } from '../core/image/encode/pixels'
@@ -103,7 +102,7 @@ async function encode(canvas: OffscreenCanvas, mimeType: string, quality?: numbe
 }
 
 /** Formatos que o próprio app escreve a partir dos pixels do canvas (`core/image/encode`). */
-const PIXEL_ENCODERS = { gif: encodeGif, bmp: encodeBmp, tiff: encodeTiff } as const
+const PIXEL_ENCODERS = { bmp: encodeBmp, tiff: encodeTiff } as const
 type PixelFormat = keyof typeof PIXEL_ENCODERS
 const isPixelFormat = (format: OutputFormat): format is PixelFormat => format in PIXEL_ENCODERS
 

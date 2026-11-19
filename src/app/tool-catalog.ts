@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Crop, Minimize2, Music, RotateCw, Scaling, Scissors } from 'lucide-react'
+import { ArrowLeftRight, Crop, ImagePlay, Minimize2, Music, RotateCw, Scaling, Scissors } from 'lucide-react'
 import type { NavListItem } from '../components/ui/NavList'
 
 /**
@@ -13,7 +13,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   {
     id: 'image-convert',
     title: 'Converter imagem',
-    description: 'Para JPG, PNG, WEBP, GIF, PDF e mais',
+    description: 'Para JPG, PNG, WEBP, PDF e mais',
     icon: ArrowLeftRight,
     to: '/imagens/converter',
     popular: true,
@@ -37,6 +37,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   { id: 'video-trim', title: 'Cortar trecho', description: 'Remova o início, o fim ou uma parte', icon: Scissors },
   { id: 'video-resize', title: 'Mudar resolução', description: 'Diminua a resolução do vídeo', icon: Scaling },
   { id: 'video-audio', title: 'Extrair áudio', description: 'Salve só o som do vídeo', icon: Music },
+  { id: 'video-gif', title: 'Criar GIF', description: 'Transforme um trecho do vídeo em GIF animado', icon: ImagePlay },
 ]
 
 export const POPULAR_TOOLS: readonly ToolEntry[] = IMAGE_TOOLS.filter((tool) => tool.popular)

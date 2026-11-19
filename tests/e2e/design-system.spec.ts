@@ -3,6 +3,9 @@ import { expect, test } from '@playwright/test'
 import { WCAG_TAGS } from './routes.ts'
 
 // Roda no servidor de desenvolvimento: a vitrine reúne todos os componentes e estados.
+// No primeiro acesso, o servidor compila todos os módulos: numa máquina ocupada, passa dos 5 s padrão.
+const FIRST_LOAD = { timeout: 15_000 }
+
 test.describe('vitrine de componentes', () => {
   for (const viewport of [
     { name: 'desktop', width: 1280, height: 800 },
@@ -11,7 +14,7 @@ test.describe('vitrine de componentes', () => {
     test(`sem violações automáticas de acessibilidade (${viewport.name})`, async ({ page }, testInfo) => {
       await page.setViewportSize(viewport)
       await page.goto('/design-system')
-      await expect(page.getByRole('heading', { level: 1, name: 'Design System' })).toBeVisible()
+      await expect(page.getByRole('heading', { level: 1, name: 'Design System' })).toBeVisible(FIRST_LOAD)
 
       const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze()
       const violations = results.violations.map(
@@ -30,7 +33,7 @@ test.describe('vitrine de componentes', () => {
   test('rota de ferramenta esconde a barra inferior no celular', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 780 })
     await page.goto('/design-system')
-    await expect(page.getByRole('heading', { level: 1, name: 'Design System' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Design System' })).toBeVisible(FIRST_LOAD)
     await expect(page.getByRole('navigation', { name: 'Principal' })).toHaveCount(0)
   })
 

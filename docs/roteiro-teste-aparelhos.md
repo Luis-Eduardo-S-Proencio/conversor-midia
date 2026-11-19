@@ -26,7 +26,7 @@ Marque ✔ ou ✘ e anote o que estranhar.
 3. A prévia aparece. Converta para PNG e baixe. Anote onde o arquivo foi parar: no iPhone, app Arquivos › Transferências; no Android, pasta Download.
 4. A foto tirada em pé continua em pé no resultado.
 5. WEBP: no iPhone, a opção fica desativada com explicação. No Android, gera um `.webp`.
-6. Converta a mesma foto para PDF e para GIF e abra os arquivos baixados. O PDF abre no leitor do aparelho com a foto inteira na página; o GIF abre como imagem.
+6. Converta a mesma foto para PDF e abra o arquivo baixado: ele abre no leitor do aparelho, com a foto inteira na página.
 7. Selecione as 5 fotos de uma vez, converta e toque em "Baixar todas (.zip)". O ZIP abre no aparelho.
 8. Só no endereço https: "Salvar na galeria" abre a folha de compartilhamento, e a imagem salva aparece na galeria.
 9. Foto grande: anote o tempo até a prévia e o tempo da conversão. A página não pode recarregar sozinha nem travar. Toque em "Cancelar" no meio de uma conversão; depois, converta de novo.

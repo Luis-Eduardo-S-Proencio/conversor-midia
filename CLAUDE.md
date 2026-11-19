@@ -83,7 +83,7 @@ Testes unitários ficam ao lado do código. Mudar esta estrutura é decisão arq
 - Limites antes de decodificar: bytes, número de arquivos e dimensões (memória decodificada ≈ largura × altura × 4).
 - Recodificar via canvas remove metadados (EXIF/GPS); PNG/WEBP com transparência → JPEG exige cor de fundo definida; confirme na saída que o formato pedido foi realmente gerado (alguns navegadores trocam para PNG em silêncio).
 - Medidas para decidir (tamanho final, recorte): as de `item.image` depois da prévia, que são as da imagem decodificada e já orientada, como o Worker a verá. O cabeçalho de PNG e WEBP não informa a orientação.
-- Reduzir imagem no Worker: `drawResized` (em `image.worker.ts`) reduz em etapas de metade. Num passo só, o Firefox, que não tem `imageSmoothingQuality`, cria listras falsas (moiré); há teste E2E disso no Firefox.
+- Reduzir imagem no Worker: sempre por `drawResized` (em `image.worker.ts`), inclusive prévias e ICO. Num passo só, o Firefox, que não tem `imageSmoothingQuality`, cria listras falsas (moiré). Uma sonda decide: onde um passo só sai bom (Chromium), um passo; senão, etapas de metade. Testes E2E de moiré no Chromium e no Firefox.
 - Não persistir arquivos do usuário (localStorage, IndexedDB, cache) sem decisão explícita.
 - Skills: `security-auditor` (segurança), `performance-optimization` (memória).
 

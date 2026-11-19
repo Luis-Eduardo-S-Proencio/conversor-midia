@@ -89,6 +89,76 @@ function release(canvas: OffscreenCanvas) {
   canvas.height = 0
 }
 
+interface Area {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+let oneStepDownscale: boolean | undefined
+
+/**
+ * O motor reduz bem num passo só? Com `imageSmoothingQuality = 'high'`, o Chromium tira a média dos
+ * pixels; o Firefox, que não tem essa opção, cria listras falsas (moiré). Reduzir uma vez listras de
+ * 1 px revela o comportamento, como a sonda do WEBP, sem depender do nome do navegador.
+ */
+function downscalesInOneStep(): boolean {
+  oneStepDownscale ??= (() => {
+    try {
+      const source = new OffscreenCanvas(100, 8)
+      const sourceContext = source.getContext('2d')
+      const target = new OffscreenCanvas(13, 1)
+      const context = target.getContext('2d', { willReadFrequently: true })
+      if (!sourceContext || !context) return false
+      sourceContext.fillStyle = '#000000'
+      sourceContext.fillRect(0, 0, 100, 8)
+      sourceContext.fillStyle = '#ffffff'
+      for (let x = 1; x < 100; x += 2) sourceContext.fillRect(x, 0, 1, 8)
+      context.imageSmoothingQuality = 'high'
+      context.drawImage(source, 0, 0, 13, 1)
+      const { data } = context.getImageData(0, 0, 13, 1)
+      for (let index = 0; index < data.length; index += 4) if (Math.abs((data[index] ?? 0) - 128) > 24) return false
+      return true
+    } catch {
+      return false // na dúvida, reduz em etapas: mais lento, mas sem listras
+    }
+  })()
+  return oneStepDownscale
+}
+
+/**
+ * Desenha `source` no retângulo `area`, reduzindo ou ampliando. Onde um passo só cria listras falsas
+ * (Firefox), reduções fortes passam por etapas de metade: a cada metade, qualquer motor tira a média
+ * dos pixels. Cada etapa ocupa um quarto da memória da anterior e é liberada em seguida.
+ */
+function drawResized(source: ImageBitmap | OffscreenCanvas, context: OffscreenCanvasRenderingContext2D, area: Area) {
+  const { x, y, width, height } = area
+  if (downscalesInOneStep()) {
+    context.imageSmoothingQuality = 'high'
+    context.drawImage(source, x, y, width, height)
+    return
+  }
+  let step: OffscreenCanvas | undefined
+  try {
+    for (;;) {
+      const current = step ?? source
+      const stepWidth = current.width >= width * 2 ? Math.round(current.width / 2) : current.width
+      const stepHeight = current.height >= height * 2 ? Math.round(current.height / 2) : current.height
+      if (stepWidth === current.width && stepHeight === current.height) break
+      const next = createSurface(stepWidth, stepHeight)
+      next.context.imageSmoothingQuality = 'high'
+      next.context.drawImage(current, 0, 0, stepWidth, stepHeight)
+      if (step) release(step)
+      step = next.canvas
+    }
+    context.imageSmoothingQuality = 'high'
+    context.drawImage(step ?? source, x, y, width, height)
+  } finally {
+    if (step) release(step)
+  }
+}
+
 async function encode(canvas: OffscreenCanvas, mimeType: string, quality?: number): Promise<Blob> {
   let blob: Blob
   try {
@@ -131,8 +201,7 @@ async function encodeIco(source: OffscreenCanvas): Promise<Blob> {
       const scale = Math.min(size / source.width, size / source.height)
       const width = Math.max(1, Math.round(source.width * scale))
       const height = Math.max(1, Math.round(source.height * scale))
-      context.imageSmoothingQuality = 'high'
-      context.drawImage(source, Math.floor((size - width) / 2), Math.floor((size - height) / 2), width, height)
+      drawResized(source, context, { x: Math.floor((size - width) / 2), y: Math.floor((size - height) / 2), width, height })
       images.push({ size, png: await encode(canvas, 'image/png') })
     } finally {
       release(canvas)
@@ -158,33 +227,6 @@ async function encodeAs(job: ConvertJob, surface: Surface): Promise<Blob> {
   return encode(surface.canvas, format.mimeType, format.lossy ? job.quality : undefined)
 }
 
-/**
- * Desenha a imagem nas medidas do destino. Reduções fortes passam por etapas de metade: num passo só,
- * o Firefox, que não tem `imageSmoothingQuality`, cria listras falsas (moiré); a cada metade, qualquer
- * motor tira a média dos pixels. Cada etapa ocupa um quarto da memória da anterior e é liberada em seguida.
- */
-function drawResized(target: Surface, bitmap: ImageBitmap) {
-  const { width, height } = target.canvas
-  let step: OffscreenCanvas | undefined
-  try {
-    for (;;) {
-      const source = step ?? bitmap
-      const stepWidth = source.width >= width * 2 ? Math.round(source.width / 2) : source.width
-      const stepHeight = source.height >= height * 2 ? Math.round(source.height / 2) : source.height
-      if (stepWidth === source.width && stepHeight === source.height) break
-      const next = createSurface(stepWidth, stepHeight)
-      next.context.imageSmoothingQuality = 'high'
-      next.context.drawImage(source, 0, 0, stepWidth, stepHeight)
-      if (step) release(step)
-      step = next.canvas
-    }
-    target.context.imageSmoothingQuality = 'high'
-    target.context.drawImage(step ?? bitmap, 0, 0, width, height)
-  } finally {
-    if (step) release(step)
-  }
-}
-
 async function convert(job: ConvertJob): Promise<ConvertOutput> {
   const format = OUTPUT_FORMAT_INFO[job.target]
   const bitmap = await decode(job.file)
@@ -197,7 +239,7 @@ async function convert(job: ConvertJob): Promise<ConvertOutput> {
       surface.context.fillStyle = job.background
       surface.context.fillRect(0, 0, width, height)
     }
-    if (job.resize) drawResized(surface, bitmap)
+    if (job.resize) drawResized(bitmap, surface.context, { x: 0, y: 0, width, height })
     else surface.context.drawImage(bitmap, 0, 0)
     bitmap.close() // o canvas já tem os pixels; libera a imagem decodificada antes de codificar
     const blob = await encodeAs(job, surface)
@@ -208,30 +250,48 @@ async function convert(job: ConvertJob): Promise<ConvertOutput> {
   }
 }
 
-async function scaled(bitmap: ImageBitmap, maxSide: number, mimeType: string): Promise<Blob> {
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height))
-  const width = Math.max(1, Math.round(bitmap.width * scale))
-  const height = Math.max(1, Math.round(bitmap.height * scale))
-  const { canvas, context } = createSurface(width, height)
+/** Cópia que cabe em `maxSide` (o maior lado), sem ampliar. Quem recebe libera o canvas. */
+function shrunk(source: ImageBitmap | OffscreenCanvas, maxSide: number): Surface {
+  const scale = Math.min(1, maxSide / Math.max(source.width, source.height))
+  const width = Math.max(1, Math.round(source.width * scale))
+  const height = Math.max(1, Math.round(source.height * scale))
+  const surface = createSurface(width, height)
   try {
-    context.imageSmoothingQuality = 'high'
-    context.drawImage(bitmap, 0, 0, width, height)
+    drawResized(source, surface.context, { x: 0, y: 0, width, height })
+  } catch (error) {
+    release(surface.canvas)
+    throw error
+  }
+  return surface
+}
+
+async function encodeShrunk(source: ImageBitmap | OffscreenCanvas, maxSide: number, mimeType: string): Promise<Blob> {
+  const { canvas } = shrunk(source, maxSide)
+  try {
     return await encode(canvas, mimeType, 0.85)
   } finally {
     release(canvas)
   }
 }
 
-/** Prévia e miniatura reduzidas: a imagem original inteira nunca vai para a tela. */
+/**
+ * Prévia e miniatura reduzidas: a imagem original inteira nunca vai para a tela. A miniatura sai da
+ * prévia, e não da original: reduzir a imagem inteira de novo custaria quase o dobro do tempo.
+ */
 async function preview(job: PreviewJob): Promise<PreviewOutput> {
   const bitmap = await decode(job.file)
+  const { width, height } = bitmap
+  let large: Surface | undefined
   try {
     const mimeType = (await canEncodeWebp()) ? 'image/webp' : 'image/png'
-    const previewBlob = await scaled(bitmap, job.previewSize, mimeType)
-    const thumbnail = await scaled(bitmap, job.thumbnailSize, mimeType)
-    return { kind: 'preview', preview: previewBlob, thumbnail, width: bitmap.width, height: bitmap.height }
+    large = shrunk(bitmap, job.previewSize)
+    bitmap.close() // a prévia já tem o que é preciso; libera a imagem decodificada
+    const previewBlob = await encode(large.canvas, mimeType, 0.85)
+    const thumbnail = await encodeShrunk(large.canvas, job.thumbnailSize, mimeType)
+    return { kind: 'preview', preview: previewBlob, thumbnail, width, height }
   } finally {
     bitmap.close()
+    if (large) release(large.canvas)
   }
 }
 

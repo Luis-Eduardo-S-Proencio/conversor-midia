@@ -50,6 +50,47 @@ export function expectColor(actual: number[], expected: [number, number, number]
   expected.forEach((channel, index) => expect(Math.abs((actual[index] ?? -1) - channel)).toBeLessThanOrEqual(16))
 }
 
+/** PNG de listras verticais de 1 px, pretas e brancas, gerado no navegador. Reduzido, deve virar cinza uniforme. */
+export async function stripesPng(page: Page, width: number, height: number): Promise<Buffer> {
+  const bytes = await page.evaluate(
+    async ({ width, height }) => {
+      const canvas = new OffscreenCanvas(width, height)
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('canvas indisponível')
+      context.fillStyle = '#000000'
+      context.fillRect(0, 0, width, height)
+      context.fillStyle = '#ffffff'
+      for (let x = 1; x < width; x += 2) context.fillRect(x, 0, 1, height)
+      const blob = await canvas.convertToBlob({ type: 'image/png' })
+      return Array.from(new Uint8Array(await blob.arrayBuffer()))
+    },
+    { width, height },
+  )
+  return Buffer.from(bytes)
+}
+
+/** Decodifica o arquivo no próprio navegador e lê o vermelho de cada pixel de uma linha. */
+export async function redRowAt(page: Page, bytes: Uint8Array, y: number): Promise<number[]> {
+  return page.evaluate(
+    async ({ data, y }) => {
+      const bitmap = await createImageBitmap(new Blob([new Uint8Array(data)]))
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('canvas indisponível')
+      context.drawImage(bitmap, 0, 0)
+      const pixels = context.getImageData(0, y, bitmap.width, 1).data
+      return Array.from({ length: bitmap.width }, (_, x) => pixels[x * 4] ?? -1)
+    },
+    { data: Array.from(bytes), y },
+  )
+}
+
+/** Listras reduzidas sem moiré: a linha toda fica perto da média entre preto e branco. */
+export function expectUniformGray(row: number[]) {
+  expect(Math.min(...row)).toBeGreaterThanOrEqual(115)
+  expect(Math.max(...row)).toBeLessThanOrEqual(140)
+}
+
 /** Confere o formato real (assinatura de bytes) e as dimensões do cabeçalho. */
 export function expectImage(bytes: Uint8Array, format: 'jpeg' | 'png' | 'webp', width: number, height: number) {
   expect(detectImageType(bytes)).toEqual({ kind: 'supported', format })

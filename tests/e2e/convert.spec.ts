@@ -9,11 +9,14 @@ import {
   expectColor,
   expectImage,
   expectNoAxeViolations,
+  expectUniformGray,
   fileInput,
   fixture,
   hasOffscreenCanvas,
   openImageTool,
   pixelAt,
+  redRowAt,
+  stripesPng,
 } from './image-tool.ts'
 
 const openTool = (page: Page) => openImageTool(page, '/imagens/converter', 'Converter imagem')
@@ -205,6 +208,29 @@ test.describe('Converter imagem', () => {
     await expect(page.getByRole('heading', { name: 'Imagem convertida' })).toBeVisible({ timeout: 20_000 })
   })
 
+  test('a prévia de uma imagem grande sai sem listras falsas (moiré), inclusive no Firefox', async ({ page }, testInfo) => {
+    test.skip(!['desktop', 'firefox'].includes(testInfo.project.name), 'filtro da redução: conferido nos dois motores que processam aqui')
+    await openTool(page)
+    // Listras de 1 px com 4000 px de largura: a prévia, de 1024 px, reduz quase 4 vezes.
+    await fileInput(page).setInputFiles({ name: 'listras.png', mimeType: 'image/png', buffer: await stripesPng(page, 4000, 200) })
+    const preview = page.getByRole('img', { name: 'Pré-visualização de listras.png' })
+    await expect(preview).toBeVisible()
+
+    // A imagem na tela é a prévia gerada pelo Worker: lida no tamanho em que foi gerada.
+    const row = await preview.evaluate(async (element) => {
+      const image = element as HTMLImageElement
+      await image.decode()
+      const canvas = new OffscreenCanvas(image.naturalWidth, image.naturalHeight)
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('canvas indisponível')
+      context.drawImage(image, 0, 0)
+      const pixels = context.getImageData(0, Math.floor(image.naturalHeight / 2), image.naturalWidth, 1).data
+      return Array.from({ length: image.naturalWidth }, (_, x) => pixels[x * 4] ?? -1)
+    })
+    expect(row).toHaveLength(1024)
+    expectUniformGray(row)
+  })
+
   test('remover o último arquivo devolve o foco à seleção', async ({ page }) => {
     await openTool(page)
     await fileInput(page).setInputFiles(fixture('foto.jpg'))
@@ -314,6 +340,20 @@ test.describe('Converter imagem para formatos escritos pelo app', () => {
     const largest = entries[2]?.data ?? new Uint8Array()
     expectColor(await pixelAt(page, largest, 12, 12), [255, 0, 0])
     expect((await pixelAt(page, largest, 36, 36))[3]).toBe(0)
+  })
+
+  test('ICO de imagem grande: os tamanhos pequenos saem sem listras falsas (moiré)', async ({ page }, testInfo) => {
+    skipOtherProjects(testInfo.project.name)
+    await openTool(page)
+    // 250 px: nenhum tamanho do ícone é divisor exato, o caso em que a redução de um passo só mais erra.
+    await fileInput(page).setInputFiles({ name: 'listras.png', mimeType: 'image/png', buffer: await stripesPng(page, 250, 250) })
+    await page.getByRole('radio', { name: 'ICO', exact: true }).click()
+    await button(page, 'Converter').click()
+    const result = await download(page, button(page, 'Baixar imagem'))
+
+    const entries = readIco(result.bytes)
+    expect(entries.map((entry) => entry.width)).toEqual([16, 32, 48])
+    for (const entry of entries) expectUniformGray(await redRowAt(page, entry.data, Math.floor(entry.width / 2)))
   })
 
   test('PDF: uma página do tamanho da imagem, com a imagem legível dentro', async ({ page }, testInfo) => {

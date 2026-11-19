@@ -7,11 +7,14 @@ import {
   expectColor,
   expectImage,
   expectNoAxeViolations,
+  expectUniformGray,
   fileInput,
   fixture,
   hasOffscreenCanvas,
   openImageTool,
   pixelAt,
+  redRowAt,
+  stripesPng,
 } from './image-tool.ts'
 
 const openTool = (page: Page) => openImageTool(page, '/imagens/redimensionar', 'Redimensionar imagem')
@@ -195,36 +198,15 @@ test.describe('Redimensionar imagem', () => {
   test('redução forte sem listras falsas (moiré), inclusive no Firefox', async ({ page }, testInfo) => {
     test.skip(!['desktop', 'firefox'].includes(testInfo.project.name), 'filtro da redução: conferido nos dois motores que processam aqui')
     await openTool(page)
-    // Listras verticais de 1 px, pretas e brancas: reduzidas quase 8 vezes, devem virar cinza uniforme.
-    const stripes = await page.evaluate(async () => {
-      const canvas = new OffscreenCanvas(800, 40)
-      const context = canvas.getContext('2d')
-      if (!context) throw new Error('canvas indisponível')
-      context.fillStyle = '#000000'
-      context.fillRect(0, 0, 800, 40)
-      context.fillStyle = '#ffffff'
-      for (let x = 1; x < 800; x += 2) context.fillRect(x, 0, 1, 40)
-      const blob = await canvas.convertToBlob({ type: 'image/png' })
-      return Array.from(new Uint8Array(await blob.arrayBuffer()))
-    })
-    await fileInput(page).setInputFiles({ name: 'listras.png', mimeType: 'image/png', buffer: Buffer.from(stripes) })
+    // Listras de 1 px reduzidas quase 8 vezes: devem virar cinza uniforme.
+    await fileInput(page).setInputFiles({ name: 'listras.png', mimeType: 'image/png', buffer: await stripesPng(page, 800, 40) })
     await usePixels(page)
     await widthField(page).fill('103')
     await button(page, 'Redimensionar').click()
 
     const result = await download(page, button(page, 'Baixar imagem'))
     expect(result.name).toBe('listras-103x5.png')
-    const row = await page.evaluate(async (data) => {
-      const bitmap = await createImageBitmap(new Blob([new Uint8Array(data)]))
-      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
-      const context = canvas.getContext('2d')
-      if (!context) throw new Error('canvas indisponível')
-      context.drawImage(bitmap, 0, 0)
-      const pixels = context.getImageData(0, 2, bitmap.width, 1).data
-      return Array.from({ length: bitmap.width }, (_, x) => pixels[x * 4] ?? -1)
-    }, Array.from(result.bytes))
-    expect(Math.min(...row)).toBeGreaterThanOrEqual(115)
-    expect(Math.max(...row)).toBeLessThanOrEqual(140)
+    expectUniformGray(await redRowAt(page, result.bytes, 2))
   })
 
   test('estados da ferramenta sem violações automáticas de acessibilidade nem rolagem lateral', async ({ page }, testInfo) => {

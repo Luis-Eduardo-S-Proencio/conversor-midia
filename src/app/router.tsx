@@ -69,12 +69,29 @@ export const router = createBrowserRouter([
         },
       },
       {
-        // A biblioteca de recorte (react-image-crop) só carrega aqui.
+        // A biblioteca de recorte (react-image-crop) só carrega aqui e no recorte de vídeo.
         path: 'imagens/recortar',
         handle: { hideBottomNav: true } satisfies RouteHandle,
         lazy: async () => {
           const { CropPage } = await import('../features/image-tools/crop/CropPage')
           return { Component: CropPage }
+        },
+      },
+      {
+        // O Worker de vídeo (com o Mediabunny) só carrega nas ferramentas de vídeo.
+        path: 'videos/cortar',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { TrimPage } = await import('../features/video-tools/trim/TrimPage')
+          return { Component: TrimPage }
+        },
+      },
+      {
+        path: 'videos/recortar',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { VideoCropPage } = await import('../features/video-tools/crop/VideoCropPage')
+          return { Component: VideoCropPage }
         },
       },
       ...devRoutes,

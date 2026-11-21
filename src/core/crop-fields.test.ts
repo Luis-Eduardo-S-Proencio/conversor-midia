@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { ASPECT_CHOICES, aspectLabel, aspectRatio, editField, fieldsOf, validateCropFields, type CropFields } from './settings'
+import {
+  ASPECT_CHOICES,
+  aspectLabel,
+  aspectRatio,
+  editField,
+  fieldsOf,
+  nothingCroppedMessage,
+  validateCropFields,
+  type CropFields,
+} from './crop-fields'
 
 const landscape = { width: 400, height: 300 }
 const portrait = { width: 300, height: 400 }
@@ -60,6 +69,32 @@ describe('validateCropFields', () => {
         missing: false,
       },
     })
+  })
+})
+
+describe('textos para imagem e para vídeo', () => {
+  it('as mensagens falam do que está sendo recortado', () => {
+    expect(validateCropFields(fields('300', '0', '101', '10'), landscape, 'video')).toMatchObject({
+      ok: false,
+      error: { message: 'A área passa da borda direita do vídeo, que tem 400 px de largura. Diminua a margem esquerda ou a largura.' },
+    })
+    expect(validateCropFields(fields('0', '250', '10', '51'), landscape, 'video')).toMatchObject({
+      ok: false,
+      error: { message: 'A área passa da borda de baixo do vídeo, que tem 300 px de altura. Diminua a margem superior ou a altura.' },
+    })
+  })
+
+  it('com lado mínimo (vídeo), a área e as margens respeitam o mínimo', () => {
+    const range = (message: string, field: keyof CropFields) => ({ ok: false, error: { message, fields: [field], missing: false } })
+    expect(validateCropFields(fields('0', '0', '15', '100'), landscape, 'video', 16)).toEqual(range('Use um valor de 16 a 400 px.', 'width'))
+    expect(validateCropFields(fields('0', '0', '100', '15'), landscape, 'video', 16)).toEqual(range('Use um valor de 16 a 300 px.', 'height'))
+    expect(validateCropFields(fields('385', '0', '16', '16'), landscape, 'video', 16)).toEqual(range('Use um valor de 0 a 384 px.', 'x'))
+    expect(validateCropFields(fields('384', '284', '16', '16'), landscape, 'video', 16)).toEqual({ ok: true, crop: { x: 384, y: 284, width: 16, height: 16 } })
+  })
+
+  it('aviso de nada recortado', () => {
+    expect(nothingCroppedMessage('image')).toBe('Ajuste a área de recorte antes: arraste os cantos sobre a imagem ou digite as medidas.')
+    expect(nothingCroppedMessage('video')).toBe('Ajuste a área de recorte antes: arraste os cantos sobre o vídeo ou digite as medidas.')
   })
 })
 

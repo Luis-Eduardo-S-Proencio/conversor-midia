@@ -2,7 +2,6 @@ import { Film, Image as ImageIcon, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router'
 import { POPULAR_TOOLS } from '../app/tool-catalog'
 import { Container } from '../components/layout/Container'
-import { Badge } from '../components/ui/Badge'
 import { Icon } from '../components/ui/Icon'
 import { NavCard } from '../components/ui/NavCard'
 import { NavList } from '../components/ui/NavList'
@@ -37,8 +36,8 @@ export function HomePage() {
               to="/videos"
               icon={Film}
               title="Vídeos"
-              description="Converter, comprimir, cortar trechos e extrair áudio."
-              badge={<Badge>Em breve</Badge>}
+              description="Cortar trechos e recortar o quadro. Mais ferramentas em breve."
+              meta="MP4 · MOV · WEBM"
             />
           </div>
         </section>
@@ -53,7 +52,7 @@ export function HomePage() {
         <p className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3 text-sm text-fg-muted">
           <Icon icon={ShieldCheck} className="text-success" />
           <span>
-            As imagens são abertas e convertidas pelo seu navegador. Nenhum arquivo é enviado para servidores.{' '}
+            Imagens e vídeos são abertos e processados pelo seu navegador. Nenhum arquivo é enviado para servidores.{' '}
             <Link
               to="/sobre#processamento-local"
               className="whitespace-nowrap text-accent-soft underline underline-offset-4 transition-colors hover:text-fg"

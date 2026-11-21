@@ -34,10 +34,11 @@ export default defineConfig({
         baseURL: PREVIEW_URL,
       },
     },
-    // Os codificadores de imagem variam entre motores: as ferramentas de imagem também rodam no Firefox e no WebKit.
+    // Os codificadores de imagem e de vídeo variam entre motores: as ferramentas também rodam no Firefox e no WebKit.
     {
       name: 'firefox',
-      testMatch: /convert|compress|resize|rotate|crop/,
+      // Só arquivos de teste: o auxiliar video-tool.ts também tem "video" no nome.
+      testMatch: /(convert|compress|resize|rotate|crop|video-trim|video-crop)\.spec\.ts$/,
       timeout: 60_000, // o Firefox abre páginas mais devagar neste ambiente, sobretudo em paralelo
       // Com muitos Firefox ao mesmo tempo, a suíte completa travava de vez em quando fora do código do app
       // (envio de arquivos, download, abertura da página) e nunca isolada. Dois por vez evitam a disputa.
@@ -46,7 +47,7 @@ export default defineConfig({
     },
     {
       name: 'webkit',
-      testMatch: /convert|compress|resize|rotate|crop/,
+      testMatch: /(convert|compress|resize|rotate|crop|video-trim|video-crop)\.spec\.ts$/,
       use: { ...devices['Desktop Safari'], viewport: { width: 1280, height: 800 }, baseURL: PREVIEW_URL },
     },
     {

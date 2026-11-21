@@ -1,21 +1,20 @@
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { render } from 'vitest-browser-react'
+import { fieldsOf, type CropError, type CropFields } from '../../core/crop-fields'
 import { CropOptions } from './CropOptions'
-import { fieldsOf, type CropError, type CropFields } from './settings'
 
-const image = { width: 400, height: 300 }
+const size = { width: 400, height: 300 }
 const crop = { x: 50, y: 40, width: 200, height: 100 }
 const base = {
-  image,
+  subject: 'image' as const,
+  size,
   aspect: 'free' as const,
   onAspectChange: () => {},
   fields: fieldsOf(crop),
   onFieldChange: () => {},
   crop,
   onReset: () => {},
-  formats: ['jpeg'] as const,
-  webpSupported: true,
 }
 
 /** Campos com estado de verdade, para conferir o que fica escrito ao digitar. */
@@ -31,7 +30,7 @@ describe('CropOptions', () => {
     expect(names()).toEqual(['Livre', '1:1', '4:3', '16:9'])
     await expect.element(screen.getByRole('radio', { name: 'Livre' })).toBeChecked()
 
-    await screen.rerender(<CropOptions {...base} image={{ width: 300, height: 400 }} />)
+    await screen.rerender(<CropOptions {...base} size={{ width: 300, height: 400 }} />)
     expect(names()).toEqual(['Livre', '1:1', '3:4', '9:16'])
   })
 
@@ -63,6 +62,11 @@ describe('CropOptions', () => {
     await expect.element(screen.getByText('Tamanho final')).toBeVisible()
     await expect.element(screen.getByText('200 × 100')).toBeVisible()
     await expect.element(screen.getByText(/Arraste a área e os cantos sobre a imagem/)).toBeVisible()
+  })
+
+  it('o tamanho final pode diferir da área (vídeo: lados pares)', async () => {
+    const screen = await render(<CropOptions {...base} crop={{ x: 0, y: 0, width: 201, height: 101 }} finalSize={{ width: 200, height: 100 }} />)
+    await expect.element(screen.getByText('200 × 100')).toBeVisible()
   })
 
   it('"Usar a imagem inteira" só aparece com a área recortada e informa o pedido', async () => {
@@ -102,16 +106,21 @@ describe('CropOptions', () => {
     await expect.element(width).toHaveFocus()
   })
 
-  it('sem WEBP no navegador, explica o destino dos WEBP só quando há WEBP', async () => {
-    const screen = await render(<CropOptions {...base} webpSupported={false} />)
-    expect(screen.getByText(/WEBP sai em/).elements()).toHaveLength(0)
-    await screen.rerender(<CropOptions {...base} webpSupported={false} formats={['webp']} />)
-    await expect.element(screen.getByText('Neste navegador, WEBP sai em JPG, ou em PNG se tiver transparência.')).toBeVisible()
+  it('mostra as observações da ferramenta antes da nota sobre metadados', async () => {
+    const screen = await render(<CropOptions {...base} notes={<p>Observação da ferramenta.</p>} />)
+    await expect.element(screen.getByText('Observação da ferramenta.')).toBeVisible()
   })
 
   it('avisa sobre metadados', async () => {
     const screen = await render(<CropOptions {...base} />)
     await expect.element(screen.getByText(/O recorte remove metadados, como localização e data da foto/)).toBeVisible()
+  })
+
+  it('para vídeo, os textos falam do vídeo', async () => {
+    const screen = await render(<CropOptions {...base} subject="video" />)
+    await expect.element(screen.getByText(/Arraste a área e os cantos sobre o vídeo/)).toBeVisible()
+    await expect.element(screen.getByRole('button', { name: 'Usar o vídeo inteiro' })).toBeVisible()
+    await expect.element(screen.getByText('O vídeo sai sem metadados, como localização e data da gravação.')).toBeVisible()
   })
 
   it('desativado durante o processamento', async () => {

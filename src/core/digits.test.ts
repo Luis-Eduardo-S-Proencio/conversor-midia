@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { digitsOnly } from './number-input'
+import { digitsOnly } from './digits'
 
 describe('digitsOnly', () => {
   it('deixa só os algarismos do que foi digitado ou colado', () => {

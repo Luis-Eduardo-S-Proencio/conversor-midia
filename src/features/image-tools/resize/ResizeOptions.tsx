@@ -9,7 +9,7 @@ import { Slider } from '../../../components/ui/Slider'
 import { formatDimensions } from '../../../core/format'
 import type { ImageFormat } from '../../../core/image/formats'
 import type { Dimensions } from '../../../core/image/resize'
-import { digitsOnly } from '../shared/number-input'
+import { digitsOnly } from '../../../core/digits'
 import { PERCENT_RANGE, type FocusRequest, type ResizeError, type ResizeMode, type ResizeSettings, type SizeField } from './settings'
 
 const MODE_OPTIONS: ReadonlyArray<{ value: ResizeMode; label: string }> = [

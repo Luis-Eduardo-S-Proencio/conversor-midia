@@ -45,10 +45,12 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   { id: 'image-rotate-flip', title: 'Girar e espelhar', description: 'Corrija a orientação da foto', icon: RotateCw, to: '/imagens/girar' },
 ]
 
+// As disponíveis primeiro; as que estão por vir, depois.
 export const VIDEO_TOOLS: readonly ToolEntry[] = [
+  { id: 'video-trim', title: 'Cortar trecho', description: 'Escolha onde o vídeo começa e termina', icon: Scissors, to: '/videos/cortar' },
+  { id: 'video-crop', title: 'Recortar vídeo', description: 'Mantenha só a parte do quadro que importa', icon: Crop, to: '/videos/recortar' },
   { id: 'video-convert', title: 'Converter vídeo', description: 'Troque o formato do arquivo', icon: ArrowLeftRight },
   { id: 'video-compress', title: 'Comprimir vídeo', description: 'Reduza o tamanho para enviar ou guardar', icon: Minimize2 },
-  { id: 'video-trim', title: 'Cortar trecho', description: 'Remova o início, o fim ou uma parte', icon: Scissors },
   { id: 'video-resize', title: 'Mudar resolução', description: 'Diminua a resolução do vídeo', icon: Scaling },
   { id: 'video-audio', title: 'Extrair áudio', description: 'Salve só o som do vídeo', icon: Music },
   { id: 'video-gif', title: 'Criar GIF', description: 'Transforme um trecho do vídeo em GIF animado', icon: ImagePlay },

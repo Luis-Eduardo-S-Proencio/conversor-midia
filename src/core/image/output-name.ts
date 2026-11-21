@@ -1,37 +1,12 @@
+import { safeBaseName } from '../file-name'
 import { OUTPUT_FORMAT_INFO, type OutputFormat } from './formats'
-
-const MAX_BASE_LENGTH = 120
-const FALLBACK_BASE = 'imagem'
-// Proibidos em nomes de arquivo no Windows; os de controle (abaixo de 32) também são trocados.
-const FORBIDDEN_CHARACTERS = new Set('<>:"/\\|?*')
-const RESERVED_WINDOWS_NAMES = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i
-
-function replaceForbidden(text: string): string {
-  return Array.from(text, (char) => {
-    const code = char.codePointAt(0) ?? 0
-    return code < 32 || code === 127 || FORBIDDEN_CHARACTERS.has(char) ? '_' : char
-  }).join('')
-}
-
-const trimEnd = (text: string) => text.replace(/[. ]+$/, '')
-
-/** Nome-base seguro: sem caminho, sem caracteres proibidos, sem extensão e com tamanho limitado. */
-function safeBaseName(inputName: string): string {
-  const name = inputName.normalize('NFC').split(/[\\/]/).pop() ?? ''
-  const dot = name.lastIndexOf('.')
-  const withoutExtension = dot >= 0 ? name.slice(0, dot) : name
-  const cleaned = trimEnd(replaceForbidden(withoutExtension).trim())
-  const base = trimEnd(Array.from(cleaned).slice(0, MAX_BASE_LENGTH).join(''))
-  if (base === '') return FALLBACK_BASE
-  return RESERVED_WINDOWS_NAMES.test(base) ? `${base}_` : base
-}
 
 /**
  * Nome do arquivo de saída: "foto.png" → "foto.jpg". Sempre exibido como texto, nunca como HTML.
  * `suffix` é gerado pelo app (ex.: "-2560x1440") e entra depois do limite de tamanho do nome.
  */
 export function outputFileName(inputName: string, format: OutputFormat, suffix = ''): string {
-  return `${safeBaseName(inputName)}${suffix}.${OUTPUT_FORMAT_INFO[format].extension}`
+  return `${safeBaseName(inputName, 'imagem')}${suffix}.${OUTPUT_FORMAT_INFO[format].extension}`
 }
 
 function splitExtension(name: string): [base: string, extension: string] {

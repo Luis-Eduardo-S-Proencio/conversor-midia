@@ -1,8 +1,8 @@
 import { Crop } from 'lucide-react'
+import { CropArea } from '../../../components/tool/CropArea'
+import { CropOptions } from '../../../components/tool/CropOptions'
 import { FilePreview } from '../../../components/tool/FilePreview'
 import { ImageToolPage } from '../shared/ImageToolPage'
-import { CropArea } from './CropArea'
-import { CropOptions } from './CropOptions'
 import { CROP_LABELS, CROP_ZIP_NAME } from './settings'
 import { useCropTool } from './useCropTool'
 
@@ -11,6 +11,7 @@ export function CropPage() {
   const { items, summary, webpSupported } = tool.batch
   const { editor } = tool
   const rejected = items[0]?.status === 'rejected'
+  const webpNote = webpSupported === false && summary.formats.includes('webp')
 
   return (
     <ImageToolPage
@@ -25,14 +26,14 @@ export function CropPage() {
       renderPreview={(item) =>
         editor && item.previewUrl ? (
           <CropArea
-            src={item.previewUrl}
-            alt={`Pré-visualização de ${item.name}`}
-            image={editor.image}
+            size={editor.image}
             crop={editor.crop}
             ratio={tool.ratio}
             onChange={tool.changeCrop}
             disabled={summary.isProcessing || summary.hasResults}
-          />
+          >
+            <img src={item.previewUrl} alt={`Pré-visualização de ${item.name}`} decoding="async" className="bg-checker" />
+          </CropArea>
         ) : (
           item.previewUrl && <FilePreview src={item.previewUrl} alt={`Pré-visualização de ${item.name}`} />
         )
@@ -40,7 +41,8 @@ export function CropPage() {
       options={
         editor ? (
           <CropOptions
-            image={editor.image}
+            subject="image"
+            size={editor.image}
             aspect={tool.aspect}
             onAspectChange={tool.changeAspect}
             fields={editor.fields}
@@ -49,8 +51,7 @@ export function CropPage() {
             onReset={tool.resetCrop}
             error={tool.error}
             focusRequest={tool.focusRequest}
-            formats={summary.formats}
-            webpSupported={webpSupported}
+            notes={webpNote && <p className="text-xs text-fg-subtle">Neste navegador, WEBP sai em JPG, ou em PNG se tiver transparência.</p>}
             disabled={summary.isProcessing}
           />
         ) : (

@@ -1,6 +1,6 @@
 # Roteiro de teste em aparelhos reais
 
-Os testes automáticos rodam no Chromium, no Firefox e no WebKit do Windows, com o celular **simulado**. Ficam de fora o Safari de verdade, o seletor de fotos, a galeria, a memória de um celular e o toque real. Este roteiro cobre esses pontos em cerca de 35 minutos por aparelho. Faça em pelo menos um iPhone (Safari) e um Android (Chrome).
+Os testes automáticos rodam no Chromium, no Firefox e no WebKit do Windows, com o celular **simulado**. Ficam de fora o Safari de verdade, o seletor de fotos, a galeria, a memória de um celular, o toque real e os vídeos gravados pela câmera (HEVC no iPhone). Este roteiro cobre esses pontos em cerca de 50 minutos por aparelho. Faça em pelo menos um iPhone (Safari) e um Android (Chrome).
 
 ## 1. Abrir o site no celular
 
@@ -14,6 +14,8 @@ Limite: por ser http, "Salvar na galeria" não aparece e o app não pode ser ins
 - 5 fotos da câmera, uma delas tirada com o celular em pé.
 - Um print de tela.
 - Uma foto na resolução máxima da câmera, se houver: 48 MP no iPhone Pro, 50 MP em muitos Android.
+- Um vídeo curto da câmera (10 a 20 s), gravado com o celular em pé, com som.
+- Um vídeo de 1 a 3 minutos, para medir o tempo de recodificar.
 
 ## 3. Checklist
 
@@ -56,11 +58,24 @@ Marque ✔ ou ✘ e anote o que estranhar.
 21. Escolha 1:1, toque em "Recortar" e baixe: a foto sai quadrada, com o que estava dentro da área. Numa foto tirada em pé, as opções aparecem como 3:4 e 9:16.
 22. Digite a largura e a altura nos campos: a área na foto acompanha. "Trocar imagem" abre outra foto e recomeça a área.
 
+**Cortar trecho** (`/videos/cortar`)
+
+23. "Selecionar vídeo" abre a galeria. Escolha o vídeo curto: o player mostra o vídeo, e a linha técnica traz formato, medidas, duração e tamanho. Anote se apareceu "só o corte rápido está disponível" (vídeo HEVC num navegador que não o recodifica).
+24. Toque no player para ir a uns 3 s e em "Marcar início aqui"; vá a uns 8 s e toque em "Marcar fim aqui". "Tocar o trecho" toca só esse pedaço.
+25. Modo Exato: corte e baixe. O vídeo baixado começa e termina nos pontos marcados, com som, e continua em pé na galeria. Anote o tempo.
+26. Modo Rápido, com o mesmo trecho: termina quase na hora. Abra o arquivo na galeria e em outro app (WhatsApp, por exemplo) e anote se algum mostra segundos antes do início.
+27. Vídeo longo, modo Exato: anote o tempo e toque em "Cancelar" no meio de uma segunda tentativa; a página volta às opções.
+
+**Recortar vídeo** (`/videos/recortar`)
+
+28. Abra o vídeo curto: a área aparece sobre o vídeo. Arraste os cantos com o dedo; "Reproduzir" e a barra "Momento do vídeo" mostram outras partes do vídeo sob a área.
+29. Escolha 9:16 (ou 16:9, se o vídeo estiver deitado), recorte e baixe: o vídeo sai com só a área escolhida, em pé, com som. Anote o tempo.
+
 **Uso geral**
 
-23. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels e no Recortar, os campos abrem o teclado numérico.
-24. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar."), cada toque em girar ou espelhar diz como a imagem ficou, e a área de recorte e os cantos têm nomes em português.
-25. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
+30. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels e no Recortar, os campos abrem o teclado numérico.
+31. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar."), cada toque em girar ou espelhar diz como a imagem ficou, e a área de recorte e os cantos têm nomes em português. No Cortar trecho, "Marcar início aqui" anuncia o tempo marcado.
+32. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
 
 ## 4. Comportamentos já conhecidos
 
@@ -70,7 +85,10 @@ Confirme se acontecem; não precisam ser tratados como erro.
 - Um PNG que declara canal de transparência não é comprimido no Safari, mesmo que todos os pixels sejam opacos. O app lê a declaração do arquivo e não confere pixel a pixel. **Avise se isso acontecer com prints de tela comuns** (item 11): dá para melhorar.
 - O limite é de 50 milhões de pixels. Fotos "50 MP" de alguns Android têm 8160 × 6144 (50,1 milhões) e são recusadas com explicação. **Anote se acontecer** (item 9): o limite pode ser revisto.
 - BMP e TIFF não têm compressão: uma foto de 12 MP vira um arquivo de uns 35 MB. É do formato.
-- Converter, comprimir, redimensionar, girar, espelhar e recortar removem metadados, como localização e data. A exceção é quando a original é mantida.
+- Converter, comprimir, redimensionar, girar, espelhar e recortar removem metadados, como localização e data. A exceção é quando a original é mantida. Os vídeos cortados e recortados também saem sem metadados.
+- Vídeo recortado ou cortado no modo Exato sai em H.264 (MP4 e MOV) ou VP9 (WEBM), recodificado em alta qualidade: pode ficar maior que o original.
+- O corte rápido guarda escondidos alguns segundos antes do início (até o quadro-chave anterior). A maioria dos players começa no ponto escolhido; alguns aplicativos e editores mostram esses segundos.
+- O limite é de 1 GB por vídeo. Num celular com pouca memória, vídeos bem menores que isso podem falhar com a mensagem de memória. **Anote o tamanho e a duração se acontecer.**
 
 ## 5. Resultado
 
@@ -82,5 +100,6 @@ Navegador e versão: (ex.: Safari; Chrome 131)
 Acesso: Vercel (https) ou rede local (http)
 Itens com problema: (número do item + o que aconteceu)
 Foto grande: resolução ___ · ___ s até a prévia · ___ s para converter · ___ s para redimensionar a 50%
+Vídeo: duração ___ · tamanho ___ · formato (HEVC/H.264) ___ · ___ s no corte exato · ___ s no corte rápido · ___ s para recortar
 Prints ou gravação de tela dos problemas
 ```

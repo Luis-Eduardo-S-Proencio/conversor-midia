@@ -11,13 +11,13 @@ export function VideosPage() {
       <Container className="grid gap-8 py-10 md:py-14">
         <PageHeader
           title="Ferramentas de vídeo"
-          description="Converter, comprimir, cortar trechos, extrair áudio e criar GIF, também direto no navegador."
+          description="Corte trechos e recorte o quadro de vídeos MP4, MOV ou WEBM, direto no navegador."
         />
-        <Alert variant="info" live={false} title="Em breve">
-          As ferramentas de vídeo chegam depois das de imagem. Vídeos exigem mais memória, por isso cada ferramenta vai
-          informar os limites antes de começar.
-        </Alert>
         <NavList items={VIDEO_TOOLS} columns={2} />
+        <Alert variant="info" live={false} title="Mais ferramentas em breve">
+          Converter, comprimir, mudar a resolução, extrair áudio e criar GIF chegam depois. Vídeos usam mais memória: cada
+          ferramenta aceita vídeos de até 1 GB e mostra o progresso, com opção de cancelar.
+        </Alert>
       </Container>
     </>
   )

@@ -1,5 +1,5 @@
 /*
- * Área de recorte (react-image-crop) com a aparência do Media Tools. Carregado só na página de
+ * Área de recorte (react-image-crop) com a aparência do Media Tools. Carregado só nas páginas de
  * recortar, depois do CSS da biblioteca; as cores vêm dos tokens (src/styles/tokens.css).
  */
 .crop-area .ReactCrop {

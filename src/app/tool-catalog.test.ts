@@ -25,4 +25,10 @@ describe('catálogo de ferramentas', () => {
   it('todas as ferramentas de imagem da primeira versão estão disponíveis', () => {
     expect(IMAGE_TOOLS.filter((tool) => !tool.to)).toEqual([])
   })
+
+  it('Cortar trecho e Recortar vídeo estão disponíveis; as demais de vídeo, em breve', () => {
+    expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-trim')?.to).toBe('/videos/cortar')
+    expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-crop')?.to).toBe('/videos/recortar')
+    expect(VIDEO_TOOLS.filter((tool) => tool.to).map((tool) => tool.id)).toEqual(['video-trim', 'video-crop'])
+  })
 })

@@ -1,16 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
-import { centeredAspectCrop, fullCrop, isFullCrop, type CropRect } from '../../../core/image/crop'
-import { processingErrorMessage } from '../../../core/image/messages'
-import type { Dimensions } from '../../../core/image/resize'
-import { BatchItemError } from '../shared/batch-process'
-import { useImageBatch } from '../shared/useImageBatch'
-import { cropFile } from './crop-file'
 import {
-  CROP_LABELS,
-  NOTHING_CROPPED,
   aspectRatio,
   editField,
   fieldsOf,
+  nothingCroppedMessage,
   validateCropFields,
   type AspectChoice,
   type CropError,
@@ -18,7 +11,14 @@ import {
   type CropFields,
   type CropValidation,
   type FocusRequest,
-} from './settings'
+} from '../../../core/crop-fields'
+import { centeredAspectCrop, fullCrop, isFullCrop, type CropRect } from '../../../core/image/crop'
+import { processingErrorMessage } from '../../../core/image/messages'
+import type { Dimensions } from '../../../core/image/resize'
+import { BatchItemError } from '../shared/batch-process'
+import { useImageBatch } from '../shared/useImageBatch'
+import { cropFile } from './crop-file'
+import { CROP_LABELS } from './settings'
 
 /** Edição em andamento de uma imagem: a área válida e, enquanto a pessoa digita, o texto dos campos. */
 interface Edit {
@@ -39,7 +39,7 @@ const startingCrop = (image: Dimensions, ratio: number | undefined) => (ratio ? 
 /** Valor errado aparece já ao digitar; campo vazio e "nada recortado", só depois de tentar. */
 function visibleError({ validation, image }: CropEditor, attempted: boolean): CropError | undefined {
   if (!validation.ok) return attempted || !validation.error.missing ? validation.error : undefined
-  if (attempted && isFullCrop(validation.crop, image)) return { message: NOTHING_CROPPED, fields: ['width'], missing: true }
+  if (attempted && isFullCrop(validation.crop, image)) return { message: nothingCroppedMessage('image'), fields: ['width'], missing: true }
   return undefined
 }
 

@@ -169,6 +169,8 @@ const RECIPES: Record<string, Recipe> = {
   'so-audio.mp4': { container: 'mp4', duration: 1, audio: { codec: 'aac' } },
   // Para extrair o áudio: MOV com som e metadados (o arquivo de som sai sem eles), e MOV com som PCM.
   'com-som.mov': { container: 'mov', duration: 2, video: { codec: 'avc', width: 160, height: 120, drawing: 'quadrants' }, audio: { codec: 'aac' }, tags: true },
+  // Para mudar a resolução em WEBM: 640 × 480 (480p) dá para baixar a 360p.
+  'quadrantes.webm': { container: 'webm', duration: 1, video: { codec: 'vp9', width: 640, height: 480, drawing: 'quadrants' }, audio: { codec: 'opus' } },
   'som-pcm.mov': { container: 'mov', duration: 1, video: { codec: 'avc', width: 160, height: 120, drawing: 'quadrants' }, audio: { codec: 'pcm-s16' } },
   'video.mkv': { container: 'mkv', duration: 1, video: { codec: 'vp9', width: 160, height: 120, drawing: 'quadrants' } },
   // Com textura e em qualidade alta: comprimir reduz bastante; o lado menor (736) passa de 720 (nível Forte).

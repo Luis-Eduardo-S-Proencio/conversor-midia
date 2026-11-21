@@ -4,6 +4,7 @@
  */
 import type { Dimensions } from '../image/resize'
 import type { VideoFormat } from './formats'
+import { fitShortSide, roundBitrate, videoBitrateFor } from './sizing'
 
 export type CompressionLevel = 'light' | 'balanced' | 'strong'
 
@@ -27,32 +28,17 @@ export const LEVEL_SETTINGS: Record<CompressionLevel, LevelSettings> = {
   strong: { label: 'Forte', hint: 'Até 720p: o menor arquivo, com perda de detalhes visível.', maxShortSide: 720, factor: 0.4 },
 }
 
-const REFERENCE_PIXELS = 1920 * 1080
-const REFERENCE_BITRATE = 3_000_000
-/** VP9 (WEBM) precisa de cerca de 60% da taxa do H.264 para a mesma qualidade. */
-const CODEC_EFFICIENCY: Record<VideoFormat, number> = { mp4: 1, mov: 1, webm: 0.6 }
-const MIN_BITRATE = 100_000
 /** Cabeçalhos e índice do arquivo, sobre a soma de vídeo e som. */
 const CONTAINER_OVERHEAD = 1.02
 /** Abaixo disso (fração do tamanho original) a compressão vale a pena. */
 const WORTH_RATIO = 0.9
 
-const even = (value: number) => Math.max(2, 2 * Math.round(value / 2))
-
 /** Medidas do resultado: o lado menor limitado pelo nível, sem aumentar, proporção mantida e lados pares (H.264). */
-export function compressedSize(size: Dimensions, level: CompressionLevel): Dimensions {
-  const { maxShortSide } = LEVEL_SETTINGS[level]
-  const shortSide = Math.min(size.width, size.height)
-  const scale = maxShortSide === null ? 1 : Math.min(1, maxShortSide / shortSide)
-  return { width: even(size.width * scale), height: even(size.height * scale) }
-}
+export const compressedSize = (size: Dimensions, level: CompressionLevel): Dimensions => fitShortSide(size, LEVEL_SETTINGS[level].maxShortSide)
 
 /** Taxa de bits do vídeo comprimido, em bits por segundo: cresce com a área do quadro, um pouco menos que linear. */
-export function compressedVideoBitrate(size: Dimensions, level: CompressionLevel, format: VideoFormat): number {
-  const scale = ((size.width * size.height) / REFERENCE_PIXELS) ** 0.95
-  const bitrate = REFERENCE_BITRATE * scale * LEVEL_SETTINGS[level].factor * CODEC_EFFICIENCY[format]
-  return Math.max(MIN_BITRATE, Math.round(bitrate / 1000) * 1000)
-}
+export const compressedVideoBitrate = (size: Dimensions, level: CompressionLevel, format: VideoFormat): number =>
+  roundBitrate(videoBitrateFor(size, LEVEL_SETTINGS[level].factor, format))
 
 export interface SizeEstimate {
   /** Em bytes. */

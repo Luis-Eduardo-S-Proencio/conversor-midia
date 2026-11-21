@@ -39,7 +39,8 @@ export function AboutPage() {
           <TextSection id="formatos" title="Formatos">
             <p>
               Imagens: abre JPG, PNG e WEBP e gera JPG, PNG, WEBP, BMP, TIFF, ICO e PDF. Vídeos: abre MP4, MOV e WEBM para
-              cortar trechos, tirar partes do meio, recortar o quadro e comprimir, e o resultado sai no mesmo formato; o som
+              cortar trechos, tirar partes do meio, recortar o quadro, comprimir e diminuir a resolução, e o resultado sai no
+              mesmo formato; o som
               do vídeo pode ser salvo sozinho em M4A, MP3 ou WEBM. As demais ferramentas de vídeo, incluindo a de criar GIF,
               estão a caminho.
             </p>

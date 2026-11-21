@@ -26,12 +26,13 @@ describe('catálogo de ferramentas', () => {
     expect(IMAGE_TOOLS.filter((tool) => !tool.to)).toEqual([])
   })
 
-  it('Cortar trecho, Recortar vídeo, Comprimir vídeo e Extrair áudio estão disponíveis, primeiro na lista; as demais de vídeo, em breve', () => {
+  it('Cortar trecho, Recortar vídeo, Comprimir vídeo, Extrair áudio e Mudar resolução estão disponíveis, primeiro na lista; as demais, em breve', () => {
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-trim')?.to).toBe('/videos/cortar')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-crop')?.to).toBe('/videos/recortar')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-compress')?.to).toBe('/videos/comprimir')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-audio')?.to).toBe('/videos/extrair-audio')
-    expect(VIDEO_TOOLS.slice(0, 4).map((tool) => tool.id)).toEqual(['video-trim', 'video-crop', 'video-compress', 'video-audio'])
-    expect(VIDEO_TOOLS.filter((tool) => tool.to)).toHaveLength(4)
+    expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-resize')?.to).toBe('/videos/resolucao')
+    expect(VIDEO_TOOLS.slice(0, 5).map((tool) => tool.id)).toEqual(['video-trim', 'video-crop', 'video-compress', 'video-audio', 'video-resize'])
+    expect(VIDEO_TOOLS.filter((tool) => tool.to)).toHaveLength(5)
   })
 })

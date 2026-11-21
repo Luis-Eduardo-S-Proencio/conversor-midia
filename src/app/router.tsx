@@ -103,6 +103,14 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: 'videos/resolucao',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { ResizePage } = await import('../features/video-tools/resize/ResizePage')
+          return { Component: ResizePage }
+        },
+      },
+      {
         path: 'videos/extrair-audio',
         handle: { hideBottomNav: true } satisfies RouteHandle,
         lazy: async () => {

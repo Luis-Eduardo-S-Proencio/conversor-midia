@@ -93,6 +93,11 @@ Marque ✔ ou ✘ e anote o que estranhar.
 38. Com o mesmo vídeo, toque em "Alterar opções", escolha MP3 e extraia. Anote o tempo com o vídeo longo. O `.mp3` baixado toca no aparelho.
 39. Escolha um vídeo sem som (uma gravação de tela sem áudio, por exemplo): aparece "Este vídeo não tem som" e o botão fica desligado.
 
+**Mudar resolução** (`/videos/resolucao`; itens novos, no fim para não mudar a numeração acima)
+
+40. Abra o vídeo curto da câmera, gravado em pé: as resoluções iguais ou maiores que a do vídeo aparecem desligadas, com a explicação de que só dá para diminuir. Escolha 720p, mude e baixe: o vídeo continua em pé, sem esticar, com som, e a galeria mostra 720 de largura. Anote o tempo.
+41. Com o vídeo longo, escolha 480p: anote o tempo e o tamanho antes e depois.
+
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.
@@ -120,5 +125,6 @@ Itens com problema: (número do item + o que aconteceu)
 Foto grande: resolução ___ · ___ s até a prévia · ___ s para converter · ___ s para redimensionar a 50%
 Vídeo: duração ___ · tamanho ___ · formato (HEVC/H.264) ___ · ___ s no corte exato · ___ s no corte rápido · ___ s para recortar · comprimir (Média): ___ MB → ___ MB em ___ s
 Extrair áudio (vídeo longo): ___ s em M4A · ___ s em MP3
+Mudar resolução (vídeo longo, 480p): ___ s · ___ MB → ___ MB
 Prints ou gravação de tela dos problemas
 ```

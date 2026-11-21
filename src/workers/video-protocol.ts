@@ -40,7 +40,10 @@ export interface CropJob {
   crop: CropRect
 }
 
-/** Refaz o vídeo nas medidas (pares, como ele aparece) e na taxa de bits pedidas; o som é copiado. */
+/**
+ * Refaz o vídeo nas medidas (pares, como ele aparece, nunca maiores que as dele) e na taxa de bits pedidas;
+ * o som é copiado. Serve ao Comprimir e ao Mudar resolução.
+ */
 export interface CompressJob {
   kind: 'compress'
   file: Blob

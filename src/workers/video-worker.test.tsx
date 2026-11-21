@@ -6,6 +6,7 @@ import detalhadoUrl from '../../tests/fixtures/videos/detalhado.mp4?url'
 import giradoUrl from '../../tests/fixtures/videos/girado.mp4?url'
 import longoUrl from '../../tests/fixtures/videos/longo.mp4?url'
 import quadrantesUrl from '../../tests/fixtures/videos/quadrantes.mov?url'
+import quadrantesWebmUrl from '../../tests/fixtures/videos/quadrantes.webm?url'
 import segundosMp4Url from '../../tests/fixtures/videos/segundos.mp4?url'
 import segundosWebmUrl from '../../tests/fixtures/videos/segundos.webm?url'
 import soAudioUrl from '../../tests/fixtures/videos/so-audio.mp4?url'
@@ -367,6 +368,38 @@ describe('Worker de vídeo: recortar', () => {
     expect(reported).toBe(true)
     const { info } = await client.run({ kind: 'inspect', file: await fixtureBlob(segundosMp4Url) })
     expect(info.format).toBe('mp4')
+  })
+})
+
+// A mesma tarefa ("compress": medidas e taxa novas, som copiado) serve ao Comprimir e ao Mudar resolução.
+describe('Worker de vídeo: novas medidas', () => {
+  it('vídeo girado (gravado em pé): as medidas valem para o quadro como ele aparece, sem distorcer', SLOW, async () => {
+    // "girado.mp4": gravado deitado (320 × 240) com rotação de 90°; aparece em pé, vermelho em cima e azul embaixo.
+    const result = await client.run({ kind: 'compress', file: await fixtureBlob(giradoUrl), width: 120, height: 160, bitrate: 300_000 })
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ width: 120, height: 160 })
+      expect(await video.colorAt(0.5, 60, 20)).toBe('red')
+      expect(await video.colorAt(0.5, 60, 140)).toBe('blue')
+    } finally {
+      video.dispose()
+    }
+  })
+
+  it('WEBM: as medidas novas saem em VP9, com as cores no lugar e o som Opus mantido', SLOW, async () => {
+    const result = await client.run({ kind: 'compress', file: await fixtureBlob(quadrantesWebmUrl), width: 480, height: 360, bitrate: 500_000 })
+    expect(result.blob.type).toBe('video/webm')
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ format: 'WebM', videoCodec: 'vp9', audioCodec: 'opus', width: 480, height: 360 })
+      expect(video.duration).toBeCloseTo(1, 1)
+      expect(await video.colorAt(0.5, 120, 90)).toBe('red')
+      expect(await video.colorAt(0.5, 360, 90)).toBe('green')
+      expect(await video.colorAt(0.5, 120, 270)).toBe('blue')
+      expect(await video.colorAt(0.5, 360, 270)).toBe('yellow')
+    } finally {
+      video.dispose()
+    }
   })
 })
 

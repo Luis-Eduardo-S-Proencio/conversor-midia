@@ -6,6 +6,7 @@
 import {
   BlobSource,
   BufferTarget,
+  CanvasSource,
   Conversion,
   EncodedPacketSink,
   Input,
@@ -38,6 +39,8 @@ import type { VideoErrorCode } from '../core/video/messages'
 import { joinSegments, keptPieces, segmentAt, type JoinSegment } from '../core/video/remove'
 import { TIME_TOLERANCE, type TrimRange } from '../core/video/trim'
 import type {
+  CompressJob,
+  CompressOutput,
   CropJob,
   CropOutput,
   InspectJob,
@@ -81,6 +84,19 @@ const AUDIO_CODECS: Record<VideoFormat, AudioCodec[]> = {
 }
 
 const QUALITY = new Quality('high')
+
+/** Pacotes de som lidos para medir a taxa média (cerca de 4 s de AAC). */
+const AUDIO_STATS_PACKETS = 200
+
+/* Clipes de teste para saber se o codificador respeita a taxa: meio segundo, pequeno, com textura. */
+const PROBE_SIZE = { width: 320, height: 240 }
+const PROBE_FPS = 30
+const PROBE_FRAMES = 15
+const PROBE_BLOCK = 16
+const PROBE_LOW_BITRATE = 150_000
+const PROBE_HIGH_BITRATE = 1_500_000
+/** O clipe na taxa baixa precisa sair com menos de 60% do tamanho do outro. */
+const PROBE_MAX_RATIO = 0.6
 
 /** Diferença (em segundos) até a qual o início do corte conta como o próprio quadro-chave. */
 const KEY_FRAME_TOLERANCE = 0.001
@@ -232,24 +248,35 @@ async function convert(opened: OpenedVideo, options: ConvertOptions, onProgress:
   return new Blob([buffer], { type: VIDEO_FORMATS[format].mimeType })
 }
 
+interface TranscodeRequest {
+  /** Recorte pedido, já com medidas pares. */
+  area?: CropRect
+  /** Novas medidas (pares) do quadro inteiro, ao comprimir. */
+  size?: Dimensions
+  /** Taxa do vídeo em bits por segundo; sem ela, qualidade alta. */
+  bitrate?: number
+}
+
 /**
- * Opções para recodificar o vídeo em alta qualidade. Medidas ímpares perdem 1 px (H.264 exige pares);
- * `area` é o recorte pedido, já com medidas pares.
+ * Opções para recodificar o vídeo. Sem recorte nem medidas novas, medidas ímpares perdem 1 px
+ * (H.264 exige pares).
  */
-async function transcodeOptions(opened: OpenedVideo, area?: CropRect): Promise<ConversionVideoOptions> {
+async function transcodeOptions(opened: OpenedVideo, { area, size, bitrate }: TranscodeRequest = {}): Promise<ConversionVideoOptions> {
   const { video, format } = opened
   const full = await displaySize(video)
   const even = encodableSize(full)
-  const crop = area ?? (even.width === full.width && even.height === full.height ? undefined : { x: 0, y: 0, ...even })
-  const size = crop ?? full
+  const crop = size ? undefined : (area ?? (even.width === full.width && even.height === full.height ? undefined : { x: 0, y: 0, ...even }))
+  const target = size ?? crop ?? full
   if (!(await video.canDecode())) throw new JobError('decode-unsupported')
-  const codec = await getFirstEncodableVideoCodec(TRANSCODE_CODECS[format], { width: size.width, height: size.height, quality: QUALITY })
+  const quality = bitrate ? new Quality({ bitrate }) : QUALITY
+  const codec = await getFirstEncodableVideoCodec(TRANSCODE_CODECS[format], { width: target.width, height: target.height, quality })
   if (!codec) throw new JobError('encode-unsupported')
   return {
     forceTranscode: true,
     codec,
-    quality: QUALITY,
+    quality,
     ...(crop && { crop: { left: crop.x, top: crop.y, width: crop.width, height: crop.height } }),
+    ...(size && { width: size.width, height: size.height, fit: 'fill' as const }),
   }
 }
 
@@ -262,6 +289,67 @@ async function copyableStart(video: InputVideoTrack, start: number): Promise<num
   if (start <= first + KEY_FRAME_TOLERANCE) return Math.min(start, first)
   const key = await new EncodedPacketSink(video).getKeyPacket(start, { verifyKeyPackets: true })
   return key && start - key.timestamp < KEY_FRAME_TOLERANCE ? key.timestamp : null
+}
+
+/** Taxa média do som, medida nos primeiros pacotes (alguns segundos bastam: o som tem taxa quase constante). */
+async function audioBitrate(audio: InputAudioTrack): Promise<number | null> {
+  const { averageBitrate } = await audio.computePacketStats(AUDIO_STATS_PACKETS)
+  return Number.isFinite(averageBitrate) && averageBitrate > 0 ? Math.round(averageBitrate) : null
+}
+
+/** Bytes de um clipe de teste curto, com textura, codificado na taxa pedida. */
+async function probeClipBytes(codec: VideoCodec, bitrate: number): Promise<number> {
+  const canvas = new OffscreenCanvas(PROBE_SIZE.width, PROBE_SIZE.height)
+  const context = canvas.getContext('2d')
+  if (!context) return 0
+  const output = new Output({ format: codec === 'avc' ? new Mp4OutputFormat() : new WebMOutputFormat(), target: new BufferTarget() })
+  const source = new CanvasSource(canvas, { codec, quality: new Quality({ bitrate }) })
+  output.addVideoTrack(source, { frameRate: PROBE_FPS })
+  await output.start()
+  // A mesma textura nas duas taxas: só a taxa muda o tamanho.
+  let seed = 1
+  const shade = () => {
+    seed = (seed * 16807) % 2147483647
+    return seed % 256
+  }
+  for (let frame = 0; frame < PROBE_FRAMES; frame += 1) {
+    for (let y = 0; y < PROBE_SIZE.height; y += PROBE_BLOCK) {
+      for (let x = 0; x < PROBE_SIZE.width; x += PROBE_BLOCK) {
+        const value = shade()
+        context.fillStyle = `rgb(${value}, ${255 - value}, ${(value * 7) % 256})`
+        context.fillRect(x, y, PROBE_BLOCK, PROBE_BLOCK)
+      }
+    }
+    await source.add(frame / PROBE_FPS, 1 / PROBE_FPS)
+  }
+  source.close()
+  await output.finalize()
+  return output.target.buffer?.byteLength ?? 0
+}
+
+const sizeControl = new Map<VideoCodec, Promise<boolean>>()
+
+/**
+ * O codificador respeita a taxa pedida? Dois clipes de teste minúsculos, numa taxa baixa e numa alta:
+ * se o baixo não sair bem menor, o navegador ignora a taxa (como o H.264 do Firefox do Playwright).
+ * O resultado fica guardado por codec enquanto o Worker existir.
+ */
+function controlsSize(codec: VideoCodec): Promise<boolean> {
+  let check = sizeControl.get(codec)
+  if (!check) {
+    check = (async () => {
+      try {
+        const low = await probeClipBytes(codec, PROBE_LOW_BITRATE)
+        const high = await probeClipBytes(codec, PROBE_HIGH_BITRATE)
+        return low > 0 && low < high * PROBE_MAX_RATIO
+      } catch (error) {
+        if (import.meta.env.DEV) console.error(error)
+        return false // sem conseguir conferir, melhor não prometer compressão
+      }
+    })()
+    sizeControl.set(codec, check)
+  }
+  return check
 }
 
 async function inspect(job: InspectJob): Promise<InspectOutput> {
@@ -279,6 +367,7 @@ async function inspect(job: InspectJob): Promise<InspectOutput> {
       !audio ||
       ((await audio.canDecode()) &&
         (await getFirstEncodableAudioCodec(AUDIO_CODECS[format], { numberOfChannels: 2, sampleRate: 48_000 })) !== null)
+    const probeCodec = job.checkSizeControl && canTranscodeVideo ? await getFirstEncodableVideoCodec(TRANSCODE_CODECS[format], PROBE_SIZE) : null
     return {
       kind: 'inspect',
       info: {
@@ -288,9 +377,11 @@ async function inspect(job: InspectJob): Promise<InspectOutput> {
         height,
         codec: (await video.getCodec()) ?? '',
         hasAudio: audio !== null,
+        audioBitrate: audio ? await audioBitrate(audio) : null,
         canTranscodeVideo,
         canTranscodeAudio,
         extraTracks,
+        ...(job.checkSizeControl && { controlsSize: probeCodec !== null && (await controlsSize(probeCodec)) }),
       },
     }
   } catch (error) {
@@ -397,9 +488,33 @@ async function crop(job: CropJob, onProgress: ProgressReporter): Promise<CropOut
       area.height >= MIN_VIDEO_CROP_SIDE &&
       isCropWithin(area, await reading(displaySize(opened.video)))
     if (!valid) throw new JobError('unexpected')
-    const video = await reading(transcodeOptions(opened, area))
+    const video = await reading(transcodeOptions(opened, { area }))
     const blob = await convert(opened, { video }, onProgress)
     return { kind: 'crop', blob, width: area.width, height: area.height }
+  } finally {
+    opened.input.dispose()
+  }
+}
+
+async function compress(job: CompressJob, onProgress: ProgressReporter): Promise<CompressOutput> {
+  const opened = await openVideo(job.file)
+  try {
+    const full = await reading(displaySize(opened.video))
+    const { width, height, bitrate } = job
+    // Lados pares podem passar 1 px do original (ex.: 1081 vira 1082); nunca mais que isso.
+    const valid =
+      [width, height, bitrate].every(Number.isInteger) &&
+      width >= 2 &&
+      height >= 2 &&
+      width % 2 === 0 &&
+      height % 2 === 0 &&
+      width <= full.width + 1 &&
+      height <= full.height + 1 &&
+      bitrate > 0
+    if (!valid) throw new JobError('unexpected')
+    const video = await reading(transcodeOptions(opened, { size: { width, height }, bitrate }))
+    const blob = await convert(opened, { video }, onProgress)
+    return { kind: 'compress', blob }
   } finally {
     opened.input.dispose()
   }
@@ -415,6 +530,8 @@ function run(job: VideoJob, onProgress: ProgressReporter): Promise<VideoJobOutpu
       return join(job, onProgress)
     case 'crop':
       return crop(job, onProgress)
+    case 'compress':
+      return compress(job, onProgress)
   }
 }
 

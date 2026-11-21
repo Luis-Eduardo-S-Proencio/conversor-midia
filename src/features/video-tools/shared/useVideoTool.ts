@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { checkVideoFile, type VideoCheck } from '../../../core/video/inspect'
 import { videoErrorMessage, videoRejectionMessage } from '../../../core/video/messages'
 import { VideoJobError, createVideoWorkerClient, isAbortError, type VideoWorkerClient } from '../../../workers/video-client'
-import type { CropJob, JoinJob, TrimJob, VideoInfo } from '../../../workers/video-protocol'
+import type { CompressJob, CropJob, JoinJob, TrimJob, VideoInfo } from '../../../workers/video-protocol'
 
 /** Textos que mudam de uma ferramenta de vídeo para outra ("Cortar" / "Recortar"). */
 export interface VideoToolLabels {
@@ -12,8 +12,8 @@ export interface VideoToolLabels {
   progress: string
   /** Particípio no masculino: "cortado" ("Vídeo cortado."). */
   done: string
-  /** Substantivo masculino da operação: "Corte" ("Corte cancelado."). */
-  noun: string
+  /** Anúncio ao cancelar: "Corte cancelado.", "Compressão cancelada.". */
+  cancelled: string
 }
 
 export type VideoPhase = 'empty' | 'opening' | 'rejected' | 'ready' | 'processing' | 'done' | 'failed'
@@ -30,12 +30,23 @@ export interface VideoToolState {
   message?: string
   /** De 0 a 1, enquanto processa. */
   progress: number
-  result?: { name: string; size: number }
+  /** Arquivo pronto; `note` explica algo sobre ele (ex.: o original foi mantido). */
+  result?: { name: string; size: number; note?: string; url: string }
   /** Aviso quando chegam vários arquivos: só o primeiro abre. */
   notice?: string
 }
 
-type ProcessJob = (file: File) => TrimJob | JoinJob | CropJob
+type ProcessJob = (file: File) => TrimJob | JoinJob | CropJob | CompressJob
+
+/** O que entregar: o arquivo do Worker com outro nome, ou outra decisão (ex.: manter o original). */
+export interface Delivery {
+  blob: Blob
+  name: string
+  note?: string
+}
+
+/** Nome do arquivo de saída, ou a decisão do que entregar a partir do resultado do Worker e do original. */
+export type DeliveryRule = string | ((output: { blob: Blob }, original: File) => Delivery)
 
 const EMPTY: VideoToolState = { phase: 'empty', fileId: 0, progress: 0 }
 
@@ -48,9 +59,10 @@ const errorMessage = (error: unknown) => videoErrorMessage(error instanceof Vide
  * duração, medidas e o que o navegador consegue fazer), processa com progresso e cancelamento e
  * entrega o resultado. O arquivo, o resultado e as URLs temporárias ficam em referências (fora do
  * estado do React) e são liberados ao trocar de vídeo, recomeçar ou sair da tela.
- * `labels` deve ser uma constante do módulo da ferramenta.
+ * `labels` deve ser uma constante do módulo da ferramenta. Com `checkSizeControl`, a abertura confere
+ * também se o codificador do navegador respeita a taxa pedida (o comprimir depende disso).
  */
-export function useVideoTool(labels: VideoToolLabels) {
+export function useVideoTool(labels: VideoToolLabels, { checkSizeControl = false }: { checkSizeControl?: boolean } = {}) {
   const [state, setState] = useState<VideoToolState>(EMPTY)
   const [announcement, setAnnouncement] = useState('')
   const [completedRuns, setCompletedRuns] = useState(0)
@@ -58,10 +70,19 @@ export function useVideoTool(labels: VideoToolLabels) {
   const client = useRef<VideoWorkerClient | null>(null)
   const file = useRef<File | null>(null)
   const result = useRef<File | null>(null)
+  /** URL temporária do resultado, para ver como ficou. */
+  const resultUrl = useRef<string | null>(null)
   const sourceUrl = useRef<string | null>(null)
   const opening = useRef<AbortController | null>(null)
   const running = useRef<AbortController | null>(null)
   const lastFileId = useRef(0)
+
+  /** Descarta o resultado e libera a URL temporária dele. */
+  const dropResult = useCallback(() => {
+    result.current = null
+    if (resultUrl.current) URL.revokeObjectURL(resultUrl.current)
+    resultUrl.current = null
+  }, [])
 
   const release = useCallback(() => {
     opening.current?.abort()
@@ -71,8 +92,8 @@ export function useVideoTool(labels: VideoToolLabels) {
     if (sourceUrl.current) URL.revokeObjectURL(sourceUrl.current)
     sourceUrl.current = null
     file.current = null
-    result.current = null
-  }, [])
+    dropResult()
+  }, [dropResult])
 
   useEffect(() => {
     const instance = createVideoWorkerClient()
@@ -108,7 +129,7 @@ export function useVideoTool(labels: VideoToolLabels) {
       const worker = client.current
       if (!worker) return
       try {
-        const { info } = await worker.run({ kind: 'inspect', file: chosen }, { signal: controller.signal })
+        const { info } = await worker.run({ kind: 'inspect', file: chosen, checkSizeControl }, { signal: controller.signal })
         if (stale()) return
         const url = URL.createObjectURL(chosen)
         sourceUrl.current = url
@@ -121,7 +142,7 @@ export function useVideoTool(labels: VideoToolLabels) {
         if (opening.current === controller) opening.current = null
       }
     },
-    [labels],
+    [labels, checkSizeControl],
   )
 
   /** Um vídeo por vez: o novo substitui o atual, que é liberado. */
@@ -149,18 +170,18 @@ export function useVideoTool(labels: VideoToolLabels) {
   /** O resultado sempre reflete as opções atuais: mudou alguma, ele é descartado. */
   const invalidateResult = useCallback(() => {
     if (!result.current) return
-    result.current = null
+    dropResult()
     setState((current) => (current.phase === 'done' ? { ...current, phase: 'ready', result: undefined } : current))
-  }, [])
+  }, [dropResult])
 
   const run = useCallback(
-    async (makeJob: ProcessJob, outputName: string) => {
+    async (makeJob: ProcessJob, deliver: DeliveryRule) => {
       const worker = client.current
       const chosen = file.current
       if (!worker || !chosen || running.current) return
       const controller = new AbortController()
       running.current = controller
-      result.current = null
+      dropResult()
       setState((current) => ({ ...current, phase: 'processing', progress: 0, message: undefined, result: undefined }))
       setAnnouncement(`${labels.progress} o vídeo…`)
       try {
@@ -168,17 +189,21 @@ export function useVideoTool(labels: VideoToolLabels) {
           signal: controller.signal,
           onProgress: (progress) => setState((current) => (current.phase === 'processing' ? { ...current, progress } : current)),
         })
-        const done = new File([output.blob], outputName, { type: output.blob.type })
+        const delivery = typeof deliver === 'string' ? { blob: output.blob, name: deliver } : deliver(output, chosen)
+        const done = new File([delivery.blob], delivery.name, { type: delivery.blob.type })
         result.current = done
-        setState((current) => ({ ...current, phase: 'done', progress: 1, result: { name: done.name, size: done.size } }))
-        setAnnouncement(`Vídeo ${labels.done}. Pronto para baixar.`)
+        const url = URL.createObjectURL(done)
+        resultUrl.current = url
+        setState((current) => ({ ...current, phase: 'done', progress: 1, result: { name: done.name, size: done.size, note: delivery.note, url } }))
+        // Com observação (ex.: original mantido), ela é o que importa ouvir.
+        setAnnouncement(delivery.note ? `${delivery.note} Pronto para baixar.` : `Vídeo ${labels.done}. Pronto para baixar.`)
         setCompletedRuns((count) => count + 1)
       } catch (error) {
         // Cancelado pela pessoa (volta às opções) ou porque ela trocou de vídeo ou saiu (nada a fazer).
         if (isAbortError(error)) {
           if (running.current !== controller) return
           setState((current) => ({ ...current, phase: 'ready', progress: 0 }))
-          setAnnouncement(`${labels.noun} cancelado.`)
+          setAnnouncement(labels.cancelled)
           return
         }
         const message = errorMessage(error)
@@ -188,7 +213,7 @@ export function useVideoTool(labels: VideoToolLabels) {
         if (running.current === controller) running.current = null
       }
     },
-    [labels],
+    [labels, dropResult],
   )
 
   const cancel = useCallback(() => running.current?.abort(), [])

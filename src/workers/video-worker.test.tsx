@@ -1,6 +1,7 @@
 import { canEncodeAudio } from 'mediabunny'
 import { afterAll, describe, expect, it } from 'vitest'
 import cortadoUrl from '../../tests/fixtures/videos/cortado.mp4?url'
+import detalhadoUrl from '../../tests/fixtures/videos/detalhado.mp4?url'
 import giradoUrl from '../../tests/fixtures/videos/girado.mp4?url'
 import longoUrl from '../../tests/fixtures/videos/longo.mp4?url'
 import quadrantesUrl from '../../tests/fixtures/videos/quadrantes.mov?url'
@@ -36,6 +37,9 @@ describe('Worker de vídeo: abrir', () => {
       extraTracks: false,
     })
     expect(info.duration).toBeCloseTo(4, 1)
+    // Som de 96 kbit/s nos vídeos de teste: a taxa medida entra na estimativa de tamanho ao comprimir.
+    expect(info.audioBitrate).toBeGreaterThan(80_000)
+    expect(info.audioBitrate).toBeLessThan(115_000)
   })
 
   it('WEBM e MOV são reconhecidos pelo conteúdo', async () => {
@@ -216,6 +220,53 @@ describe('Worker de vídeo: remover partes (juntar trechos)', () => {
     ]
     for (const ranges of bad) {
       await expect(client.run({ kind: 'join', file, ranges })).rejects.toEqual(new VideoJobError('unexpected'))
+    }
+  })
+})
+
+describe('Worker de vídeo: comprimir', () => {
+  it('confere se o codificador respeita a taxa pedida: só quando pedido, e o Chromium respeita', SLOW, async () => {
+    const file = await fixtureBlob(detalhadoUrl)
+    const plain = await client.run({ kind: 'inspect', file })
+    expect(plain.info).not.toHaveProperty('controlsSize')
+    const checked = await client.run({ kind: 'inspect', file, checkSizeControl: true })
+    // No Firefox do Playwright o H.264 sai do mesmo tamanho em qualquer taxa: lá a resposta é "não".
+    expect(checked.info.controlsSize).toBe(!navigator.userAgent.includes('Firefox'))
+  })
+
+  it('menos resolução e menos taxa: arquivo bem menor, cores no lugar, som copiado', SLOW, async () => {
+    const file = await fixtureBlob(detalhadoUrl) // 976 × 736, com textura e som
+    const { info } = await client.run({ kind: 'inspect', file, checkSizeControl: true })
+    if (!info.controlsSize) return // a tela não oferece comprimir onde o codificador ignora a taxa
+    const progress: number[] = []
+    const result = await client.run(
+      { kind: 'compress', file, width: 954, height: 720, bitrate: 420_000 },
+      { onProgress: (value) => progress.push(value) },
+    )
+    expect(result.blob.type).toBe('video/mp4')
+    expect(result.blob.size).toBeLessThan(file.size / 2)
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ format: 'MP4', videoCodec: 'avc', audioCodec: 'aac', width: 954, height: 720 })
+      expect(video.duration).toBeCloseTo(1, 1)
+      expect(await video.colorAt(0.5, 240, 180)).toBe('red')
+      expect(await video.colorAt(0.5, 715, 180)).toBe('green')
+      expect(await video.colorAt(0.5, 240, 540)).toBe('blue')
+      expect(await video.colorAt(0.5, 715, 540)).toBe('yellow')
+    } finally {
+      video.dispose()
+    }
+    expect(progress.length).toBeGreaterThan(0)
+  })
+
+  it('medidas ímpares, maiores que o vídeo ou taxa inválida são recusadas', async () => {
+    const file = await fixtureBlob(detalhadoUrl)
+    for (const job of [
+      { width: 955, height: 720, bitrate: 420_000 },
+      { width: 1200, height: 900, bitrate: 420_000 },
+      { width: 954, height: 720, bitrate: 0 },
+    ]) {
+      await expect(client.run({ kind: 'compress', file, ...job })).rejects.toEqual(new VideoJobError('unexpected'))
     }
   })
 })

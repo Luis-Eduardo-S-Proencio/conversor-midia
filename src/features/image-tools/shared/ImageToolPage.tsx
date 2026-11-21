@@ -1,4 +1,4 @@
-import { ArrowLeft, SlidersHorizontal, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, Eye, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ActionBar } from '../../../components/layout/ActionBar'
@@ -71,8 +71,11 @@ export function ImageToolPage({
   const filesHeading = useRef<HTMLHeadingElement>(null)
   const resultHeading = useRef<HTMLHeadingElement>(null)
   const pickerButton = useRef<HTMLButtonElement>(null)
+  const compareRef = useRef<HTMLDivElement>(null)
   const focusPickerWhenEmpty = useRef(false)
   const supported = supportsImageWorker()
+  const [onlyItem] = items
+  const singleResult = items.length === 1 && onlyItem?.status === 'done' && Boolean(onlyItem.output?.url)
 
   usePageFileDrop(batch.addFiles, supported && !summary.isProcessing)
 
@@ -101,6 +104,14 @@ export function ImageToolPage({
     }
     batch.remove(id)
     filesHeading.current?.focus()
+  }
+
+  /** Leva até a comparação (no celular ela fica acima do painel) e escolhe "Como ficou", que recebe o foco. */
+  function showResult() {
+    const comparison = compareRef.current
+    if (!comparison) return
+    comparison.scrollIntoView({ block: 'start' })
+    comparison.querySelector<HTMLElement>('[role="radio"]')?.click()
   }
 
   function handleDownload(id: string) {
@@ -156,6 +167,7 @@ export function ImageToolPage({
               singleImage={singleImage}
               renderPreview={renderPreview}
               progressVerb={labels.progress}
+              compareRef={compareRef}
               onAdd={batch.addFiles}
               onRemove={handleRemove}
               onClear={handleReset}
@@ -167,7 +179,14 @@ export function ImageToolPage({
               className="grid gap-5 rounded-lg border border-border bg-surface p-4 md:p-5 lg:sticky lg:top-20"
             >
               {summary.hasResults ? (
-                <BatchResult items={items} labels={labels} headingRef={resultHeading} />
+                <>
+                  <BatchResult items={items} labels={labels} headingRef={resultHeading} />
+                  {singleResult && (
+                    <Button icon={Eye} onClick={showResult}>
+                      Ver como ficou
+                    </Button>
+                  )}
+                </>
               ) : (
                 <>
                   <h2 id={optionsHeadingId} className="text-lg font-semibold tracking-tight">

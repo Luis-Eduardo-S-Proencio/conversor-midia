@@ -51,6 +51,8 @@ export function useImageBatch(labels: BatchLabels, { singleImage = false }: { si
   const client = useRef<ImageWorkerClient | null>(null)
   const files = useRef(new Map<string, File>())
   const results = useRef(new Map<string, File>())
+  /** URLs temporárias dos resultados, para ver como ficou. */
+  const resultUrls = useRef(new Map<string, string>())
   const objectUrls = useRef(new Map<string, string[]>())
   const preparing = useRef(new Map<string, AbortController>())
   const activeRun = useRef<AbortController | null>(null)
@@ -62,17 +64,28 @@ export function useImageBatch(labels: BatchLabels, { singleImage = false }: { si
 
   const summary = useMemo(() => summarizeBatch(state.items), [state.items])
 
-  const releaseItem = useCallback((id: string) => {
-    preparing.current.get(id)?.abort()
-    preparing.current.delete(id)
-    for (const url of objectUrls.current.get(id) ?? []) URL.revokeObjectURL(url)
-    objectUrls.current.delete(id)
-    files.current.delete(id)
+  /** Descarta o resultado de um arquivo e libera a URL temporária dele. */
+  const dropResult = useCallback((id: string) => {
     results.current.delete(id)
+    const url = resultUrls.current.get(id)
+    if (url) URL.revokeObjectURL(url)
+    resultUrls.current.delete(id)
   }, [])
 
+  const releaseItem = useCallback(
+    (id: string) => {
+      preparing.current.get(id)?.abort()
+      preparing.current.delete(id)
+      for (const url of objectUrls.current.get(id) ?? []) URL.revokeObjectURL(url)
+      objectUrls.current.delete(id)
+      files.current.delete(id)
+      dropResult(id)
+    },
+    [dropResult],
+  )
+
   const releaseAll = useCallback(() => {
-    const ids = new Set([...files.current.keys(), ...objectUrls.current.keys(), ...results.current.keys()])
+    const ids = new Set([...files.current.keys(), ...objectUrls.current.keys(), ...results.current.keys(), ...resultUrls.current.keys()])
     for (const id of ids) releaseItem(id)
   }, [releaseItem])
 
@@ -156,9 +169,9 @@ export function useImageBatch(labels: BatchLabels, { singleImage = false }: { si
   /** Resultados sempre refletem as opções atuais: mudou alguma, os prontos voltam para a fila. */
   const invalidateResults = useCallback(() => {
     if (!items.current.some((item) => item.status === 'done')) return
-    for (const item of items.current) if (item.status === 'done') results.current.delete(item.id)
+    for (const item of items.current) if (item.status === 'done') dropResult(item.id)
     dispatch({ type: 'invalidated' })
-  }, [])
+  }, [dropResult])
 
   const run = useCallback(
     async (process: BatchProcess) => {
@@ -185,8 +198,11 @@ export function useImageBatch(labels: BatchLabels, { singleImage = false }: { si
           const output = await process(file, item, { client: worker, signal: controller.signal })
           const [name = output.name] = uniqueFileNames([output.name], taken)
           taken.push(name)
-          results.current.set(item.id, new File([output.blob], name, { type: output.blob.type }))
-          dispatch({ type: 'processed', id: item.id, output: { name, size: output.blob.size, note: output.note } })
+          const resultFile = new File([output.blob], name, { type: output.blob.type })
+          results.current.set(item.id, resultFile)
+          const url = URL.createObjectURL(resultFile)
+          resultUrls.current.set(item.id, url)
+          dispatch({ type: 'processed', id: item.id, output: { name, size: output.blob.size, note: output.note, url } })
           succeeded += 1
         } catch (error) {
           if (isAbortError(error)) break

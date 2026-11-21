@@ -14,6 +14,8 @@ interface FilePreviewProps {
   backdrop?: string
   /** Giro e espelhamento escolhidos: a prévia já mostra a imagem como o resultado sairá. */
   orientation?: Orientation
+  /** O navegador não conseguiu mostrar a imagem (ex.: TIFF fora do Safari). */
+  onError?: () => void
   className?: string
 }
 
@@ -43,7 +45,7 @@ function orientedLayout(natural: Dimensions, orientation: Orientation): { box: C
   }
 }
 
-export function FilePreview({ src, alt, backdrop, orientation, className }: FilePreviewProps) {
+export function FilePreview({ src, alt, backdrop, orientation, onError, className }: FilePreviewProps) {
   const [natural, setNatural] = useState<Dimensions>()
   const layout = orientation && !isUpright(orientation) && natural ? orientedLayout(natural, orientation) : undefined
 
@@ -56,6 +58,7 @@ export function FilePreview({ src, alt, backdrop, orientation, className }: File
           alt={alt}
           decoding="async"
           onLoad={(event) => setNatural({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })}
+          onError={onError}
           className={cx(!layout && 'max-h-[50dvh] w-auto max-w-full object-contain', !backdrop && 'bg-checker')}
           style={{ ...(backdrop ? { backgroundColor: backdrop } : undefined), ...layout?.image }}
         />

@@ -14,6 +14,8 @@ export interface BatchOutputInfo {
   size: number
   /** Observação sobre o resultado (ex.: "mantida a original"). */
   note?: string
+  /** URL temporária do resultado, para ver como ficou; liberada quando o resultado é descartado. */
+  url?: string
 }
 
 export interface BatchItem {

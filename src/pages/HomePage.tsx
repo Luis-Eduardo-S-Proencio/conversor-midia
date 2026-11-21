@@ -36,7 +36,7 @@ export function HomePage() {
               to="/videos"
               icon={Film}
               title="Vídeos"
-              description="Cortar trechos e recortar o quadro. Mais ferramentas em breve."
+              description="Cortar trechos, recortar o quadro e comprimir. Mais ferramentas em breve."
               meta="MP4 · MOV · WEBM"
             />
           </div>

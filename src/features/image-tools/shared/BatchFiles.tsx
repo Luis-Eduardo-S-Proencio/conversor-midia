@@ -1,8 +1,10 @@
-import { Download, Plus, RefreshCw, X } from 'lucide-react'
-import { useId, type ReactNode, type RefObject } from 'react'
+import { Download, Eye, Plus, RefreshCw, X } from 'lucide-react'
+import { useEffect, useId, useRef, useState, type ReactNode, type Ref, type RefObject } from 'react'
+import { CompareView } from '../../../components/tool/CompareView'
 import { FileListItem, type FileItemState, type MessageTone } from '../../../components/tool/FileListItem'
 import { FilePickerButton } from '../../../components/tool/FilePickerButton'
 import { FilePreview } from '../../../components/tool/FilePreview'
+import { ResultImage } from '../../../components/tool/ResultMedia'
 import { Alert } from '../../../components/ui/Alert'
 import { Button, IconButton } from '../../../components/ui/Button'
 import { formatBytes, formatFileMeta } from '../../../core/format'
@@ -64,10 +66,33 @@ interface BatchFilesProps {
   renderPreview?: (item: BatchItem) => ReactNode
   /** Gerúndio da ferramenta ("Comprimindo"), para o nome da barra de progresso. */
   progressVerb: string
+  /** A comparação do arquivo único, para o botão "Ver como ficou" do painel levar até ela. */
+  compareRef?: Ref<HTMLDivElement>
   onAdd: (files: File[]) => void
   onRemove: (id: string) => void
   onClear: () => void
   onDownload: (id: string) => void
+}
+
+interface ResultComparisonProps {
+  item: BatchItem
+  /** Nome acessível da prévia original. */
+  name: string
+  containerRef?: Ref<HTMLDivElement>
+}
+
+/** Como ficou e o original, um de cada vez. A prévia original sai sem o giro e o fundo escolhidos: é a imagem de antes. */
+function ResultComparison({ item, name, containerRef }: ResultComparisonProps) {
+  const url = item.output?.url
+  if (!url || !item.output || !item.previewUrl) return null
+  return (
+    <CompareView
+      resultKey={url}
+      containerRef={containerRef}
+      result={<ResultImage key={url} src={url} name={item.output.name} />}
+      original={<FilePreview src={item.previewUrl} alt={`Pré-visualização de ${name}`} />}
+    />
+  )
 }
 
 /** Arquivo único com prévia grande; vários, em lista com miniaturas. Erros aparecem por arquivo. */
@@ -81,14 +106,29 @@ export function BatchFiles({
   singleImage = false,
   renderPreview,
   progressVerb,
+  compareRef,
   onAdd,
   onRemove,
   onClear,
   onDownload,
 }: BatchFilesProps) {
   const headingId = useId()
+  const viewingHeadingId = useId()
+  const viewingHeading = useRef<HTMLHeadingElement>(null)
+  const [viewingId, setViewingId] = useState<string>()
   const [first] = items
   const single = items.length === 1 && first?.previewUrl ? first : undefined
+  // No lote, a comparação de um arquivo pronto abre acima da lista; some quando o resultado é descartado.
+  const viewing = single ? undefined : items.find((item) => item.id === viewingId && item.status === 'done' && item.output?.url)
+
+  useEffect(() => {
+    if (viewingId) viewingHeading.current?.focus()
+  }, [viewingId])
+
+  function closeViewing() {
+    setViewingId(undefined)
+    headingRef.current?.focus()
+  }
 
   return (
     <section aria-labelledby={headingId} className="grid min-w-0 gap-4">
@@ -119,7 +159,9 @@ export function BatchFiles({
       )}
 
       {single?.previewUrl &&
-        (renderPreview ? (
+        (single.status === 'done' && single.output?.url ? (
+          <ResultComparison item={single} name={single.name} containerRef={compareRef} />
+        ) : renderPreview ? (
           renderPreview(single)
         ) : (
           <FilePreview
@@ -129,6 +171,18 @@ export function BatchFiles({
             orientation={orientation}
           />
         ))}
+
+      {viewing && (
+        <section aria-labelledby={viewingHeadingId} className="grid gap-3 rounded-lg border border-border bg-surface p-3">
+          <div className="flex items-center justify-between gap-3">
+            <h3 id={viewingHeadingId} ref={viewingHeading} tabIndex={-1} className="min-w-0 truncate text-sm font-semibold">
+              {`Como ficou: ${viewing.output?.name ?? viewing.name}`}
+            </h3>
+            <IconButton icon={X} label="Fechar a comparação" onClick={closeViewing} />
+          </div>
+          <ResultComparison item={viewing} name={viewing.name} />
+        </section>
+      )}
 
       <ul className="grid gap-px overflow-hidden rounded-lg border border-border bg-border">
         {items.map((item) => (
@@ -142,6 +196,9 @@ export function BatchFiles({
             {...describeItem(item)}
             actions={
               <>
+                {item.status === 'done' && !single && item.output?.url && (
+                  <IconButton icon={Eye} label={`Ver como ficou ${item.output.name}`} onClick={() => setViewingId(item.id)} />
+                )}
                 {item.status === 'done' && (
                   <IconButton icon={Download} label={`Baixar ${item.output?.name ?? item.name}`} onClick={() => onDownload(item.id)} />
                 )}

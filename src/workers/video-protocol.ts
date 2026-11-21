@@ -9,6 +9,8 @@ import type { TrimMode, TrimRange } from '../core/video/trim'
 export interface InspectJob {
   kind: 'inspect'
   file: Blob
+  /** Confere também se o codificador respeita a taxa pedida (só o comprimir precisa; leva uma fração de segundo). */
+  checkSizeControl?: boolean
 }
 
 /** Mantém só o trecho entre `start` e `end`, em segundos. */
@@ -37,7 +39,17 @@ export interface CropJob {
   crop: CropRect
 }
 
-export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob
+/** Refaz o vídeo nas medidas (pares, como ele aparece) e na taxa de bits pedidas; o som é copiado. */
+export interface CompressJob {
+  kind: 'compress'
+  file: Blob
+  width: number
+  height: number
+  /** Taxa do vídeo, em bits por segundo. */
+  bitrate: number
+}
+
+export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob | CompressJob
 
 /* Resultados, um por tipo de tarefa. */
 
@@ -51,6 +63,8 @@ export interface VideoInfo {
   /** Codec do vídeo como o Mediabunny o nomeia ("avc", "hevc", "vp9"...). */
   codec: string
   hasAudio: boolean
+  /** Taxa média do som, em bits por segundo (`null` sem som): entra na estimativa do tamanho comprimido. */
+  audioBitrate: number | null
   /** O navegador decodifica o vídeo e codifica o resultado: sem isso, só dá para copiar (corte rápido). */
   canTranscodeVideo: boolean
   /**
@@ -60,6 +74,11 @@ export interface VideoInfo {
   canTranscodeAudio: boolean
   /** Há mais de uma faixa de vídeo ou de áudio: o resultado fica só com as principais. */
   extraTracks: boolean
+  /**
+   * O codificador deste navegador gera arquivos menores quando a taxa pedida é menor (o do Firefox,
+   * ao menos no Playwright, ignora a taxa no H.264). Só vem quando pedido em `checkSizeControl`.
+   */
+  controlsSize?: boolean
 }
 
 export interface InspectOutput {
@@ -86,7 +105,12 @@ export interface CropOutput {
   height: number
 }
 
-export type VideoJobOutput = InspectOutput | TrimOutput | JoinOutput | CropOutput
+export interface CompressOutput {
+  kind: 'compress'
+  blob: Blob
+}
+
+export type VideoJobOutput = InspectOutput | TrimOutput | JoinOutput | CropOutput | CompressOutput
 
 export type VideoOutputFor<J extends VideoJob> = Extract<VideoJobOutput, { kind: J['kind'] }>
 

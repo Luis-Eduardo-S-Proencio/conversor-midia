@@ -72,11 +72,20 @@ Marque ✔ ou ✘ e anote o que estranhar.
 29. Abra o vídeo curto: a área aparece sobre o vídeo. Arraste os cantos com o dedo; "Reproduzir" e a barra "Momento do vídeo" mostram outras partes do vídeo sob a área.
 30. Escolha 9:16 (ou 16:9, se o vídeo estiver deitado), recorte e baixe: o vídeo sai com só a área escolhida, em pé, com som. Anote o tempo.
 
+**Comprimir vídeo** (`/videos/comprimir`)
+
+31. Abra o vídeo longo da câmera: aparecem a resolução final e o tamanho estimado de cada nível. Comprima no nível Média e baixe: anote o tamanho antes e depois, o tempo e se a qualidade continua boa na tela do celular.
+32. No nível Forte, o vídeo sai em até 720p. Envie o resultado pelo WhatsApp e confira que ele abre e toca com som.
+
+**Ver como ficou** (todas as ferramentas)
+
+33. Depois de processar uma foto e um vídeo, a prévia mostra "Como ficou". Toque em "Original" para comparar e em "Ver como ficou" (no painel do resultado) para voltar. Num lote de fotos, o botão de olho de cada uma abre a comparação.
+
 **Uso geral**
 
-31. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels e no Recortar, os campos abrem o teclado numérico.
-32. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar."), cada toque em girar ou espelhar diz como a imagem ficou, e a área de recorte e os cantos têm nomes em português. No Cortar trecho, "Marcar início aqui" anuncia o tempo marcado.
-33. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
+34. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels e no Recortar, os campos abrem o teclado numérico.
+35. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar."), cada toque em girar ou espelhar diz como a imagem ficou, e a área de recorte e os cantos têm nomes em português. No Cortar trecho, "Marcar início aqui" anuncia o tempo marcado.
+36. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
 
 ## 4. Comportamentos já conhecidos
 
@@ -89,6 +98,7 @@ Confirme se acontecem; não precisam ser tratados como erro.
 - Converter, comprimir, redimensionar, girar, espelhar e recortar removem metadados, como localização e data. A exceção é quando a original é mantida. Os vídeos cortados e recortados também saem sem metadados.
 - Vídeo recortado ou cortado no modo Exato sai em H.264 (MP4 e MOV) ou VP9 (WEBM), recodificado em alta qualidade: pode ficar maior que o original.
 - O corte rápido guarda escondidos alguns segundos antes do início (até o quadro-chave anterior). A maioria dos players começa no ponto escolhido; alguns aplicativos e editores mostram esses segundos.
+- Comprimir mostra um tamanho estimado: o real pode ficar um pouco acima ou abaixo. Se não ficar menor que o original, o app entrega o original.
 - O limite é de 1 GB por vídeo. Num celular com pouca memória, vídeos bem menores que isso podem falhar com a mensagem de memória. **Anote o tamanho e a duração se acontecer.**
 
 ## 5. Resultado
@@ -101,6 +111,6 @@ Navegador e versão: (ex.: Safari; Chrome 131)
 Acesso: Vercel (https) ou rede local (http)
 Itens com problema: (número do item + o que aconteceu)
 Foto grande: resolução ___ · ___ s até a prévia · ___ s para converter · ___ s para redimensionar a 50%
-Vídeo: duração ___ · tamanho ___ · formato (HEVC/H.264) ___ · ___ s no corte exato · ___ s no corte rápido · ___ s para recortar
+Vídeo: duração ___ · tamanho ___ · formato (HEVC/H.264) ___ · ___ s no corte exato · ___ s no corte rápido · ___ s para recortar · comprimir (Média): ___ MB → ___ MB em ___ s
 Prints ou gravação de tela dos problemas
 ```

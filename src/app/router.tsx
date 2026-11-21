@@ -87,6 +87,14 @@ export const router = createBrowserRouter([
         },
       },
       {
+        path: 'videos/comprimir',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { CompressPage } = await import('../features/video-tools/compress/CompressPage')
+          return { Component: CompressPage }
+        },
+      },
+      {
         path: 'videos/recortar',
         handle: { hideBottomNav: true } satisfies RouteHandle,
         lazy: async () => {

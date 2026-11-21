@@ -1,12 +1,14 @@
-import { ArrowLeft, CircleCheck, Download, RefreshCw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, CircleCheck, Download, Eye, RefreshCw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ActionBar } from '../../../components/layout/ActionBar'
+import { CompareView } from '../../../components/tool/CompareView'
+import { ResultVideo } from '../../../components/tool/ResultMedia'
 import { Container } from '../../../components/layout/Container'
 import { PageHeader } from '../../../components/layout/PageHeader'
 import { saveBlob } from '../../../components/tool/download'
 import { Dropzone } from '../../../components/tool/Dropzone'
-import { FileListItem, type FileItemState } from '../../../components/tool/FileListItem'
+import { FileListItem, type FileItemState, type MessageTone } from '../../../components/tool/FileListItem'
 import { FilePickerButton } from '../../../components/tool/FilePickerButton'
 import { ResultSummary } from '../../../components/tool/ResultSummary'
 import { usePageFileDrop } from '../../../components/tool/usePageFileDrop'
@@ -33,6 +35,7 @@ interface ItemView {
   state: FileItemState
   statusLabel?: string
   message?: string
+  messageTone?: MessageTone
 }
 
 function describeItem({ phase, message, result }: VideoToolState): ItemView {
@@ -43,7 +46,8 @@ function describeItem({ phase, message, result }: VideoToolState): ItemView {
     case 'failed':
       return { state: 'error', message }
     case 'done':
-      return { state: 'done', statusLabel: result ? formatBytes(result.size) : undefined }
+      // Observação sobre o resultado (ex.: original mantido) no tom informativo, sem cor de erro.
+      return { state: 'done', statusLabel: result ? formatBytes(result.size) : undefined, message: result?.note, messageTone: 'info' }
     default:
       // Processando: o progresso aparece junto do botão de cancelar, não aqui.
       return { state: 'ready' }
@@ -77,6 +81,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
   const fileHeadingId = useId()
   const resultHeading = useRef<HTMLHeadingElement>(null)
   const pickerButton = useRef<HTMLButtonElement>(null)
+  const compareRef = useRef<HTMLDivElement>(null)
   const focusPickerWhenEmpty = useRef(false)
   const supported = supportsVideoWorker()
   const busy = state.phase === 'processing'
@@ -99,6 +104,14 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
   function handleReset() {
     focusPickerWhenEmpty.current = true
     tool.reset()
+  }
+
+  /** Leva até a comparação (no celular ela fica acima do painel) e escolhe "Como ficou", que recebe o foco. */
+  function showResult() {
+    const comparison = compareRef.current
+    if (!comparison) return
+    comparison.scrollIntoView({ block: 'start' })
+    comparison.querySelector<HTMLElement>('[role="radio"]')?.click()
   }
 
   function handleDownload() {
@@ -166,7 +179,17 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
                 </Alert>
               )}
 
-              {opened && preview}
+              {opened &&
+                (state.phase === 'done' && state.result ? (
+                  <CompareView
+                    resultKey={state.result.url}
+                    containerRef={compareRef}
+                    result={<ResultVideo key={state.result.url} src={state.result.url} name={state.result.name} />}
+                    original={preview}
+                  />
+                ) : (
+                  preview
+                ))}
 
               {state.file && (
                 <ul className="grid gap-px overflow-hidden rounded-lg border border-border bg-border">
@@ -200,6 +223,9 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
                   </p>
                   <ResultSummary beforeBytes={state.file.size} afterBytes={state.result.size} />
                   {resultDetails}
+                  <Button icon={Eye} onClick={showResult}>
+                    Ver como ficou
+                  </Button>
                 </div>
               ) : (
                 <>

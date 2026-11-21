@@ -17,13 +17,26 @@ const ORIGIN = 'http://localhost:4999'
  * seconds: uma cor por segundo (vermelho, verde, azul, amarelo, e repete).
  * quadrants: vermelho, verde, azul e amarelo nos quadrantes (em leitura: esquerda→direita, cima→baixo).
  * halves: metade esquerda vermelha, direita azul.
+ * textured: os quadrantes com ruído que muda a cada quadro (textura que pesa como um vídeo real, para comprimir).
  */
-type Drawing = 'seconds' | 'quadrants' | 'halves'
+type Drawing = 'seconds' | 'quadrants' | 'halves' | 'textured'
 
 interface Recipe {
   container: 'mp4' | 'mov' | 'webm' | 'mkv'
   duration: number
-  video?: { codec: 'avc' | 'vp9'; width: number; height: number; drawing: Drawing; rotation?: 0 | 90 }
+  video?: {
+    codec: 'avc' | 'vp9'
+    width: number
+    height: number
+    drawing: Drawing
+    rotation?: 0 | 90
+    /** Quadros por segundo; o padrão é 30. */
+    fps?: number
+    /** Taxa fixa do vídeo, em bits por segundo; sem ela, qualidade alta. */
+    bitrate?: number
+    /** Lado dos blocos de ruído da textura, em pixels (padrão 8); blocos maiores pesam menos. */
+    noiseBlock?: number
+  }
   audio?: { codec: 'aac' | 'opus' }
   /** `false`: índice (moov) no fim do arquivo, para gerar um MP4 truncado ilegível. */
   fastStart?: false
@@ -37,7 +50,7 @@ interface Recipe {
  */
 async function encode(recipe: Recipe): Promise<number[]> {
   const M: typeof import('mediabunny') = await import('/mediabunny.js' as string)
-  const FPS = 30
+  const FPS = recipe.video?.fps ?? 30
   const KEY_FRAME_INTERVAL = 2 // segundos: quadros-chave em 0, 2, 4...
   const COLORS = ['#ff0000', '#00ff00', '#0000ff', '#ffff00']
   const formats = {
@@ -51,7 +64,7 @@ async function encode(recipe: Recipe): Promise<number[]> {
   let draw: ((time: number) => void) | undefined
   let videoSource: InstanceType<typeof M.CanvasSource> | undefined
   if (recipe.video) {
-    const { width, height, drawing, codec, rotation = 0 } = recipe.video
+    const { width, height, drawing, codec, rotation = 0, bitrate, noiseBlock = 8 } = recipe.video
     const canvas = new OffscreenCanvas(width, height)
     const context = canvas.getContext('2d')
     if (!context) throw new Error('canvas indisponível')
@@ -59,9 +72,17 @@ async function encode(recipe: Recipe): Promise<number[]> {
       context.fillStyle = color
       context.fillRect(x, y, w, h)
     }
+    // Ruído reproduzível: o mesmo gerador (mulberry32) com a mesma semente a cada execução.
+    let seed = 20261121
+    const random = () => {
+      seed = (seed + 0x6d2b79f5) | 0
+      let value = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+      value = (value + Math.imul(value ^ (value >>> 7), 61 | value)) ^ value
+      return ((value ^ (value >>> 14)) >>> 0) / 4294967296
+    }
     draw = (time) => {
       if (drawing === 'seconds') fill(COLORS[Math.floor(time) % 4] ?? '#000', 0, 0, width, height)
-      else if (drawing === 'quadrants') {
+      else if (drawing === 'quadrants' || drawing === 'textured') {
         const [w, h] = [width / 2, height / 2]
         ;[
           [0, 0],
@@ -69,12 +90,25 @@ async function encode(recipe: Recipe): Promise<number[]> {
           [0, h],
           [w, h],
         ].forEach(([x = 0, y = 0], index) => fill(COLORS[index] ?? '#000', x, y, w, h))
+        if (drawing === 'textured') {
+          // Blocos com até 40 de variação: pesa como um vídeo real, e a cor de cada quadrante continua
+          // reconhecível pelo canal dominante.
+          const BLOCK = noiseBlock
+          for (let y = 0; y < height; y += BLOCK) {
+            for (let x = 0; x < width; x += BLOCK) {
+              const shade = Math.round((random() - 0.5) * 80)
+              context.fillStyle = shade >= 0 ? `rgba(255, 255, 255, ${shade / 255})` : `rgba(0, 0, 0, ${-shade / 255})`
+              context.fillRect(x, y, BLOCK, BLOCK)
+            }
+          }
+        }
       } else {
         fill('#ff0000', 0, 0, width / 2, height)
         fill('#0000ff', width / 2, 0, width / 2, height)
       }
     }
-    videoSource = new M.CanvasSource(canvas, { codec, quality: new M.Quality('high'), keyFrameInterval: KEY_FRAME_INTERVAL })
+    const quality = bitrate ? new M.Quality({ bitrate }) : new M.Quality('high')
+    videoSource = new M.CanvasSource(canvas, { codec, quality, keyFrameInterval: KEY_FRAME_INTERVAL })
     output.addVideoTrack(videoSource, { frameRate: FPS, rotation })
   }
 
@@ -132,6 +166,19 @@ const RECIPES: Record<string, Recipe> = {
   'longo.mp4': { container: 'mp4', duration: 30, video: { codec: 'avc', width: 640, height: 360, drawing: 'seconds' } },
   'so-audio.mp4': { container: 'mp4', duration: 1, audio: { codec: 'aac' } },
   'video.mkv': { container: 'mkv', duration: 1, video: { codec: 'vp9', width: 160, height: 120, drawing: 'quadrants' } },
+  // Com textura e em qualidade alta: comprimir reduz bastante; o lado menor (736) passa de 720 (nível Forte).
+  'detalhado.mp4': {
+    container: 'mp4',
+    duration: 1,
+    video: { codec: 'avc', width: 976, height: 736, drawing: 'textured', fps: 6 },
+    audio: { codec: 'aac' },
+  },
+  // Com textura, mas já numa taxa baixa: comprimir no nível Leve não diminui, e o original é mantido.
+  'ja-comprimido.mp4': {
+    container: 'mp4',
+    duration: 1,
+    video: { codec: 'avc', width: 640, height: 360, drawing: 'textured', fps: 15, bitrate: 60_000, noiseBlock: 40 },
+  },
 }
 
 const browser = await chromium.launch()

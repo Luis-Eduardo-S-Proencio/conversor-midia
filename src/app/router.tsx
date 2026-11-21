@@ -102,6 +102,14 @@ export const router = createBrowserRouter([
           return { Component: VideoCropPage }
         },
       },
+      {
+        path: 'videos/extrair-audio',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { ExtractAudioPage } = await import('../features/video-tools/audio/ExtractAudioPage')
+          return { Component: ExtractAudioPage }
+        },
+      },
       ...devRoutes,
       { path: '*', element: <NotFoundPage /> },
     ],

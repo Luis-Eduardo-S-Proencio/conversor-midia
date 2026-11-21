@@ -1,9 +1,9 @@
-import { ArrowLeft, CircleCheck, Download, Eye, RefreshCw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, CircleCheck, Download, Eye, Headphones, RefreshCw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ActionBar } from '../../../components/layout/ActionBar'
 import { CompareView } from '../../../components/tool/CompareView'
-import { ResultVideo } from '../../../components/tool/ResultMedia'
+import { ResultAudio, ResultVideo } from '../../../components/tool/ResultMedia'
 import { Container } from '../../../components/layout/Container'
 import { PageHeader } from '../../../components/layout/PageHeader'
 import { saveBlob } from '../../../components/tool/download'
@@ -19,7 +19,7 @@ import { formatBytes } from '../../../core/format'
 import { ACCEPTED_VIDEO_TYPES } from '../../../core/video/formats'
 import { supportsVideoWorker } from '../../../workers/video-client'
 import { VideoActions } from './VideoActions'
-import type { VideoTool, VideoToolLabels, VideoToolState } from './useVideoTool'
+import { outputTexts, type VideoTool, type VideoToolLabels, type VideoToolState } from './useVideoTool'
 import { describeVideo } from './video-meta'
 
 function BackToVideos() {
@@ -84,6 +84,8 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
   const compareRef = useRef<HTMLDivElement>(null)
   const focusPickerWhenEmpty = useRef(false)
   const supported = supportsVideoWorker()
+  const texts = outputTexts(labels)
+  const ResultMedia = labels.output === 'audio' ? ResultAudio : ResultVideo
   const busy = state.phase === 'processing'
   const opened = state.phase === 'ready' || state.phase === 'processing' || state.phase === 'done' || state.phase === 'failed'
 
@@ -184,7 +186,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
                   <CompareView
                     resultKey={state.result.url}
                     containerRef={compareRef}
-                    result={<ResultVideo key={state.result.url} src={state.result.url} name={state.result.name} />}
+                    result={<ResultMedia key={state.result.url} src={state.result.url} name={state.result.name} />}
                     original={preview}
                   />
                 ) : (
@@ -216,15 +218,16 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
                 <div className="grid gap-4">
                   <h2 ref={resultHeading} tabIndex={-1} className="flex items-center gap-2 text-lg font-semibold tracking-tight">
                     <Icon icon={CircleCheck} className="text-success" />
-                    {`Vídeo ${labels.done}`}
+                    {`${texts.noun} ${labels.done}`}
                   </h2>
                   <p className="truncate font-mono text-xs text-fg-muted" title={state.result.name}>
                     {state.result.name}
                   </p>
-                  <ResultSummary beforeBytes={state.file.size} afterBytes={state.result.size} />
+                  {/* O som extraído não se compara ao vídeo de onde saiu: a ferramenta mostra o tamanho nos detalhes. */}
+                  {labels.output !== 'audio' && <ResultSummary beforeBytes={state.file.size} afterBytes={state.result.size} />}
                   {resultDetails}
-                  <Button icon={Eye} onClick={showResult}>
-                    Ver como ficou
+                  <Button icon={labels.output === 'audio' ? Headphones : Eye} onClick={showResult}>
+                    {texts.view}
                   </Button>
                 </div>
               ) : (

@@ -1,9 +1,10 @@
 import type { CropRect } from '../core/image/crop'
+import type { AudioFormat } from '../core/video/audio'
 import type { VideoFormat } from '../core/video/formats'
 import type { VideoErrorCode } from '../core/video/messages'
 import type { TrimMode, TrimRange } from '../core/video/trim'
 
-/* Tarefas que o Worker de vídeo executa. O resultado sai sempre no mesmo formato do original. */
+/* Tarefas que o Worker de vídeo executa. O vídeo resultante sai sempre no mesmo formato do original. */
 
 /** Abre o vídeo: formato, duração, medidas e o que este navegador consegue fazer com ele. */
 export interface InspectJob {
@@ -49,7 +50,20 @@ export interface CompressJob {
   bitrate: number
 }
 
-export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob | CompressJob
+/**
+ * Salva só o som, no formato pedido. Quando o formato comporta o som original (AAC em M4A, Opus em WEBM),
+ * ele é copiado sem refazer; senão, é refeito (M4A em AAC, MP3).
+ */
+export interface ExtractAudioJob {
+  kind: 'extract-audio'
+  file: Blob
+  format: AudioFormat
+}
+
+export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob | CompressJob | ExtractAudioJob
+
+/** Tarefas que geram um arquivo (todas menos abrir). */
+export type ProcessingJob = Exclude<VideoJob, InspectJob>
 
 /* Resultados, um por tipo de tarefa. */
 
@@ -72,6 +86,14 @@ export interface VideoInfo {
    * no WEBM); sempre verdadeiro sem som. Recodificam o som: remover partes e o corte exato de WEBM.
    */
   canTranscodeAudio: boolean
+  /** Codec do som como o Mediabunny o nomeia ("aac", "opus", "pcm-s16"...); `null` sem som. */
+  audioCodec: string | null
+  /** O navegador decodifica o som (falso sem som): é preciso para refazê-lo em outro formato. */
+  canDecodeAudio: boolean
+  /** O navegador decodifica o som e gera AAC (extrair em M4A refeito). O Firefox não gera AAC. */
+  canEncodeAac: boolean
+  /** O navegador decodifica o som e roda o codificador próprio de MP3 (WebAssembly). */
+  canEncodeMp3: boolean
   /** Há mais de uma faixa de vídeo ou de áudio: o resultado fica só com as principais. */
   extraTracks: boolean
   /**
@@ -110,7 +132,14 @@ export interface CompressOutput {
   blob: Blob
 }
 
-export type VideoJobOutput = InspectOutput | TrimOutput | JoinOutput | CropOutput | CompressOutput
+export interface ExtractAudioOutput {
+  kind: 'extract-audio'
+  blob: Blob
+  /** O som foi copiado como estava, sem refazer. */
+  copied: boolean
+}
+
+export type VideoJobOutput = InspectOutput | TrimOutput | JoinOutput | CropOutput | CompressOutput | ExtractAudioOutput
 
 export type VideoOutputFor<J extends VideoJob> = Extract<VideoJobOutput, { kind: J['kind'] }>
 

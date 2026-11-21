@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import { DownloadActions } from '../../../components/tool/DownloadActions'
 import { Button } from '../../../components/ui/Button'
 import { ProgressBar } from '../../../components/ui/ProgressBar'
-import type { VideoToolLabels, VideoToolState } from './useVideoTool'
+import { outputTexts, type VideoToolLabels, type VideoToolState } from './useVideoTool'
 
 interface VideoActionsProps {
   state: VideoToolState
@@ -19,11 +19,12 @@ interface VideoActionsProps {
 
 /** Ação principal de cada fase: começar, acompanhar e cancelar, ou baixar. Usada no painel e na barra do celular. */
 export function VideoActions({ state, labels, icon, size, canStart, onStart, onCancel, onReset, getFile }: VideoActionsProps) {
+  const texts = outputTexts(labels)
   if (state.phase === 'processing') {
     return (
       <div className="grid gap-3">
         {/* O leitor de tela recebe só o início e o fim, pela região de status da página. */}
-        <ProgressBar label={`${labels.progress} o vídeo`} value={state.progress * 100} />
+        <ProgressBar label={`${labels.progress} ${texts.object}`} value={state.progress * 100} />
         <Button size={size} block onClick={onCancel}>
           Cancelar
         </Button>
@@ -38,9 +39,9 @@ export function VideoActions({ state, labels, icon, size, canStart, onStart, onC
     }
     return (
       <div className="grid gap-2">
-        <DownloadActions getFiles={getFiles} downloadLabel="Baixar vídeo" size={size} stacked />
+        <DownloadActions getFiles={getFiles} downloadLabel={texts.download} size={size} stacked />
         <Button variant="ghost" size={size} block onClick={onReset}>
-          {`${labels.action} outro vídeo`}
+          {labels.again ?? `${labels.action} outro vídeo`}
         </Button>
       </div>
     )

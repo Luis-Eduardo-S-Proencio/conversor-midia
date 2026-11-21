@@ -1,4 +1,4 @@
-import { CircleAlert, Info } from 'lucide-react'
+import { CircleAlert } from 'lucide-react'
 import { useEffect, useId, useRef } from 'react'
 import { Alert } from '../../../components/ui/Alert'
 import { Icon } from '../../../components/ui/Icon'
@@ -6,6 +6,7 @@ import { SegmentedControl } from '../../../components/ui/SegmentedControl'
 import { VIDEO_FORMATS, codecLabel, type VideoFormat } from '../../../core/video/formats'
 import { formatTime } from '../../../core/video/time'
 import type { TrimAction, TrimField, TrimFocusRequest, TrimMode } from '../../../core/video/trim'
+import { Note } from '../shared/Note'
 import { RemovalParts } from './RemovalParts'
 import { TimeFields } from './TimeFields'
 import type { TrimEditor, VisibleTrimError } from './useTrimTool'
@@ -28,15 +29,6 @@ const MODE_DESCRIPTIONS: Record<TrimMode, string> = {
 const HINTS: Record<TrimAction, string> = {
   keep: 'Digite como 1:05,30 ou use os botões abaixo do vídeo.',
   remove: 'Digite como 1:05,30 ou use os botões abaixo do vídeo: eles marcam a parte destacada.',
-}
-
-function Note({ children }: { children: string }) {
-  return (
-    <p className="flex gap-2 text-xs text-fg-subtle">
-      <Icon icon={Info} size="sm" className="mt-px" />
-      <span>{children}</span>
-    </p>
-  )
 }
 
 function SectionTitle({ children }: { children: string }) {

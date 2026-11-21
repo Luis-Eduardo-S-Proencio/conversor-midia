@@ -12,6 +12,7 @@ export const PUBLIC_ROUTES = [
   { path: '/videos/cortar', heading: 'Cortar trecho' },
   { path: '/videos/recortar', heading: 'Recortar vídeo' },
   { path: '/videos/comprimir', heading: 'Comprimir vídeo' },
+  { path: '/videos/extrair-audio', heading: 'Extrair áudio' },
   { path: '/endereco-que-nao-existe', heading: 'Página não encontrada' },
 ] as const
 

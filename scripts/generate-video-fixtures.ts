@@ -37,7 +37,8 @@ interface Recipe {
     /** Lado dos blocos de ruído da textura, em pixels (padrão 8); blocos maiores pesam menos. */
     noiseBlock?: number
   }
-  audio?: { codec: 'aac' | 'opus' }
+  /** PCM: som sem compressão, como o de algumas câmeras (não tem cópia para arquivo de som). */
+  audio?: { codec: 'aac' | 'opus' | 'pcm-s16' }
   /** `false`: índice (moov) no fim do arquivo, para gerar um MP4 truncado ilegível. */
   fastStart?: false
   /** Título, comentário e localização, para conferir que o resultado sai sem metadados. */
@@ -115,8 +116,9 @@ async function encode(recipe: Recipe): Promise<number[]> {
   let audioSource: InstanceType<typeof M.AudioBufferSource> | undefined
   if (recipe.audio) {
     // Taxa baixa (a menor que o AAC do Chromium aceita): só importa haver som, e os arquivos ficam pequenos.
-    const bitrate = recipe.audio.codec === 'aac' ? 96_000 : 32_000
-    audioSource = new M.AudioBufferSource({ codec: recipe.audio.codec, quality: new M.Quality({ bitrate }) })
+    const { codec } = recipe.audio
+    const bitrate = codec === 'aac' ? 96_000 : 32_000
+    audioSource = new M.AudioBufferSource(codec === 'pcm-s16' ? { codec } : { codec, quality: new M.Quality({ bitrate }) })
     output.addAudioTrack(audioSource)
   }
   if (recipe.tags) {
@@ -165,6 +167,9 @@ const RECIPES: Record<string, Recipe> = {
   // Longo o bastante para cancelar no meio da recodificação (sem som: ele não muda o tempo de recodificar).
   'longo.mp4': { container: 'mp4', duration: 30, video: { codec: 'avc', width: 640, height: 360, drawing: 'seconds' } },
   'so-audio.mp4': { container: 'mp4', duration: 1, audio: { codec: 'aac' } },
+  // Para extrair o áudio: MOV com som e metadados (o arquivo de som sai sem eles), e MOV com som PCM.
+  'com-som.mov': { container: 'mov', duration: 2, video: { codec: 'avc', width: 160, height: 120, drawing: 'quadrants' }, audio: { codec: 'aac' }, tags: true },
+  'som-pcm.mov': { container: 'mov', duration: 1, video: { codec: 'avc', width: 160, height: 120, drawing: 'quadrants' }, audio: { codec: 'pcm-s16' } },
   'video.mkv': { container: 'mkv', duration: 1, video: { codec: 'vp9', width: 160, height: 120, drawing: 'quadrants' } },
   // Com textura e em qualidade alta: comprimir reduz bastante; o lado menor (736) passa de 720 (nível Forte).
   'detalhado.mp4': {

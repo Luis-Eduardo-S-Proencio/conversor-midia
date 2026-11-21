@@ -12,6 +12,7 @@ export type VideoRejectionReason =
 export const VIDEO_ERROR_CODES = [
   'read-failed',
   'no-video',
+  'no-audio',
   'codec-unsupported',
   'decode-unsupported',
   'encode-unsupported',
@@ -40,6 +41,7 @@ export function videoRejectionMessage(reason: VideoRejectionReason): string {
 const ERROR_MESSAGES: Record<VideoErrorCode, string> = {
   'read-failed': 'Não foi possível ler o vídeo. O arquivo pode estar corrompido ou incompleto.',
   'no-video': `Não há vídeo neste arquivo. ${CHOOSE_VIDEO}`,
+  'no-audio': 'Este vídeo não tem som para extrair. Escolha um vídeo com som.',
   'codec-unsupported': 'Este vídeo usa um formato de compressão que a ferramenta não lê.',
   'decode-unsupported': 'Este navegador não consegue decodificar este vídeo. Tente em outro navegador, como o Chrome, o Edge ou o Safari.',
   'encode-unsupported': 'Este navegador não consegue gerar o vídeo. Tente em outro navegador, como o Chrome, o Edge ou o Firefox.',

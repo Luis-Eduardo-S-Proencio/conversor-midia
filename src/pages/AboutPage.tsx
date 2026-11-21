@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 import { Container } from '../components/layout/Container'
 import { PageHeader } from '../components/layout/PageHeader'
 
+const LINK = 'text-accent-soft underline underline-offset-4 transition-colors hover:text-fg'
+
 function TextSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="grid gap-3">
@@ -37,8 +39,26 @@ export function AboutPage() {
           <TextSection id="formatos" title="Formatos">
             <p>
               Imagens: abre JPG, PNG e WEBP e gera JPG, PNG, WEBP, BMP, TIFF, ICO e PDF. Vídeos: abre MP4, MOV e WEBM para
-              cortar trechos, tirar partes do meio, recortar o quadro e comprimir, e o resultado sai no mesmo formato. As
-              demais ferramentas de vídeo, incluindo a de criar GIF, estão a caminho.
+              cortar trechos, tirar partes do meio, recortar o quadro e comprimir, e o resultado sai no mesmo formato; o som
+              do vídeo pode ser salvo sozinho em M4A, MP3 ou WEBM. As demais ferramentas de vídeo, incluindo a de criar GIF,
+              estão a caminho.
+            </p>
+          </TextSection>
+          <TextSection id="creditos" title="Créditos e licenças">
+            <p>
+              Os vídeos são lidos e gerados com o{' '}
+              <a href="https://mediabunny.dev" rel="noopener noreferrer" className={LINK}>
+                Mediabunny
+              </a>{' '}
+              (licença MPL-2.0). O MP3 é gerado pelo LAME, distribuído sob a{' '}
+              <a href="/licencas/lame-lgpl.txt" className={LINK}>
+                licença LGPL
+              </a>
+              , com o código-fonte em{' '}
+              <a href="https://lame.sourceforge.io" rel="noopener noreferrer" className={LINK}>
+                lame.sourceforge.io
+              </a>
+              .
             </p>
           </TextSection>
           <TextSection id="limites" title="Limites">

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { fixture } from './image-tool.ts'
-import { videoFixture } from './video-tool.ts'
+import { trackCspViolations, videoFixture } from './video-tool.ts'
 
 // A prévia local serve os cabeçalhos do vercel.json (ver vite.config.ts): o que passa aqui
 // é o que vai para produção.
@@ -14,6 +14,12 @@ test.describe('cabeçalhos de segurança', () => {
     expect(headers['content-security-policy']).toContain("object-src 'none'")
     // O player mostra o vídeo escolhido por URL temporária (blob:), e só ela além do próprio site.
     expect(headers['content-security-policy']).toContain("media-src 'self' blob:")
+    // O codificador de MP3 (WebAssembly) roda num Worker criado a partir de blob:. Só isso se abre:
+    // compilar WebAssembly não libera eval de JavaScript, e scripts embutidos continuam proibidos.
+    const directives = (headers['content-security-policy'] ?? '').split(';').map((directive) => directive.trim())
+    expect(directives).toContain("script-src 'self' 'wasm-unsafe-eval'")
+    expect(directives).toContain("worker-src 'self' blob:")
+    expect(headers['content-security-policy']).not.toMatch(/'unsafe-eval'|'unsafe-inline'/)
     expect(headers['x-content-type-options']).toBe('nosniff')
     expect(headers['referrer-policy']).toBe('strict-origin-when-cross-origin')
     expect(headers['permissions-policy']).toContain('camera=()')
@@ -30,16 +36,7 @@ test.describe('cabeçalhos de segurança', () => {
   })
 
   test('o fluxo completo roda sem nenhuma violação de CSP', async ({ page }) => {
-    const violations: string[] = []
-    page.on('console', (message) => {
-      const text = message.text()
-      if (/Content[- ]Security[- ]Policy|Refused to/i.test(text)) violations.push(text)
-    })
-    await page.addInitScript(() => {
-      document.addEventListener('securitypolicyviolation', (event) => {
-        console.error(`Content-Security-Policy: ${event.violatedDirective} bloqueou ${event.blockedURI}`)
-      })
-    })
+    const violations = await trackCspViolations(page)
 
     await page.goto('/')
     await page.getByRole('link', { name: /Converter imagem/ }).first().click()
@@ -70,6 +67,13 @@ test.describe('cabeçalhos de segurança', () => {
     await page.getByRole('textbox', { name: 'Início' }).fill('0:01,00')
     await page.getByRole('button', { name: 'Cortar', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'Vídeo cortado' })).toBeVisible()
+
+    // MP3: o codificador carrega sob demanda e roda em WebAssembly, num Worker criado pelo Worker de vídeo.
+    await page.goto('/videos/extrair-audio')
+    await page.locator('input[type="file"]').first().setInputFiles(videoFixture('segundos.mp4'))
+    await page.getByRole('radio', { name: 'MP3' }).click()
+    await page.getByRole('button', { name: 'Extrair áudio', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Áudio extraído' })).toBeVisible({ timeout: 30_000 })
     expect(violations).toEqual([])
   })
 })

@@ -1,19 +1,9 @@
-import { Info, TriangleAlert, type LucideIcon } from 'lucide-react'
-import { Icon } from '../../../components/ui/Icon'
+import { TriangleAlert } from 'lucide-react'
 import { SegmentedControl } from '../../../components/ui/SegmentedControl'
-import { cx } from '../../../components/ui/cx'
 import { describeSizeChange, formatBytes, formatDimensions } from '../../../core/format'
 import { COMPRESSION_LEVELS, LEVEL_SETTINGS, type CompressionLevel } from '../../../core/video/compress'
+import { Note } from '../shared/Note'
 import type { CompressionPlan } from './useCompressTool'
-
-function Note({ children, icon = Info, tone = 'text-fg-subtle' }: { children: string; icon?: LucideIcon; tone?: string }) {
-  return (
-    <p className={cx('flex gap-2 text-xs', tone)}>
-      <Icon icon={icon} size="sm" className="mt-px" />
-      <span>{children}</span>
-    </p>
-  )
-}
 
 interface CompressOptionsProps {
   level: CompressionLevel

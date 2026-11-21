@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { checkVideoFile, type VideoCheck } from '../../../core/video/inspect'
 import { videoErrorMessage, videoRejectionMessage } from '../../../core/video/messages'
 import { VideoJobError, createVideoWorkerClient, isAbortError, type VideoWorkerClient } from '../../../workers/video-client'
-import type { CompressJob, CropJob, JoinJob, TrimJob, VideoInfo } from '../../../workers/video-protocol'
+import type { ProcessingJob, VideoInfo } from '../../../workers/video-protocol'
 
 /** Textos que mudam de uma ferramenta de vídeo para outra ("Cortar" / "Recortar"). */
 export interface VideoToolLabels {
@@ -14,6 +14,17 @@ export interface VideoToolLabels {
   done: string
   /** Anúncio ao cancelar: "Corte cancelado.", "Compressão cancelada.". */
   cancelled: string
+  /** O que a ferramenta entrega; o padrão é um vídeo. Com `audio`: "Áudio extraído", "Baixar áudio" e player de som. */
+  output?: 'video' | 'audio'
+  /** Botão para recomeçar com outro vídeo; o padrão é "{action} outro vídeo". */
+  again?: string
+}
+
+/** Textos que dependem do que a ferramenta entrega (vídeo ou som). */
+export function outputTexts({ output = 'video' }: VideoToolLabels) {
+  return output === 'audio'
+    ? { noun: 'Áudio', object: 'o áudio', download: 'Baixar áudio', view: 'Ouvir como ficou' }
+    : { noun: 'Vídeo', object: 'o vídeo', download: 'Baixar vídeo', view: 'Ver como ficou' }
 }
 
 export type VideoPhase = 'empty' | 'opening' | 'rejected' | 'ready' | 'processing' | 'done' | 'failed'
@@ -36,7 +47,7 @@ export interface VideoToolState {
   notice?: string
 }
 
-type ProcessJob = (file: File) => TrimJob | JoinJob | CropJob | CompressJob
+type ProcessJob = (file: File) => ProcessingJob
 
 /** O que entregar: o arquivo do Worker com outro nome, ou outra decisão (ex.: manter o original). */
 export interface Delivery {
@@ -183,7 +194,8 @@ export function useVideoTool(labels: VideoToolLabels, { checkSizeControl = false
       running.current = controller
       dropResult()
       setState((current) => ({ ...current, phase: 'processing', progress: 0, message: undefined, result: undefined }))
-      setAnnouncement(`${labels.progress} o vídeo…`)
+      const texts = outputTexts(labels)
+      setAnnouncement(`${labels.progress} ${texts.object}…`)
       try {
         const output = await worker.run(makeJob(chosen), {
           signal: controller.signal,
@@ -196,7 +208,7 @@ export function useVideoTool(labels: VideoToolLabels, { checkSizeControl = false
         resultUrl.current = url
         setState((current) => ({ ...current, phase: 'done', progress: 1, result: { name: done.name, size: done.size, note: delivery.note, url } }))
         // Com observação (ex.: original mantido), ela é o que importa ouvir.
-        setAnnouncement(delivery.note ? `${delivery.note} Pronto para baixar.` : `Vídeo ${labels.done}. Pronto para baixar.`)
+        setAnnouncement(delivery.note ? `${delivery.note} Pronto para baixar.` : `${texts.noun} ${labels.done}. Pronto para baixar.`)
         setCompletedRuns((count) => count + 1)
       } catch (error) {
         // Cancelado pela pessoa (volta às opções) ou porque ela trocou de vídeo ou saiu (nada a fazer).

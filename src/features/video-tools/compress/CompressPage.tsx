@@ -1,31 +1,12 @@
 import { Minimize2 } from 'lucide-react'
-import { useState } from 'react'
 import { Alert } from '../../../components/ui/Alert'
 import { formatDimensions } from '../../../core/format'
 import { codecLabel } from '../../../core/video/formats'
+import { SourcePlayer } from '../shared/SourcePlayer'
 import { VideoToolPage } from '../shared/VideoToolPage'
 import { COMPRESS_LABELS } from './settings'
 import { CompressOptions } from './CompressOptions'
 import { useCompressTool } from './useCompressTool'
-
-/** O vídeo escolhido, com os controles do navegador (teclado incluído), para conferir antes de comprimir. */
-function Player({ src, name }: { src: string; name: string }) {
-  const [unplayable, setUnplayable] = useState(false)
-  return (
-    <div className="grid gap-3">
-      <video
-        src={src}
-        controls
-        playsInline
-        preload="metadata"
-        aria-label={`Vídeo ${name}`}
-        onError={() => setUnplayable(true)}
-        className="max-h-[50dvh] w-full rounded-lg border border-border bg-bg"
-      />
-      {unplayable && <p className="text-sm text-fg-muted">Este navegador não consegue mostrar este vídeo.</p>}
-    </div>
-  )
-}
 
 export function CompressPage() {
   const compress = useCompressTool()
@@ -50,7 +31,7 @@ export function CompressPage() {
       tool={tool}
       canStart={Boolean(plan) && !blocker}
       onStart={compress.apply}
-      preview={state.sourceUrl && <Player key={state.fileId} src={state.sourceUrl} name={state.file?.name ?? ''} />}
+      preview={state.sourceUrl && <SourcePlayer key={state.fileId} src={state.sourceUrl} name={state.file?.name ?? ''} />}
       options={
         blocker ? (
           <Alert variant="error" title="Compressão indisponível neste navegador">

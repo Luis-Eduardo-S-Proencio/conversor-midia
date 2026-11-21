@@ -21,6 +21,9 @@ export default mergeConfig(
         },
         {
           extends: true,
+          // Importado só sob demanda, dentro do Worker: sem isto o Vite o descobre no meio dos testes e
+          // recarrega a página, derrubando os que estiverem rodando.
+          optimizeDeps: { include: ['@mediabunny/mp3-encoder'] },
           test: {
             name: 'browser',
             include: ['src/**/*.test.tsx'],

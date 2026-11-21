@@ -1,5 +1,6 @@
 import { canEncodeAudio } from 'mediabunny'
 import { afterAll, describe, expect, it } from 'vitest'
+import comSomUrl from '../../tests/fixtures/videos/com-som.mov?url'
 import cortadoUrl from '../../tests/fixtures/videos/cortado.mp4?url'
 import detalhadoUrl from '../../tests/fixtures/videos/detalhado.mp4?url'
 import giradoUrl from '../../tests/fixtures/videos/girado.mp4?url'
@@ -8,9 +9,12 @@ import quadrantesUrl from '../../tests/fixtures/videos/quadrantes.mov?url'
 import segundosMp4Url from '../../tests/fixtures/videos/segundos.mp4?url'
 import segundosWebmUrl from '../../tests/fixtures/videos/segundos.webm?url'
 import soAudioUrl from '../../tests/fixtures/videos/so-audio.mp4?url'
+import somPcmUrl from '../../tests/fixtures/videos/som-pcm.mov?url'
 import textoUrl from '../../tests/fixtures/videos/texto.mp4?url'
+import { audioPackets, measureTone, readAudio } from '../test/audio-reader'
 import { fixtureBlob, readVideo } from '../test/video-reader'
 import { VideoJobError, createVideoWorkerClient, isAbortError } from './video-client'
+import type { ExtractAudioJob } from './video-protocol'
 
 // Worker real, no Chromium: confere formato, codec, duração, medidas, cores dos quadros e faixas do resultado.
 // Vídeos de teste (tests/fixtures/videos): "segundos" troca de cor a cada segundo (vermelho, verde, azul,
@@ -363,5 +367,110 @@ describe('Worker de vídeo: recortar', () => {
     expect(reported).toBe(true)
     const { info } = await client.run({ kind: 'inspect', file: await fixtureBlob(segundosMp4Url) })
     expect(info.format).toBe('mp4')
+  })
+})
+
+describe('Worker de vídeo: extrair áudio', () => {
+  it('ao abrir: o som do vídeo e o que o navegador consegue gerar a partir dele', async () => {
+    const mp4 = await client.run({ kind: 'inspect', file: await fixtureBlob(segundosMp4Url) })
+    expect(mp4.info).toMatchObject({ audioCodec: 'aac', canDecodeAudio: true, canEncodeAac: await canEncodeAac(), canEncodeMp3: true })
+    const webm = await client.run({ kind: 'inspect', file: await fixtureBlob(segundosWebmUrl) })
+    expect(webm.info).toMatchObject({ audioCodec: 'opus', canDecodeAudio: true })
+    const silent = await client.run({ kind: 'inspect', file: await fixtureBlob(giradoUrl) })
+    expect(silent.info).toMatchObject({ audioCodec: null, canDecodeAudio: false, canEncodeAac: false, canEncodeMp3: false })
+  })
+
+  it('MP4 para M4A: o som é copiado byte a byte, sem a imagem', SLOW, async () => {
+    const file = await fixtureBlob(segundosMp4Url)
+    const result = await client.run({ kind: 'extract-audio', file, format: 'm4a' })
+    expect(result.copied).toBe(true)
+    expect(result.blob.type).toBe('audio/mp4')
+    const audio = await readAudio(result.blob)
+    expect(audio).toMatchObject({ format: 'MP4', videoTracks: 0, audioTracks: 1, codec: 'aac', numberOfChannels: 2, sampleRate: 48_000 })
+    expect(audio.duration).toBeCloseTo(4, 1)
+    expect(await audioPackets(result.blob)).toEqual(await audioPackets(file))
+  })
+
+  it('WEBM para WEBM: o som Opus é copiado byte a byte', SLOW, async () => {
+    const file = await fixtureBlob(segundosWebmUrl)
+    const result = await client.run({ kind: 'extract-audio', file, format: 'webm' })
+    expect(result.copied).toBe(true)
+    expect(result.blob.type).toBe('audio/webm')
+    const audio = await readAudio(result.blob)
+    expect(audio).toMatchObject({ format: 'WebM', videoTracks: 0, audioTracks: 1, codec: 'opus' })
+    expect(audio.duration).toBeCloseTo(4, 1)
+    expect(await audioPackets(result.blob)).toEqual(await audioPackets(file))
+  })
+
+  it('WEBM para M4A: o som é refeito em AAC, com o mesmo tom e a mesma duração', SLOW, async () => {
+    const result = await client.run({ kind: 'extract-audio', file: await fixtureBlob(segundosWebmUrl), format: 'm4a' })
+    expect(result.copied).toBe(false)
+    expect(result.blob.type).toBe('audio/mp4')
+    const audio = await readAudio(result.blob)
+    expect(audio).toMatchObject({ format: 'MP4', videoTracks: 0, codec: 'aac' })
+    expect(audio.duration).toBeCloseTo(4, 1)
+    const tone = await measureTone(result.blob, 1, 3)
+    expect(tone.frequency).toBeCloseTo(440, -1)
+    expect(tone.rms).toBeGreaterThan(0.1)
+  })
+
+  it('MP4 para MP3: refeito pelo codificador próprio, a 192 kbit/s, com o mesmo tom', SLOW, async () => {
+    const result = await client.run({ kind: 'extract-audio', file: await fixtureBlob(segundosMp4Url), format: 'mp3' })
+    expect(result.copied).toBe(false)
+    expect(result.blob.type).toBe('audio/mpeg')
+    const audio = await readAudio(result.blob)
+    expect(audio).toMatchObject({ format: 'MP3', videoTracks: 0, codec: 'mp3', numberOfChannels: 2 })
+    expect(audio.duration).toBeCloseTo(4, 1)
+    // 192 kbit/s durante 4 s: cerca de 96 KB.
+    expect(result.blob.size).toBeGreaterThan(85_000)
+    expect(result.blob.size).toBeLessThan(110_000)
+    const tone = await measureTone(result.blob, 1, 3)
+    expect(tone.frequency).toBeCloseTo(440, -1)
+    expect(tone.rms).toBeGreaterThan(0.1)
+  })
+
+  it('WEBM para MP3: o som Opus também vira MP3', SLOW, async () => {
+    const result = await client.run({ kind: 'extract-audio', file: await fixtureBlob(segundosWebmUrl), format: 'mp3' })
+    const audio = await readAudio(result.blob)
+    expect(audio).toMatchObject({ format: 'MP3', codec: 'mp3' })
+    expect(audio.duration).toBeCloseTo(4, 1)
+  })
+
+  it('som PCM (MOV de câmera): não há cópia; M4A e MP3 saem refeitos', SLOW, async () => {
+    const file = await fixtureBlob(somPcmUrl)
+    const { info } = await client.run({ kind: 'inspect', file })
+    expect(info).toMatchObject({ audioCodec: 'pcm-s16', canDecodeAudio: true })
+    for (const format of ['m4a', 'mp3'] as const) {
+      const result = await client.run({ kind: 'extract-audio', file, format })
+      expect(result.copied).toBe(false)
+      const audio = await readAudio(result.blob)
+      expect(audio.codec).toBe(format === 'm4a' ? 'aac' : 'mp3')
+      expect(audio.duration).toBeCloseTo(1, 1)
+      expect((await measureTone(result.blob, 0.2, 0.8)).frequency).toBeCloseTo(440, -1)
+    }
+    await expect(client.run({ kind: 'extract-audio', file, format: 'webm' })).rejects.toEqual(new VideoJobError('unexpected'))
+  })
+
+  it('o arquivo de som sai sem metadados (título, localização)', SLOW, async () => {
+    const file = await fixtureBlob(comSomUrl)
+    const original = await readAudio(file)
+    expect(original.tags).toMatchObject({ title: 'Viagem de teste', raw: { '©xyz': '+12.3456-045.6789/' } })
+    for (const format of ['m4a', 'mp3'] as const) {
+      const result = await client.run({ kind: 'extract-audio', file, format })
+      const audio = await readAudio(result.blob)
+      expect(audio.tags).not.toHaveProperty('title')
+      expect(audio.tags).not.toHaveProperty('comment')
+      expect(JSON.stringify(audio.tags)).not.toContain('12.3456')
+      expect(new TextDecoder('latin1').decode(new Uint8Array(await result.blob.arrayBuffer()))).not.toContain('Viagem de teste')
+    }
+  })
+
+  it('vídeo sem som, formato desconhecido ou WEBM sem som Opus são recusados', async () => {
+    await expect(client.run({ kind: 'extract-audio', file: await fixtureBlob(giradoUrl), format: 'm4a' })).rejects.toEqual(new VideoJobError('no-audio'))
+    const file = await fixtureBlob(segundosMp4Url)
+    await expect(client.run({ kind: 'extract-audio', file, format: 'webm' })).rejects.toEqual(new VideoJobError('unexpected'))
+    // Pedido malformado: o protocolo é tipado, mas o Worker não confia no que recebe.
+    const malformed = { kind: 'extract-audio', file, format: 'wav' } as unknown as ExtractAudioJob
+    await expect(client.run(malformed)).rejects.toEqual(new VideoJobError('unexpected'))
   })
 })

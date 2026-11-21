@@ -1,23 +1,14 @@
-import { Crop, Info } from 'lucide-react'
+import { Crop } from 'lucide-react'
 import { CropOptions } from '../../../components/tool/CropOptions'
 import { Alert } from '../../../components/ui/Alert'
-import { Icon } from '../../../components/ui/Icon'
 import { formatDimensions } from '../../../core/format'
 import { encodableCrop, tooSmallToCrop } from '../../../core/video/crop'
 import { codecLabel } from '../../../core/video/formats'
+import { Note } from '../shared/Note'
 import { VideoToolPage } from '../shared/VideoToolPage'
 import { VIDEO_CROP_LABELS } from './settings'
 import { useVideoCropTool } from './useVideoCropTool'
 import { VideoCropPreview } from './VideoCropPreview'
-
-function Note({ children }: { children: string }) {
-  return (
-    <p className="flex gap-2 text-xs text-fg-subtle">
-      <Icon icon={Info} size="sm" className="mt-px" />
-      <span>{children}</span>
-    </p>
-  )
-}
 
 export function VideoCropPage() {
   const crop = useVideoCropTool()

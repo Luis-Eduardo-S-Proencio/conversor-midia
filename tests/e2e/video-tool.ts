@@ -62,6 +62,58 @@ export function expectVideoFormat(bytes: Uint8Array, format: VideoFormat) {
   expect(detectVideoType(bytes)).toEqual({ kind: 'supported', format })
 }
 
+export interface AudioProbe {
+  format: string
+  videoTracks: number
+  audioTracks: number
+  codec: string | null
+  duration: number
+  tags: Record<string, unknown>
+}
+
+/** Lê o arquivo de som baixado no Node, sem decodificar: formato, faixas, codec, duração e metadados. */
+export async function probeAudio(bytes: Uint8Array): Promise<AudioProbe> {
+  const input = new Input({ source: new BufferSource(bytes), formats: ALL_FORMATS })
+  try {
+    const audio = await input.getPrimaryAudioTrack()
+    const { raw, ...tags } = await input.getMetadataTags()
+    return {
+      format: (await input.getFormat()).name,
+      videoTracks: (await input.getVideoTracks()).length,
+      audioTracks: (await input.getAudioTracks()).length,
+      codec: audio ? await audio.getCodec() : null,
+      duration: await input.computeDuration(),
+      tags: { ...tags, ...(raw && { raw }) },
+    }
+  } finally {
+    input.dispose()
+  }
+}
+
+/** Assinatura do arquivo de som: M4A ("ftyp"), WEBM (EBML) ou MP3 (ID3 ou o sincronismo de quadro). */
+export function audioSignature(bytes: Uint8Array): 'm4a' | 'webm' | 'mp3' | 'unknown' {
+  const ascii = (start: number, length: number) => String.fromCharCode(...bytes.subarray(start, start + length))
+  if (ascii(4, 4) === 'ftyp') return 'm4a'
+  if (bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return 'webm'
+  if (ascii(0, 3) === 'ID3' || (bytes[0] === 0xff && ((bytes[1] ?? 0) & 0xe0) === 0xe0)) return 'mp3'
+  return 'unknown'
+}
+
+/** Junta as violações de CSP da página (inclusive as de Workers, que aparecem no console). */
+export async function trackCspViolations(page: Page): Promise<string[]> {
+  const violations: string[] = []
+  page.on('console', (message) => {
+    const text = message.text()
+    if (/Content[- ]Security[- ]Policy|Refused to/i.test(text)) violations.push(text)
+  })
+  await page.addInitScript(() => {
+    document.addEventListener('securitypolicyviolation', (event) => {
+      console.error(`Content-Security-Policy: ${event.violatedDirective} bloqueou ${event.blockedURI}`)
+    })
+  })
+  return violations
+}
+
 export type Color = 'red' | 'green' | 'blue' | 'yellow' | 'other'
 
 /** Cor pelo canal dominante: codificar vídeo altera os valores, e cada navegador converte cores do seu jeito. */

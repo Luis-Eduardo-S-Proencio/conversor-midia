@@ -1,7 +1,7 @@
 /**
- * Worker de vídeo: abre, corta e recorta vídeos com o Mediabunny (WebCodecs), fora da thread principal.
- * O arquivo é lido aos pedaços e o resultado é montado na memória do Worker; nada sai do aparelho.
- * Cada pedido recebe exatamente uma resposta, de sucesso ou com um código de erro estável.
+ * Worker de vídeo: abre, corta, recorta e comprime vídeos e extrai o som, com o Mediabunny (WebCodecs),
+ * fora da thread principal. O arquivo é lido aos pedaços e o resultado é montado na memória do Worker;
+ * nada sai do aparelho. Cada pedido recebe exatamente uma resposta, de sucesso ou com um código de erro estável.
  */
 import {
   BlobSource,
@@ -12,12 +12,14 @@ import {
   Input,
   MP4,
   MovOutputFormat,
+  Mp3OutputFormat,
   Mp4OutputFormat,
   Output,
   QTFF,
   Quality,
   WEBM,
   WebMOutputFormat,
+  canEncodeAudio,
   getFirstEncodableAudioCodec,
   getFirstEncodableVideoCodec,
   type AudioCodec,
@@ -28,11 +30,13 @@ import {
   type InputAudioTrack,
   type InputFormat,
   type InputVideoTrack,
+  type OutputFormat,
   type VideoCodec,
   type VideoSample,
 } from 'mediabunny'
 import { isCropWithin, type CropRect } from '../core/image/crop'
 import type { Dimensions } from '../core/image/resize'
+import { AUDIO_FORMATS, REENCODED_AUDIO_BITRATE, copyableAudioFormat, type AudioFormat } from '../core/video/audio'
 import { MIN_VIDEO_CROP_SIDE, encodableCrop, encodableSize } from '../core/video/crop'
 import { VIDEO_FORMATS, type VideoFormat } from '../core/video/formats'
 import type { VideoErrorCode } from '../core/video/messages'
@@ -43,6 +47,8 @@ import type {
   CompressOutput,
   CropJob,
   CropOutput,
+  ExtractAudioJob,
+  ExtractAudioOutput,
   InspectJob,
   InspectOutput,
   JoinJob,
@@ -213,18 +219,28 @@ interface ConvertOptions {
   video: ConversionVideoOptions
   /** Sem opções, o som é copiado quando possível. */
   audio?: ConversionAudioOptions
+  /** Tipo do arquivo gerado; sem ele, o mesmo formato do vídeo original. */
+  container?: { format: OutputFormat; mimeType: string }
+  /**
+   * Só copiar, como foi prometido na tela: faixa que o Mediabunny teria de refazer vira erro, em vez de
+   * ser refeita em silêncio. Mantém também o início do som como no original (o Opus começa alguns
+   * milissegundos antes do zero, e sem isto o Mediabunny preferiria refazê-lo).
+   */
+  copyOnly?: boolean
 }
 
-/** Gera o vídeo no mesmo formato do original, sem metadados (localização, data, aparelho). */
+/** Gera o arquivo (por padrão, o vídeo no mesmo formato do original), sem metadados (localização, data, aparelho). */
 async function convert(opened: OpenedVideo, options: ConvertOptions, onProgress: ProgressReporter): Promise<Blob> {
   const { input, format, video, audio } = opened
-  const output = new Output({ format: outputFormatFor(format), target: new BufferTarget() })
+  const container = options.container ?? { format: outputFormatFor(format), mimeType: VIDEO_FORMATS[format].mimeType }
+  const output = new Output({ format: container.format, target: new BufferTarget() })
   let conversion: Conversion
   try {
     conversion = await Conversion.init({
       input,
       output,
       trim: options.trim,
+      ...(options.copyOnly && { copy: { mode: 'forced' as const } }),
       video: (track) => (track.id === video.id ? options.video : { discard: true }),
       audio: (track) => (audio && track.id === audio.id ? (options.audio ?? {}) : { discard: true }),
       tags: {},
@@ -245,7 +261,7 @@ async function convert(opened: OpenedVideo, options: ConvertOptions, onProgress:
   }
   const { buffer } = output.target
   if (!buffer) throw new JobError('unexpected')
-  return new Blob([buffer], { type: VIDEO_FORMATS[format].mimeType })
+  return new Blob([buffer], { type: container.mimeType })
 }
 
 interface TranscodeRequest {
@@ -362,11 +378,10 @@ async function inspect(job: InspectJob): Promise<InspectOutput> {
     const even = encodableSize({ width, height })
     const canTranscodeVideo =
       (await video.canDecode()) && (await getFirstEncodableVideoCodec(TRANSCODE_CODECS[format], { ...even, quality: QUALITY })) !== null
+    const canDecodeAudio = audio !== null && (await audio.canDecode())
     // Recodificam o som: remover partes (emendas) e o corte exato de WEBM (o formato não começa antes do zero).
     const canTranscodeAudio =
-      !audio ||
-      ((await audio.canDecode()) &&
-        (await getFirstEncodableAudioCodec(AUDIO_CODECS[format], { numberOfChannels: 2, sampleRate: 48_000 })) !== null)
+      !audio || (canDecodeAudio && (await getFirstEncodableAudioCodec(AUDIO_CODECS[format], { numberOfChannels: 2, sampleRate: 48_000 })) !== null)
     const probeCodec = job.checkSizeControl && canTranscodeVideo ? await getFirstEncodableVideoCodec(TRANSCODE_CODECS[format], PROBE_SIZE) : null
     return {
       kind: 'inspect',
@@ -380,6 +395,11 @@ async function inspect(job: InspectJob): Promise<InspectOutput> {
         audioBitrate: audio ? await audioBitrate(audio) : null,
         canTranscodeVideo,
         canTranscodeAudio,
+        audioCodec: audio ? await audio.getCodec() : null,
+        canDecodeAudio,
+        canEncodeAac: canDecodeAudio && (await canEncodeAudio('aac', { numberOfChannels: 2, sampleRate: 48_000 })),
+        // O MP3 vem do codificador próprio, em WebAssembly (desligado, por exemplo, no Modo de Isolamento do iPhone).
+        canEncodeMp3: canDecodeAudio && typeof WebAssembly === 'object',
         extraTracks,
         ...(job.checkSizeControl && { controlsSize: probeCodec !== null && (await controlsSize(probeCodec)) }),
       },
@@ -520,6 +540,72 @@ async function compress(job: CompressJob, onProgress: ProgressReporter): Promise
   }
 }
 
+let mp3Encoder: Promise<void> | null = null
+
+/**
+ * O codificador de MP3 (LAME em WebAssembly, cerca de 120 KB) só carrega quando alguém pede MP3: os
+ * navegadores não geram MP3 pelo WebCodecs. Ele roda num Worker próprio, criado a partir de `blob:`
+ * (a CSP permite `worker-src blob:` e `'wasm-unsafe-eval'` por causa dele).
+ */
+function loadMp3Encoder(): Promise<void> {
+  mp3Encoder ??= (async () => {
+    if (await canEncodeAudio('mp3')) return // um navegador que passe a gerar MP3 usa o próprio
+    const { registerMp3Encoder } = await import('@mediabunny/mp3-encoder')
+    registerMp3Encoder()
+  })().catch((error: unknown) => {
+    mp3Encoder = null // falha ao carregar (ex.: sem conexão) não impede tentar de novo
+    throw toJobError(error, 'unexpected')
+  })
+  return mp3Encoder
+}
+
+/** Taxas de amostragem que todo tocador aceita; outras (ex.: 96 kHz de gravador) saem em 48 kHz. */
+const REENCODED_SAMPLE_RATES = [44_100, 48_000]
+
+/** Som refeito: AAC (M4A) ou MP3, em estéreo no máximo, na taxa de bits padrão. */
+async function reencodedAudioOptions(audio: InputAudioTrack, format: Exclude<AudioFormat, 'webm'>): Promise<ConversionAudioOptions> {
+  if (!(await audio.canDecode())) throw new JobError('decode-unsupported')
+  if (format === 'mp3') await loadMp3Encoder()
+  const sampleRate = await audio.getSampleRate()
+  return {
+    codec: format === 'mp3' ? 'mp3' : 'aac',
+    forceTranscode: true,
+    quality: new Quality({ bitrate: REENCODED_AUDIO_BITRATE }),
+    numberOfChannels: Math.min(await audio.getNumberOfChannels(), 2),
+    ...(!REENCODED_SAMPLE_RATES.includes(sampleRate) && { sampleRate: 48_000 }),
+  }
+}
+
+/** Opções do som: copiar, quando o formato pedido comporta o som original, ou refazer. */
+async function extractedAudioOptions(audio: InputAudioTrack, format: AudioFormat): Promise<{ options: ConversionAudioOptions; copied: boolean }> {
+  if (copyableAudioFormat(await audio.getCodec()) === format) return { options: {}, copied: true }
+  // WEBM só serve para copiar Opus ou Vorbis: refazer o som sai em M4A ou MP3.
+  if (format === 'webm') throw new JobError('unexpected')
+  return { options: await reencodedAudioOptions(audio, format), copied: false }
+}
+
+function audioContainerFor(format: AudioFormat): OutputFormat {
+  if (format === 'mp3') return new Mp3OutputFormat()
+  if (format === 'webm') return new WebMOutputFormat()
+  return new Mp4OutputFormat()
+}
+
+async function extractAudio(job: ExtractAudioJob, onProgress: ProgressReporter): Promise<ExtractAudioOutput> {
+  // O protocolo é tipado, mas o pedido vem de outra thread: formato desconhecido é recusado.
+  if (!Object.hasOwn(AUDIO_FORMATS, job.format)) throw new JobError('unexpected')
+  const opened = await openVideo(job.file)
+  try {
+    const { audio } = opened
+    if (!audio) throw new JobError('no-audio')
+    const { options, copied } = await reading(extractedAudioOptions(audio, job.format))
+    const container = { format: audioContainerFor(job.format), mimeType: AUDIO_FORMATS[job.format].mimeType }
+    const blob = await convert(opened, { video: { discard: true }, audio: options, container, copyOnly: copied }, onProgress)
+    return { kind: 'extract-audio', blob, copied }
+  } finally {
+    opened.input.dispose()
+  }
+}
+
 function run(job: VideoJob, onProgress: ProgressReporter): Promise<VideoJobOutput> {
   switch (job.kind) {
     case 'inspect':
@@ -532,6 +618,8 @@ function run(job: VideoJob, onProgress: ProgressReporter): Promise<VideoJobOutpu
       return crop(job, onProgress)
     case 'compress':
       return compress(job, onProgress)
+    case 'extract-audio':
+      return extractAudio(job, onProgress)
   }
 }
 

@@ -2,7 +2,7 @@
  * Leitura de vídeos nos testes de navegador: formato, faixas, duração e a cor de pontos dos quadros,
  * pelo Mediabunny (independente do Worker testado no que importa: aqui só se lê, nada se gera).
  */
-import { ALL_FORMATS, BlobSource, CanvasSink, Input } from 'mediabunny'
+import { ALL_FORMATS, BlobSource, CanvasSink, EncodedPacketSink, Input } from 'mediabunny'
 
 export type Color = 'red' | 'green' | 'blue' | 'yellow' | 'other'
 
@@ -40,6 +40,20 @@ export interface VideoReport {
   /** Cor do pixel (x, y), em medidas do quadro como ele aparece, no tempo pedido (segundos). */
   colorAt: (time: number, x: number, y: number) => Promise<Color>
   dispose: () => void
+}
+
+/** Bytes de cada pacote de vídeo, em ordem: iguais aos do original quando o vídeo foi copiado sem refazer. */
+export async function videoPackets(blob: Blob): Promise<Uint8Array[]> {
+  const input = new Input({ source: new BlobSource(blob), formats: ALL_FORMATS })
+  try {
+    const track = await input.getPrimaryVideoTrack()
+    if (!track) throw new Error('sem faixa de vídeo')
+    const packets: Uint8Array[] = []
+    for await (const packet of new EncodedPacketSink(track).packets()) packets.push(packet.data)
+    return packets
+  } finally {
+    input.dispose()
+  }
 }
 
 export async function readVideo(blob: Blob): Promise<VideoReport> {

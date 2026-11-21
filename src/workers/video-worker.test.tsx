@@ -13,9 +13,9 @@ import soAudioUrl from '../../tests/fixtures/videos/so-audio.mp4?url'
 import somPcmUrl from '../../tests/fixtures/videos/som-pcm.mov?url'
 import textoUrl from '../../tests/fixtures/videos/texto.mp4?url'
 import { audioPackets, measureTone, readAudio } from '../test/audio-reader'
-import { fixtureBlob, readVideo } from '../test/video-reader'
+import { fixtureBlob, readVideo, videoPackets } from '../test/video-reader'
 import { VideoJobError, createVideoWorkerClient, isAbortError } from './video-client'
-import type { ExtractAudioJob } from './video-protocol'
+import type { ConvertJob, ExtractAudioJob } from './video-protocol'
 
 // Worker real, no Chromium: confere formato, codec, duração, medidas, cores dos quadros e faixas do resultado.
 // Vídeos de teste (tests/fixtures/videos): "segundos" troca de cor a cada segundo (vermelho, verde, azul,
@@ -505,5 +505,163 @@ describe('Worker de vídeo: extrair áudio', () => {
     // Pedido malformado: o protocolo é tipado, mas o Worker não confia no que recebe.
     const malformed = { kind: 'extract-audio', file, format: 'wav' } as unknown as ExtractAudioJob
     await expect(client.run(malformed)).rejects.toEqual(new VideoJobError('unexpected'))
+  })
+})
+
+describe('Worker de vídeo: converter', () => {
+  const convertJob = (file: Blob, format: ConvertJob['format'], bitrate = 1_000_000, audioBitrate = 192_000): ConvertJob => ({
+    kind: 'convert',
+    file,
+    format,
+    mode: 'compatible',
+    bitrate,
+    audioBitrate,
+  })
+  const audioBytes = async (blob: Blob) => (await audioPackets(blob)).reduce((total, packet) => total + packet.byteLength, 0)
+
+  it('ao abrir: rotação e o que o navegador consegue refazer em cada formato', async () => {
+    const aac = await canEncodeAac()
+    const { info } = await client.run({ kind: 'inspect', file: await fixtureBlob(segundosMp4Url) })
+    expect(info.rotated).toBe(false)
+    // MP4 e MOV pedem H.264 e AAC (o Firefox não gera AAC); WEBM, VP9 e Opus.
+    expect(info.reencodable).toEqual({ mp4: { video: true, audio: aac }, mov: { video: true, audio: aac }, webm: { video: true, audio: true } })
+    const silent = await client.run({ kind: 'inspect', file: await fixtureBlob(giradoUrl) })
+    expect(silent.info).toMatchObject({ rotated: true, reencodable: { webm: { video: true, audio: false } } })
+  })
+
+  it('MP4 para MOV: vídeo e som copiados byte a byte, sem refazer', SLOW, async () => {
+    const file = await fixtureBlob(segundosMp4Url)
+    const result = await client.run(convertJob(file, 'mov'))
+    expect(result).toMatchObject({ video: 'copy', audio: 'copy' })
+    expect(result.blob.type).toBe('video/quicktime')
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ format: 'QuickTime File Format', videoCodec: 'avc', audioCodec: 'aac', width: 320, height: 240 })
+      expect(video.duration).toBeCloseTo(4, 1)
+      expect(await video.colorAt(2.5, 160, 120)).toBe('blue')
+    } finally {
+      video.dispose()
+    }
+    expect(await videoPackets(result.blob)).toEqual(await videoPackets(file))
+    expect(await audioPackets(result.blob)).toEqual(await audioPackets(file))
+  })
+
+  it('MOV para MP4: copiado e sem metadados (título, localização)', SLOW, async () => {
+    const file = await fixtureBlob(comSomUrl)
+    const result = await client.run(convertJob(file, 'mp4'))
+    expect(result).toMatchObject({ video: 'copy', audio: 'copy' })
+    expect(result.blob.type).toBe('video/mp4')
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ format: 'MP4', videoCodec: 'avc', audioCodec: 'aac' })
+      expect(video.tags).not.toHaveProperty('title')
+      expect(JSON.stringify(video.tags)).not.toContain('12.3456')
+    } finally {
+      video.dispose()
+    }
+    expect(new TextDecoder('latin1').decode(new Uint8Array(await result.blob.arrayBuffer()))).not.toContain('Viagem de teste')
+    expect(await videoPackets(result.blob)).toEqual(await videoPackets(file))
+  })
+
+  it('MP4 para WEBM: refeito em VP9 e Opus, na taxa de som pedida, com as cores, o tom e a duração', SLOW, async () => {
+    const progress: number[] = []
+    const result = await client.run(convertJob(await fixtureBlob(segundosMp4Url), 'webm', 500_000, 96_000), {
+      onProgress: (value) => progress.push(value),
+    })
+    // Som a 96 kbit/s durante 4 s: cerca de 48 KB (a 192 kbit/s seriam 96 KB).
+    expect(await audioBytes(result.blob)).toBeLessThan(60_000)
+    expect(result).toMatchObject({ video: 'encode', audio: 'encode' })
+    expect(result.blob.type).toBe('video/webm')
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ format: 'WebM', videoCodec: 'vp9', audioCodec: 'opus', width: 320, height: 240 })
+      expect(video.duration).toBeCloseTo(4, 1)
+      expect(await video.colorAt(0.5, 160, 120)).toBe('red')
+      expect(await video.colorAt(3.5, 160, 120)).toBe('yellow')
+    } finally {
+      video.dispose()
+    }
+    const tone = await measureTone(result.blob, 1, 3)
+    expect(tone.frequency).toBeCloseTo(440, -1)
+    expect(tone.rms).toBeGreaterThan(0.1)
+    expect(progress.length).toBeGreaterThan(0)
+  })
+
+  it('WEBM para MP4 e para MOV: refeito em H.264 e AAC, que tocam em todo lugar', SLOW, async () => {
+    if (!(await canEncodeAac())) return // a tela não oferece onde o navegador não gera AAC
+    const file = await fixtureBlob(quadrantesWebmUrl) // 640 × 480, com som
+    for (const [format, name, type] of [
+      ['mp4', 'MP4', 'video/mp4'],
+      ['mov', 'QuickTime File Format', 'video/quicktime'],
+    ] as const) {
+      // 96 kbit/s, a menor taxa oferecida: o AAC do Windows só aceita 96, 128, 160 e 192.
+      const result = await client.run(convertJob(file, format, 800_000, 96_000))
+      expect(result).toMatchObject({ video: 'encode', audio: 'encode' })
+      expect(result.blob.type).toBe(type)
+      const video = await readVideo(result.blob)
+      try {
+        expect(video).toMatchObject({ format: name, videoCodec: 'avc', audioCodec: 'aac', width: 640, height: 480 })
+        expect(video.duration).toBeCloseTo(1, 1)
+        expect(await video.colorAt(0.5, 160, 120)).toBe('red')
+        expect(await video.colorAt(0.5, 480, 120)).toBe('green')
+        expect(await video.colorAt(0.5, 160, 360)).toBe('blue')
+        expect(await video.colorAt(0.5, 480, 360)).toBe('yellow')
+      } finally {
+        video.dispose()
+      }
+      expect((await measureTone(result.blob, 0.2, 0.8)).frequency).toBeCloseTo(440, -1)
+    }
+  })
+
+  it('som PCM (MOV de câmera) para MP4: a imagem é copiada e o som refeito em AAC', SLOW, async () => {
+    if (!(await canEncodeAac())) return
+    const file = await fixtureBlob(somPcmUrl)
+    const result = await client.run(convertJob(file, 'mp4'))
+    expect(result).toMatchObject({ video: 'copy', audio: 'encode' })
+    expect(await videoPackets(result.blob)).toEqual(await videoPackets(file))
+    const audio = await readAudio(result.blob)
+    expect(audio).toMatchObject({ codec: 'aac', numberOfChannels: 2 })
+    expect(audio.duration).toBeCloseTo(1, 1)
+    expect((await measureTone(result.blob, 0.2, 0.8)).frequency).toBeCloseTo(440, -1)
+  })
+
+  it('vídeo gravado em pé para WEBM: refeito já em pé (o WEBM não guarda rotação); para MOV: copiado com a rotação', SLOW, async () => {
+    // "girado.mp4": gravado deitado (320 × 240) com rotação de 90°; aparece em pé, vermelho em cima e azul embaixo.
+    const file = await fixtureBlob(giradoUrl)
+    const webm = await client.run(convertJob(file, 'webm', 300_000))
+    expect(webm).toMatchObject({ video: 'encode', audio: null })
+    const upright = await readVideo(webm.blob)
+    try {
+      expect(upright).toMatchObject({ videoCodec: 'vp9', audioCodec: null, rotation: 0, width: 240, height: 320 })
+      expect(await upright.colorAt(0.5, 120, 20)).toBe('red')
+      expect(await upright.colorAt(0.5, 120, 300)).toBe('blue')
+    } finally {
+      upright.dispose()
+    }
+    const mov = await client.run(convertJob(file, 'mov'))
+    expect(mov).toMatchObject({ video: 'copy', audio: null })
+    const rotated = await readVideo(mov.blob)
+    try {
+      expect(rotated).toMatchObject({ rotation: 90, width: 240, height: 320 })
+      expect(await rotated.colorAt(0.5, 120, 20)).toBe('red')
+    } finally {
+      rotated.dispose()
+    }
+  })
+
+  it('o mesmo formato do original, formato ou modo desconhecido e taxa inválida são recusados', async () => {
+    const file = await fixtureBlob(segundosMp4Url)
+    await expect(client.run(convertJob(file, 'mp4'))).rejects.toEqual(new VideoJobError('unexpected'))
+    for (const job of [
+      { format: 'avi', mode: 'compatible', bitrate: 1_000_000, audioBitrate: 192_000 },
+      { format: 'webm', mode: 'turbo', bitrate: 1_000_000, audioBitrate: 192_000 },
+      { format: 'webm', mode: 'compatible', bitrate: 0, audioBitrate: 192_000 },
+      { format: 'webm', mode: 'compatible', bitrate: 1.5, audioBitrate: 192_000 },
+      { format: 'webm', mode: 'compatible', bitrate: 1_000_000 },
+    ]) {
+      // Pedido malformado: o protocolo é tipado, mas o Worker não confia no que recebe.
+      const malformed = { kind: 'convert', file, ...job } as unknown as ConvertJob
+      await expect(client.run(malformed)).rejects.toEqual(new VideoJobError('unexpected'))
+    }
   })
 })

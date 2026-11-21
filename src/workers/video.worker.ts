@@ -1,5 +1,5 @@
 /**
- * Worker de vídeo: abre, corta, recorta e comprime vídeos e extrai o som, com o Mediabunny (WebCodecs),
+ * Worker de vídeo: abre, corta, recorta, comprime e converte vídeos e extrai o som, com o Mediabunny (WebCodecs),
  * fora da thread principal. O arquivo é lido aos pedaços e o resultado é montado na memória do Worker;
  * nada sai do aparelho. Cada pedido recebe exatamente uma resposta, de sucesso ou com um código de erro estável.
  */
@@ -37,6 +37,7 @@ import {
 import { isCropWithin, type CropRect } from '../core/image/crop'
 import type { Dimensions } from '../core/image/resize'
 import { AUDIO_FORMATS, REENCODED_AUDIO_BITRATE, copyableAudioFormat, type AudioFormat } from '../core/video/audio'
+import { VIDEO_MODES, convertActions } from '../core/video/convert'
 import { MIN_VIDEO_CROP_SIDE, encodableCrop, encodableSize } from '../core/video/crop'
 import { VIDEO_FORMATS, type VideoFormat } from '../core/video/formats'
 import type { VideoErrorCode } from '../core/video/messages'
@@ -45,6 +46,8 @@ import { TIME_TOLERANCE, type TrimRange } from '../core/video/trim'
 import type {
   CompressJob,
   CompressOutput,
+  ConvertJob,
+  ConvertOutput,
   CropJob,
   CropOutput,
   ExtractAudioJob,
@@ -80,14 +83,17 @@ const TRANSCODE_CODECS: Record<VideoFormat, VideoCodec[]> = {
 }
 
 /**
- * Som recodificado (remover partes, corte exato de WEBM): AAC no MP4 e no MOV, para tocar em todo lugar,
- * inclusive nos aparelhos da Apple; Opus (ou Vorbis) no WEBM.
+ * Som recodificado (remover partes, corte exato de WEBM, converter): AAC no MP4 e no MOV, para tocar em todo
+ * lugar, inclusive nos aparelhos da Apple; Opus (ou Vorbis) no WEBM.
  */
 const AUDIO_CODECS: Record<VideoFormat, AudioCodec[]> = {
   mp4: ['aac'],
   mov: ['aac'],
   webm: ['opus', 'vorbis'],
 }
+
+/** Configuração de referência para saber se o navegador gera um codec de som. */
+const STEREO_48K = { numberOfChannels: 2, sampleRate: 48_000 }
 
 const QUALITY = new Quality('high')
 
@@ -271,14 +277,16 @@ interface TranscodeRequest {
   size?: Dimensions
   /** Taxa do vídeo em bits por segundo; sem ela, qualidade alta. */
   bitrate?: number
+  /** Formato do arquivo gerado, ao converter; sem ele, o do original. */
+  target?: VideoFormat
 }
 
 /**
  * Opções para recodificar o vídeo. Sem recorte nem medidas novas, medidas ímpares perdem 1 px
  * (H.264 exige pares).
  */
-async function transcodeOptions(opened: OpenedVideo, { area, size, bitrate }: TranscodeRequest = {}): Promise<ConversionVideoOptions> {
-  const { video, format } = opened
+async function transcodeOptions(opened: OpenedVideo, { area, size, bitrate, target: format = opened.format }: TranscodeRequest = {}): Promise<ConversionVideoOptions> {
+  const { video } = opened
   const full = await displaySize(video)
   const even = encodableSize(full)
   const crop = size ? undefined : (area ?? (even.width === full.width && even.height === full.height ? undefined : { x: 0, y: 0, ...even }))
@@ -376,12 +384,18 @@ async function inspect(job: InspectJob): Promise<InspectOutput> {
     if (!(duration > 0)) throw new JobError('read-failed')
     const { width, height } = await displaySize(video)
     const even = encodableSize({ width, height })
-    const canTranscodeVideo =
-      (await video.canDecode()) && (await getFirstEncodableVideoCodec(TRANSCODE_CODECS[format], { ...even, quality: QUALITY })) !== null
+    const canDecodeVideo = await video.canDecode()
     const canDecodeAudio = audio !== null && (await audio.canDecode())
+    const encodable = async (target: VideoFormat) => ({
+      video: canDecodeVideo && (await getFirstEncodableVideoCodec(TRANSCODE_CODECS[target], { ...even, quality: QUALITY })) !== null,
+      audio: canDecodeAudio && (await getFirstEncodableAudioCodec(AUDIO_CODECS[target], STEREO_48K)) !== null,
+    })
+    // MP4 e MOV refazem nos mesmos codecs (H.264 e AAC).
+    const isobmff = await encodable('mp4')
+    const reencodable = { mp4: isobmff, mov: isobmff, webm: await encodable('webm') }
+    const canTranscodeVideo = reencodable[format].video
     // Recodificam o som: remover partes (emendas) e o corte exato de WEBM (o formato não começa antes do zero).
-    const canTranscodeAudio =
-      !audio || (canDecodeAudio && (await getFirstEncodableAudioCodec(AUDIO_CODECS[format], { numberOfChannels: 2, sampleRate: 48_000 })) !== null)
+    const canTranscodeAudio = !audio || reencodable[format].audio
     const probeCodec = job.checkSizeControl && canTranscodeVideo ? await getFirstEncodableVideoCodec(TRANSCODE_CODECS[format], PROBE_SIZE) : null
     return {
       kind: 'inspect',
@@ -397,9 +411,11 @@ async function inspect(job: InspectJob): Promise<InspectOutput> {
         canTranscodeAudio,
         audioCodec: audio ? await audio.getCodec() : null,
         canDecodeAudio,
-        canEncodeAac: canDecodeAudio && (await canEncodeAudio('aac', { numberOfChannels: 2, sampleRate: 48_000 })),
+        canEncodeAac: isobmff.audio,
         // O MP3 vem do codificador próprio, em WebAssembly (desligado, por exemplo, no Modo de Isolamento do iPhone).
         canEncodeMp3: canDecodeAudio && typeof WebAssembly === 'object',
+        rotated: (await video.getRotation()) !== 0,
+        reencodable,
         extraTracks,
         ...(job.checkSizeControl && { controlsSize: probeCodec !== null && (await controlsSize(probeCodec)) }),
       },
@@ -562,18 +578,25 @@ function loadMp3Encoder(): Promise<void> {
 /** Taxas de amostragem que todo tocador aceita; outras (ex.: 96 kHz de gravador) saem em 48 kHz. */
 const REENCODED_SAMPLE_RATES = [44_100, 48_000]
 
-/** Som refeito: AAC (M4A) ou MP3, em estéreo no máximo, na taxa de bits padrão. */
+/** Som refeito, em estéreo no máximo e numa taxa de amostragem que o codec e todo tocador aceitam. */
+async function reencodedAudio(audio: InputAudioTrack, codec: AudioCodec, bitrate = REENCODED_AUDIO_BITRATE): Promise<ConversionAudioOptions> {
+  const sampleRate = await audio.getSampleRate()
+  // O Opus só trabalha em 48 kHz.
+  const keepRate = codec !== 'opus' && REENCODED_SAMPLE_RATES.includes(sampleRate)
+  return {
+    codec,
+    forceTranscode: true,
+    quality: new Quality({ bitrate }),
+    numberOfChannels: Math.min(await audio.getNumberOfChannels(), 2),
+    ...(!keepRate && { sampleRate: 48_000 }),
+  }
+}
+
+/** Som refeito para um arquivo de som: AAC (M4A) ou MP3. */
 async function reencodedAudioOptions(audio: InputAudioTrack, format: Exclude<AudioFormat, 'webm'>): Promise<ConversionAudioOptions> {
   if (!(await audio.canDecode())) throw new JobError('decode-unsupported')
   if (format === 'mp3') await loadMp3Encoder()
-  const sampleRate = await audio.getSampleRate()
-  return {
-    codec: format === 'mp3' ? 'mp3' : 'aac',
-    forceTranscode: true,
-    quality: new Quality({ bitrate: REENCODED_AUDIO_BITRATE }),
-    numberOfChannels: Math.min(await audio.getNumberOfChannels(), 2),
-    ...(!REENCODED_SAMPLE_RATES.includes(sampleRate) && { sampleRate: 48_000 }),
-  }
+  return reencodedAudio(audio, format === 'mp3' ? 'mp3' : 'aac')
 }
 
 /** Opções do som: copiar, quando o formato pedido comporta o som original, ou refazer. */
@@ -606,6 +629,42 @@ async function extractAudio(job: ExtractAudioJob, onProgress: ProgressReporter):
   }
 }
 
+/** Som refeito no codec do formato novo: AAC no MP4 e no MOV; Opus (ou Vorbis) no WEBM. */
+async function convertedAudioOptions(audio: InputAudioTrack, target: VideoFormat, bitrate: number): Promise<ConversionAudioOptions> {
+  if (!(await audio.canDecode())) throw new JobError('decode-unsupported')
+  const codec = await getFirstEncodableAudioCodec(AUDIO_CODECS[target], STEREO_48K)
+  if (!codec) throw new JobError('encode-unsupported')
+  return reencodedAudio(audio, codec, bitrate)
+}
+
+const isBitrate = (value: number) => Number.isInteger(value) && value > 0
+
+async function convertFormat(job: ConvertJob, onProgress: ProgressReporter): Promise<ConvertOutput> {
+  // O protocolo é tipado, mas o pedido vem de outra thread: formato, modo ou taxas inválidos são recusados.
+  const valid = Object.hasOwn(VIDEO_FORMATS, job.format) && VIDEO_MODES.includes(job.mode) && isBitrate(job.bitrate) && isBitrate(job.audioBitrate)
+  if (!valid) throw new JobError('unexpected')
+  const opened = await openVideo(job.file)
+  try {
+    const { video, audio } = opened
+    if (opened.format === job.format) throw new JobError('unexpected')
+    const source = {
+      codec: (await reading(video.getCodec())) ?? '',
+      audioCodec: audio ? await reading(audio.getCodec()) : null,
+      rotated: (await reading(video.getRotation())) !== 0,
+    }
+    const actions = convertActions(source, job.format, job.mode)
+    const videoOptions = actions.video === 'copy' ? {} : await reading(transcodeOptions(opened, { bitrate: job.bitrate, target: job.format }))
+    const audioOptions = audio && actions.audio === 'encode' ? await reading(convertedAudioOptions(audio, job.format, job.audioBitrate)) : {}
+    const container = { format: outputFormatFor(job.format), mimeType: VIDEO_FORMATS[job.format].mimeType }
+    // Tudo copiado, como a tela prometeu: nada é refeito em silêncio.
+    const copyOnly = actions.video === 'copy' && actions.audio !== 'encode'
+    const blob = await convert(opened, { video: videoOptions, audio: audioOptions, container, copyOnly }, onProgress)
+    return { kind: 'convert', blob, ...actions }
+  } finally {
+    opened.input.dispose()
+  }
+}
+
 function run(job: VideoJob, onProgress: ProgressReporter): Promise<VideoJobOutput> {
   switch (job.kind) {
     case 'inspect':
@@ -620,6 +679,8 @@ function run(job: VideoJob, onProgress: ProgressReporter): Promise<VideoJobOutpu
       return compress(job, onProgress)
     case 'extract-audio':
       return extractAudio(job, onProgress)
+    case 'convert':
+      return convertFormat(job, onProgress)
   }
 }
 

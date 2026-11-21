@@ -52,7 +52,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   { id: 'video-compress', title: 'Comprimir vídeo', description: 'Reduza o tamanho para enviar ou guardar', icon: Minimize2, to: '/videos/comprimir' },
   { id: 'video-audio', title: 'Extrair áudio', description: 'Salve só o som do vídeo, em M4A ou MP3', icon: Music, to: '/videos/extrair-audio' },
   { id: 'video-resize', title: 'Mudar resolução', description: 'Diminua para 1080p, 720p, 480p ou 360p', icon: Scaling, to: '/videos/resolucao' },
-  { id: 'video-convert', title: 'Converter vídeo', description: 'Troque o formato do arquivo', icon: ArrowLeftRight },
+  { id: 'video-convert', title: 'Converter vídeo', description: 'Entre MP4, MOV e WEBM', icon: ArrowLeftRight, to: '/videos/converter' },
   { id: 'video-gif', title: 'Criar GIF', description: 'Transforme um trecho do vídeo em GIF animado', icon: ImagePlay },
 ]
 

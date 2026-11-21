@@ -1,10 +1,11 @@
 import type { CropRect } from '../core/image/crop'
 import type { AudioFormat } from '../core/video/audio'
+import type { TrackAction, VideoMode } from '../core/video/convert'
 import type { VideoFormat } from '../core/video/formats'
 import type { VideoErrorCode } from '../core/video/messages'
 import type { TrimMode, TrimRange } from '../core/video/trim'
 
-/* Tarefas que o Worker de vídeo executa. O vídeo resultante sai sempre no mesmo formato do original. */
+/* Tarefas que o Worker de vídeo executa. O vídeo resultante sai no mesmo formato do original, menos ao converter. */
 
 /** Abre o vídeo: formato, duração, medidas e o que este navegador consegue fazer com ele. */
 export interface InspectJob {
@@ -63,7 +64,24 @@ export interface ExtractAudioJob {
   format: AudioFormat
 }
 
-export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob | CompressJob | ExtractAudioJob
+/**
+ * Troca o formato do arquivo (MP4, MOV ou WEBM, diferente do original). O que o formato novo comporta é
+ * copiado sem refazer; o resto é refeito (H.264 e AAC no MP4 e no MOV, VP9 e Opus no WEBM), pelas regras de
+ * `core/video/convert.ts`.
+ */
+export interface ConvertJob {
+  kind: 'convert'
+  file: Blob
+  format: VideoFormat
+  /** Só muda algo para HEVC indo para MP4 ou MOV: "fast" copia o HEVC; "compatible" o refaz em H.264. */
+  mode: VideoMode
+  /** Taxa do vídeo, em bits por segundo, usada se ele for refeito. */
+  bitrate: number
+  /** Taxa do som, em bits por segundo, usada se ele for refeito. */
+  audioBitrate: number
+}
+
+export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob | CompressJob | ExtractAudioJob | ConvertJob
 
 /** Tarefas que geram um arquivo (todas menos abrir). */
 export type ProcessingJob = Exclude<VideoJob, InspectJob>
@@ -97,6 +115,13 @@ export interface VideoInfo {
   canEncodeAac: boolean
   /** O navegador decodifica o som e roda o codificador próprio de MP3 (WebAssembly). */
   canEncodeMp3: boolean
+  /** Tem rotação gravada (ex.: celular em pé). O WEBM não guarda rotação: converter para ele refaz o vídeo. */
+  rotated: boolean
+  /**
+   * Para cada formato, se o navegador consegue refazer o vídeo e o som nos codecs dele (H.264 e AAC no MP4
+   * e no MOV, VP9 e Opus no WEBM): é o que o Converter vídeo precisa quando não dá para copiar. Som: falso sem som.
+   */
+  reencodable: Record<VideoFormat, { video: boolean; audio: boolean }>
   /** Há mais de uma faixa de vídeo ou de áudio: o resultado fica só com as principais. */
   extraTracks: boolean
   /**
@@ -142,7 +167,15 @@ export interface ExtractAudioOutput {
   copied: boolean
 }
 
-export type VideoJobOutput = InspectOutput | TrimOutput | JoinOutput | CropOutput | CompressOutput | ExtractAudioOutput
+export interface ConvertOutput {
+  kind: 'convert'
+  blob: Blob
+  video: TrackAction
+  /** `null` sem som. */
+  audio: TrackAction | null
+}
+
+export type VideoJobOutput = InspectOutput | TrimOutput | JoinOutput | CropOutput | CompressOutput | ExtractAudioOutput | ConvertOutput
 
 export type VideoOutputFor<J extends VideoJob> = Extract<VideoJobOutput, { kind: J['kind'] }>
 

@@ -118,6 +118,14 @@ export const router = createBrowserRouter([
           return { Component: ExtractAudioPage }
         },
       },
+      {
+        path: 'videos/converter',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { ConvertPage } = await import('../features/video-tools/convert/ConvertPage')
+          return { Component: ConvertPage }
+        },
+      },
       ...devRoutes,
       { path: '*', element: <NotFoundPage /> },
     ],

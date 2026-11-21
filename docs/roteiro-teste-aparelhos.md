@@ -1,6 +1,6 @@
 # Roteiro de teste em aparelhos reais
 
-Os testes automáticos rodam no Chromium, no Firefox e no WebKit do Windows, com o celular **simulado**. Ficam de fora o Safari de verdade, o seletor de fotos, a galeria, a memória de um celular, o toque real e os vídeos gravados pela câmera (HEVC no iPhone). Este roteiro cobre esses pontos em cerca de 50 minutos por aparelho. Faça em pelo menos um iPhone (Safari) e um Android (Chrome).
+Os testes automáticos rodam no Chromium, no Firefox e no WebKit do Windows, com o celular **simulado**. Ficam de fora o Safari de verdade, o seletor de fotos, a galeria, a memória de um celular, o toque real e os vídeos gravados pela câmera (HEVC no iPhone). Este roteiro cobre esses pontos em cerca de 55 minutos por aparelho. Faça em pelo menos um iPhone (Safari) e um Android (Chrome).
 
 ## 1. Abrir o site no celular
 
@@ -98,6 +98,12 @@ Marque ✔ ou ✘ e anote o que estranhar.
 40. Abra o vídeo curto da câmera, gravado em pé: as resoluções iguais ou maiores que a do vídeo aparecem desligadas, com a explicação de que só dá para diminuir. Escolha 720p, mude e baixe: o vídeo continua em pé, sem esticar, com som, e a galeria mostra 720 de largura. Anote o tempo.
 41. Com o vídeo longo, escolha 480p: anote o tempo e o tamanho antes e depois.
 
+**Converter vídeo** (`/videos/converter`; itens novos, no fim para não mudar a numeração acima)
+
+42. No iPhone, abra o vídeo curto da câmera (MOV): MP4 já vem marcado e aparece "Vídeo HEVC (do iPhone)" com "Compatível" e "Rápido". Em "Compatível", converta, anote o tempo e baixe: o `.mp4` toca no iPhone, em pé e com som. Se puder, abra também num computador com Windows.
+43. Com o mesmo vídeo, escolha "Rápido": termina quase na hora. O `.mp4` toca no iPhone. Anote se ele toca num computador com Windows ou num Android (pode não tocar: é o aviso da opção).
+44. No Android, abra o vídeo curto da câmera (MP4): MOV já vem marcado e diz "Só troca o formato do arquivo". Converta: termina quase na hora. Depois escolha WEBM, converta e anote o tempo com o vídeo longo. O `.webm` toca no aparelho, em pé e com som.
+
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.
@@ -112,6 +118,7 @@ Confirme se acontecem; não precisam ser tratados como erro.
 - Comprimir mostra um tamanho estimado: o real pode ficar um pouco acima ou abaixo. Se não ficar menor que o original, o app entrega o original.
 - O limite é de 1 GB por vídeo. Num celular com pouca memória, vídeos bem menores que isso podem falhar com a mensagem de memória. **Anote o tamanho e a duração se acontecer.**
 - Extrair áudio: o M4A copiado é instantâneo; o MP3 é refeito e leva mais tempo (no computador, cerca de 10 s para cada 3 minutos de som). O som de vídeos WEBM sai em WEBM, que iPhones mais antigos podem não tocar: para eles, existem M4A e MP3.
+- Converter vídeo: entre MP4 e MOV, um vídeo H.264 só é copiado (instantâneo). Para WEBM, ou de WEBM para MP4 e MOV, o vídeo é refeito e demora em vídeos longos. Um vídeo pequeno e já bem comprimido pode sair um pouco maior ao ser refeito. No Firefox, MP4 e MOV ficam indisponíveis quando o som precisa ser refeito (o Firefox não gera AAC).
 
 ## 5. Resultado
 
@@ -126,5 +133,6 @@ Foto grande: resolução ___ · ___ s até a prévia · ___ s para converter · 
 Vídeo: duração ___ · tamanho ___ · formato (HEVC/H.264) ___ · ___ s no corte exato · ___ s no corte rápido · ___ s para recortar · comprimir (Média): ___ MB → ___ MB em ___ s
 Extrair áudio (vídeo longo): ___ s em M4A · ___ s em MP3
 Mudar resolução (vídeo longo, 480p): ___ s · ___ MB → ___ MB
+Converter vídeo (vídeo longo): ___ s em Compatível (iPhone) · ___ s para WEBM · ___ MB → ___ MB
 Prints ou gravação de tela dos problemas
 ```

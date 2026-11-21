@@ -7,8 +7,8 @@ import type { VideoFormat } from './formats'
 
 const REFERENCE_PIXELS = 1920 * 1080
 const REFERENCE_BITRATE = 3_000_000
-/** VP9 (WEBM) precisa de cerca de 60% da taxa do H.264 para a mesma qualidade. */
-const CODEC_EFFICIENCY: Record<VideoFormat, number> = { mp4: 1, mov: 1, webm: 0.6 }
+/** Taxa do vídeo refeito em cada formato, em relação ao H.264: o VP9 (WEBM) precisa de cerca de 60% para a mesma qualidade. */
+export const FORMAT_EFFICIENCY: Record<VideoFormat, number> = { mp4: 1, mov: 1, webm: 0.6 }
 export const MIN_VIDEO_BITRATE = 100_000
 
 const even = (value: number) => Math.max(2, 2 * Math.round(value / 2))
@@ -29,8 +29,24 @@ export function fitShortSide(size: Dimensions, maxShortSide: number | null): Dim
  */
 export function videoBitrateFor(size: Dimensions, factor: number, format: VideoFormat): number {
   const scale = ((size.width * size.height) / REFERENCE_PIXELS) ** 0.95
-  return REFERENCE_BITRATE * scale * factor * CODEC_EFFICIENCY[format]
+  return REFERENCE_BITRATE * scale * factor * FORMAT_EFFICIENCY[format]
 }
 
 /** Arredonda a taxa (kbit/s inteiros), respeitando o mínimo. */
 export const roundBitrate = (bitrate: number) => Math.max(MIN_VIDEO_BITRATE, Math.round(bitrate / 1000) * 1000)
+
+/** Qualidade alta, como a do vídeo refeito ao recortar (o dobro da referência do Comprimir). */
+export const HIGH_QUALITY_FACTOR = 2
+
+export interface OriginalVideo {
+  original: Dimensions
+  originalBytes: number
+  /** Em segundos. */
+  duration: number
+  /** Taxa do som do original; `null` sem som. */
+  audioBitrate: number | null
+}
+
+/** Taxa média só do vídeo no original: o arquivo inteiro menos o som. */
+export const originalVideoBitrate = ({ originalBytes, duration, audioBitrate }: OriginalVideo) =>
+  Math.max(0, (originalBytes * 8) / duration - (audioBitrate ?? 0))

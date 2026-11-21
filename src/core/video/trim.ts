@@ -36,9 +36,11 @@ export interface TrimError {
 
 export type TrimValidation = { ok: true; range: TrimRange } | { ok: false; error: TrimError }
 
-/** Pedido de foco: um objeto novo a cada tentativa de cortar com problema. */
+/** Pedido de foco: um objeto novo a cada pedido (tentativa de cortar com problema, parte nova). */
 export interface TrimFocusRequest {
   field: TrimField
+  /** Ao remover partes, qual delas (o `id` da parte). */
+  part?: number
 }
 
 /**
@@ -66,6 +68,15 @@ export function availableTrimModes({ format, canTranscodeVideo, canTranscodeAudi
   }
 }
 
+/** O que fazer com o vídeo: manter só um trecho, ou remover partes e juntar o que sobra. */
+export type TrimAction = 'keep' | 'remove'
+
+/**
+ * Remover partes emenda pedaços: o vídeo e o som são sempre recodificados (o som em AAC no MP4 e no
+ * MOV, em Opus no WEBM), então o navegador precisa conseguir as duas coisas.
+ */
+export const canRemoveParts = ({ canTranscodeVideo, canTranscodeAudio }: TrimCapabilities) => canTranscodeVideo && canTranscodeAudio
+
 /** O modo escolhido, se possível; senão o outro; `null` quando não dá para cortar este vídeo aqui. */
 export function resolveTrimMode(preferred: TrimMode, available: Record<TrimMode, boolean>): TrimMode | null {
   if (available[preferred]) return preferred
@@ -91,24 +102,40 @@ export const isWholeVideo = (range: TrimRange, duration: number) => range.start 
 /** Aviso de tentativa sem nada cortado. */
 export const NOTHING_TRIMMED = 'Ajuste o início ou o fim antes: o trecho ainda é o vídeo inteiro.'
 
-/** Confere os campos e os traduz no trecho. Valor errado vem antes de campo vazio. */
-export function validateTrim(fields: TrimFields, duration: number): TrimValidation {
-  const values: Partial<Record<TrimField, number>> = {}
+/** Folga das comparações de tempo, em segundos (ver TOLERANCE), para as outras regras de corte. */
+export const TIME_TOLERANCE = TOLERANCE
+
+/** Tempos lidos dos campos; os vazios ficam de fora. */
+export type TimeValues = Partial<Record<TrimField, number>>
+
+export type TimeValuesCheck = { ok: true; values: TimeValues } | { ok: false; error: TrimError }
+
+/** Primeira etapa: cada campo preenchido é um tempo dentro do vídeo. Campo vazio fica para depois. */
+export function checkTimeValues(fields: TrimFields, duration: number): TimeValuesCheck {
+  const values: TimeValues = {}
   for (const field of TRIM_FIELDS) {
     if (fields[field].trim() === '') continue
     const value = parseTime(fields[field])
-    if (value === null) return invalid('Use minutos e segundos, como 1:05,30.', [field])
+    if (value === null) return { ok: false, error: { message: 'Use minutos e segundos, como 1:05,30.', fields: [field], missing: false } }
     values[field] = value
   }
 
   const durationText = formatTime(duration)
   const { start, end } = values
   if (start !== undefined && start >= duration - TOLERANCE) {
-    return invalid(`O vídeo tem ${durationText}: o início precisa vir antes disso.`, ['start'])
+    return { ok: false, error: { message: `O vídeo tem ${durationText}: o início precisa vir antes disso.`, fields: ['start'], missing: false } }
   }
   if (end !== undefined && end > duration + TOLERANCE) {
-    return invalid(`O vídeo tem ${durationText}: o fim não pode passar disso.`, ['end'])
+    return { ok: false, error: { message: `O vídeo tem ${durationText}: o fim não pode passar disso.`, fields: ['end'], missing: false } }
   }
+  return { ok: true, values }
+}
+
+/**
+ * Segunda etapa: os dois campos preenchidos, o início antes do fim e a duração mínima.
+ * `subject` nomeia o que está sendo medido ("O trecho", "A parte").
+ */
+export function checkRange(fields: TrimFields, { start, end }: TimeValues, duration: number, subject: string): TrimValidation {
   if (start === undefined || end === undefined) {
     const empty = TRIM_FIELDS.filter((field) => fields[field].trim() === '')
     const names = empty.map((field) => FIELD_NAMES[field])
@@ -117,7 +144,14 @@ export function validateTrim(fields: TrimFields, duration: number): TrimValidati
   if (start >= end) return invalid('O início precisa vir antes do fim.', ['start', 'end'])
   const range = { start, end: Math.min(end, duration) }
   if (range.end - range.start < MIN_TRIM_SECONDS - TOLERANCE) {
-    return invalid('O trecho precisa ter pelo menos 0,1 segundo.', ['end', 'start'])
+    return invalid(`${subject} precisa ter pelo menos 0,1 segundo.`, ['end', 'start'])
   }
   return { ok: true, range }
+}
+
+/** Confere os campos e os traduz no trecho. Valor errado vem antes de campo vazio. */
+export function validateTrim(fields: TrimFields, duration: number): TrimValidation {
+  const checked = checkTimeValues(fields, duration)
+  if (!checked.ok) return checked
+  return checkRange(fields, checked.values, duration, 'O trecho')
 }

@@ -1,50 +1,73 @@
 import { ArrowLeftToLine, ArrowRightToLine, Play } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../../components/ui/Button'
+import { formatTime } from '../../../core/video/time'
 import type { TrimField, TrimRange } from '../../../core/video/trim'
+import { TrimTimeline } from './TrimTimeline'
 
 interface TrimPreviewProps {
   /** URL temporária do vídeo (quem a cria a libera). */
   src: string
   name: string
-  /** Trecho válido atual, para "Tocar o trecho". */
-  range?: TrimRange
+  duration: number
+  /** O que fica do vídeo, em ordem: a linha do tempo mostra, e "Ver como fica" toca só isso. */
+  kept: readonly TrimRange[]
+  /** O que os botões marcam, para a frase de ajuda: "o trecho", "a parte 2". */
+  target: string
   onMark: (field: TrimField, time: number) => void
   disabled?: boolean
 }
 
+/** Pedaços a tocar em "Ver como fica" e qual está tocando. */
+interface Playback {
+  ranges: readonly TrimRange[]
+  index: number
+}
+
 /**
- * Player do vídeo com os controles do navegador (teclado incluído) e os atalhos para marcar o início
- * e o fim no ponto em que ele está. Os campos de tempo são a alternativa a usar o player.
+ * Player do vídeo com os controles do navegador (teclado incluído), a linha do tempo do que fica e os
+ * atalhos para marcar o início e o fim no ponto em que ele está. Os campos de tempo são a alternativa.
  */
-export function TrimPreview({ src, name, range, onMark, disabled = false }: TrimPreviewProps) {
+export function TrimPreview({ src, name, duration, kept, target, onMark, disabled = false }: TrimPreviewProps) {
   const video = useRef<HTMLVideoElement>(null)
-  const stopAt = useRef<number | null>(null)
+  const playback = useRef<Playback | null>(null)
   const frame = useRef(0)
+  const [time, setTime] = useState(0)
   const [unplayable, setUnplayable] = useState(false)
 
   useEffect(() => () => cancelAnimationFrame(frame.current), [])
 
-  /** Confere a cada quadro de tela (não a cada evento de tempo, que vem 4 vezes por segundo) se o trecho acabou. */
-  function watchEnd() {
+  /**
+   * Confere a cada quadro de tela (não a cada evento de tempo, que vem 4 vezes por segundo) se o pedaço
+   * acabou: pula para o próximo ou para no último. Assim as partes removidas não aparecem.
+   */
+  function follow() {
     const element = video.current
-    if (!element || stopAt.current === null) return
-    if (element.currentTime >= stopAt.current) {
-      stopAt.current = null
-      element.pause()
-      return
+    const current = playback.current
+    if (!element || !current) return
+    const range = current.ranges[current.index]
+    if (range && element.currentTime >= range.end) {
+      const next = current.ranges[current.index + 1]
+      if (!next) {
+        playback.current = null
+        element.pause()
+        return
+      }
+      current.index += 1
+      element.currentTime = next.start
     }
-    frame.current = requestAnimationFrame(watchEnd)
+    frame.current = requestAnimationFrame(follow)
   }
 
-  function playRange() {
+  function preview() {
     const element = video.current
-    if (!element || !range) return
+    const [first] = kept
+    if (!element || !first) return
     cancelAnimationFrame(frame.current)
-    element.currentTime = range.start
-    stopAt.current = range.end
-    element.play().then(watchEnd, () => {
-      stopAt.current = null // o navegador recusou tocar (ex.: interrompido): nada a acompanhar
+    playback.current = { ranges: kept, index: 0 }
+    element.currentTime = first.start
+    element.play().then(follow, () => {
+      playback.current = null // o navegador recusou tocar (ex.: interrompido): nada a acompanhar
     })
   }
 
@@ -61,28 +84,38 @@ export function TrimPreview({ src, name, range, onMark, disabled = false }: Trim
         playsInline
         preload="metadata"
         aria-label={`Vídeo ${name}`}
+        onTimeUpdate={(event) => setTime(event.currentTarget.currentTime)}
         onPause={() => {
-          stopAt.current = null // pausado pela pessoa: o trecho deixa de ser acompanhado
+          playback.current = null // pausado pela pessoa: "Ver como fica" deixa de pular as partes
         }}
         onError={() => setUnplayable(true)}
         className="max-h-[50dvh] w-full rounded-lg border border-border bg-bg"
       />
-      {unplayable && (
+      <TrimTimeline duration={duration} kept={kept} time={time} />
+      {unplayable ? (
         <p className="text-sm text-fg-muted">
-          Este navegador não consegue mostrar este vídeo, mas você ainda pode cortá-lo digitando o início e o fim.
+          Este navegador não consegue mostrar este vídeo, mas você ainda pode cortá-lo digitando os tempos.
         </p>
+      ) : (
+        <div className="grid gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <Button icon={ArrowLeftToLine} onClick={() => mark('start')} disabled={disabled}>
+              Marcar início aqui
+            </Button>
+            <Button icon={ArrowRightToLine} onClick={() => mark('end')} disabled={disabled}>
+              Marcar fim aqui
+            </Button>
+            <Button variant="ghost" icon={Play} onClick={preview} disabled={disabled || kept.length === 0} className="col-span-2 sm:col-auto">
+              Ver como fica
+            </Button>
+          </div>
+          <p className="text-xs text-fg-muted">
+            {'Agora em '}
+            <span className="font-mono tabular-nums">{formatTime(time)}</span>
+            {` · os botões marcam ${target}.`}
+          </p>
+        </div>
       )}
-      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        <Button icon={ArrowLeftToLine} onClick={() => mark('start')} disabled={disabled || unplayable}>
-          Marcar início aqui
-        </Button>
-        <Button icon={ArrowRightToLine} onClick={() => mark('end')} disabled={disabled || unplayable}>
-          Marcar fim aqui
-        </Button>
-        <Button variant="ghost" icon={Play} onClick={playRange} disabled={disabled || unplayable || !range} className="col-span-2 sm:col-auto">
-          Tocar o trecho
-        </Button>
-      </div>
     </div>
   )
 }

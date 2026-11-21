@@ -33,6 +33,8 @@ export interface VideoReport {
   rotation: number
   videoCodec: string | null
   audioCodec: string | null
+  /** Fim do som, em segundos (null sem som): deve acompanhar o fim da imagem. */
+  audioDuration: number | null
   firstTimestamp: number
   tags: Record<string, unknown>
   /** Cor do pixel (x, y), em medidas do quadro como ele aparece, no tempo pedido (segundos). */
@@ -55,6 +57,7 @@ export async function readVideo(blob: Blob): Promise<VideoReport> {
     rotation: await video.getRotation(),
     videoCodec: await video.getCodec(),
     audioCodec: audio ? await audio.getCodec() : null,
+    audioDuration: audio ? await audio.computeDuration() : null,
     firstTimestamp: await video.getFirstTimestamp(),
     tags: { ...tags, ...(raw && { raw }) },
     async colorAt(time, x, y) {

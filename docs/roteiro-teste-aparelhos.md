@@ -61,21 +61,22 @@ Marque ✔ ou ✘ e anote o que estranhar.
 **Cortar trecho** (`/videos/cortar`)
 
 23. "Selecionar vídeo" abre a galeria. Escolha o vídeo curto: o player mostra o vídeo, e a linha técnica traz formato, medidas, duração e tamanho. Anote se apareceu "só o corte rápido está disponível" (vídeo HEVC num navegador que não o recodifica).
-24. Toque no player para ir a uns 3 s e em "Marcar início aqui"; vá a uns 8 s e toque em "Marcar fim aqui". "Tocar o trecho" toca só esse pedaço.
+24. Toque no player para ir a uns 3 s e em "Marcar início aqui"; vá a uns 8 s e toque em "Marcar fim aqui". "Ver como fica" toca só esse pedaço, e a linha azul abaixo do player mostra o que fica.
 25. Modo Exato: corte e baixe. O vídeo baixado começa e termina nos pontos marcados, com som, e continua em pé na galeria. Anote o tempo.
 26. Modo Rápido, com o mesmo trecho: termina quase na hora. Abra o arquivo na galeria e em outro app (WhatsApp, por exemplo) e anote se algum mostra segundos antes do início.
 27. Vídeo longo, modo Exato: anote o tempo e toque em "Cancelar" no meio de uma segunda tentativa; a página volta às opções.
+28. Em "Remover partes", marque uma parte do meio do vídeo curto (por exemplo, de 5 a 7 s) e outra perto do fim, com "Adicionar parte". "Ver como fica" pula as duas. Corte e baixe: o vídeo não mostra nada das partes removidas, o som acompanha a imagem depois de cada emenda e não há estalo forte. Anote o tempo.
 
 **Recortar vídeo** (`/videos/recortar`)
 
-28. Abra o vídeo curto: a área aparece sobre o vídeo. Arraste os cantos com o dedo; "Reproduzir" e a barra "Momento do vídeo" mostram outras partes do vídeo sob a área.
-29. Escolha 9:16 (ou 16:9, se o vídeo estiver deitado), recorte e baixe: o vídeo sai com só a área escolhida, em pé, com som. Anote o tempo.
+29. Abra o vídeo curto: a área aparece sobre o vídeo. Arraste os cantos com o dedo; "Reproduzir" e a barra "Momento do vídeo" mostram outras partes do vídeo sob a área.
+30. Escolha 9:16 (ou 16:9, se o vídeo estiver deitado), recorte e baixe: o vídeo sai com só a área escolhida, em pé, com som. Anote o tempo.
 
 **Uso geral**
 
-30. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels e no Recortar, os campos abrem o teclado numérico.
-31. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar."), cada toque em girar ou espelhar diz como a imagem ficou, e a área de recorte e os cantos têm nomes em português. No Cortar trecho, "Marcar início aqui" anuncia o tempo marcado.
-32. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
+31. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels e no Recortar, os campos abrem o teclado numérico.
+32. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar."), cada toque em girar ou espelhar diz como a imagem ficou, e a área de recorte e os cantos têm nomes em português. No Cortar trecho, "Marcar início aqui" anuncia o tempo marcado.
+33. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
 
 ## 4. Comportamentos já conhecidos
 

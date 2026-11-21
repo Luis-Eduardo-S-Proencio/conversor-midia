@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { checkVideoFile, type VideoCheck } from '../../../core/video/inspect'
 import { videoErrorMessage, videoRejectionMessage } from '../../../core/video/messages'
 import { VideoJobError, createVideoWorkerClient, isAbortError, type VideoWorkerClient } from '../../../workers/video-client'
-import type { CropJob, TrimJob, VideoInfo } from '../../../workers/video-protocol'
+import type { CropJob, JoinJob, TrimJob, VideoInfo } from '../../../workers/video-protocol'
 
 /** Textos que mudam de uma ferramenta de vídeo para outra ("Cortar" / "Recortar"). */
 export interface VideoToolLabels {
@@ -35,7 +35,7 @@ export interface VideoToolState {
   notice?: string
 }
 
-type ProcessJob = (file: File) => TrimJob | CropJob
+type ProcessJob = (file: File) => TrimJob | JoinJob | CropJob
 
 const EMPTY: VideoToolState = { phase: 'empty', fileId: 0, progress: 0 }
 

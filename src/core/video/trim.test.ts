@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { availableTrimModes, fieldsOfRange, isWholeVideo, resolveTrimMode, validateTrim, wholeRange } from './trim'
+import { availableTrimModes, canRemoveParts, fieldsOfRange, isWholeVideo, resolveTrimMode, validateTrim, wholeRange } from './trim'
 
 describe('modos de corte', () => {
   const capable = { canTranscodeVideo: true, canTranscodeAudio: true }
@@ -18,6 +18,12 @@ describe('modos de corte', () => {
   it('WEBM com som que não dá para recodificar não tem corte exato', () => {
     expect(availableTrimModes({ format: 'webm', canTranscodeVideo: true, canTranscodeAudio: false })).toEqual({ exact: false, fast: false })
     expect(availableTrimModes({ format: 'mp4', canTranscodeVideo: true, canTranscodeAudio: false })).toEqual({ exact: true, fast: true })
+  })
+
+  it('remover partes exige recodificar o vídeo e o som', () => {
+    expect(canRemoveParts({ format: 'mp4', ...capable })).toBe(true)
+    expect(canRemoveParts({ format: 'mp4', canTranscodeVideo: true, canTranscodeAudio: false })).toBe(false)
+    expect(canRemoveParts({ format: 'webm', canTranscodeVideo: false, canTranscodeAudio: true })).toBe(false)
   })
 
   it('usa o modo escolhido quando possível; senão o outro; senão nenhum', () => {

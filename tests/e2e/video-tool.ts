@@ -8,6 +8,12 @@ import type { VideoFormat } from '../../src/core/video/formats'
 
 export const videoFixture = (name: string) => fileURLToPath(new URL(`../fixtures/videos/${name}`, import.meta.url))
 
+/**
+ * Abrir o vídeo inicia o Worker de vídeo (cerca de 500 KB) e consulta os codificadores do navegador: com
+ * vários navegadores testando ao mesmo tempo, pode passar dos 5 s padrão.
+ */
+export const OPEN_TIMEOUT = 15_000
+
 export const timeField = (page: Page, name: 'Início' | 'Fim') => page.getByRole('textbox', { name, exact: true })
 
 /** O navegador decodifica vídeo (WebCodecs)? O WebKit do Playwright no Windows não: lá só dá para copiar. */

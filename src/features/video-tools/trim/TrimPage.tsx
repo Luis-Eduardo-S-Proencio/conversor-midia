@@ -12,21 +12,32 @@ export function TrimPage() {
   const { state } = tool
   const { info } = state
   const busy = state.phase === 'processing'
-  const range = editor?.validation.ok ? editor.validation.range : undefined
+  const activeNumber = editor ? editor.remove.parts.findIndex((part) => part.id === editor.remove.active) + 1 : 0
+  const target = editor?.action === 'remove' ? `a parte ${activeNumber}` : 'o trecho'
 
   return (
     <VideoToolPage
       title="Cortar trecho"
-      description="Escolha onde o vídeo começa e termina e fique só com esse trecho. MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
+      description="Fique só com um trecho do vídeo ou tire partes do meio. MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
       labels={TRIM_LABELS}
       actionIcon={Scissors}
       tool={tool}
-      canStart={Boolean(editor?.mode)}
+      canStart={Boolean(editor?.action)}
       onStart={trim.apply}
       preview={
-        state.sourceUrl && (
+        state.sourceUrl &&
+        editor && (
           // Vídeo novo, player novo: nada do anterior (tempo, trecho em reprodução) passa para ele.
-          <TrimPreview key={state.fileId} src={state.sourceUrl} name={state.file?.name ?? ''} range={range} onMark={trim.markField} disabled={busy} />
+          <TrimPreview
+            key={state.fileId}
+            src={state.sourceUrl}
+            name={state.file?.name ?? ''}
+            duration={editor.duration}
+            kept={editor.kept}
+            target={target}
+            onMark={trim.markField}
+            disabled={busy}
+          />
         )
       }
       options={
@@ -36,20 +47,26 @@ export function TrimPage() {
             editor={editor}
             format={info.format}
             codec={info.codec}
+            canTranscodeVideo={info.canTranscodeVideo}
             extraTracks={info.extraTracks}
-            onFieldChange={trim.changeField}
-            onModeChange={trim.changeMode}
             error={trim.error}
             focusRequest={trim.focusRequest}
             disabled={busy}
+            onActionChange={trim.changeAction}
+            onFieldChange={trim.changeField}
+            onPartFieldChange={trim.changePartField}
+            onPartActivate={trim.activatePart}
+            onPartAdd={trim.addPart}
+            onPartRemove={trim.removePart}
+            onModeChange={trim.changeMode}
           />
         )
       }
       resultDetails={
-        range && (
+        editor?.finalDuration != null && (
           <dl className="flex items-baseline justify-between gap-3 text-sm">
-            <dt className="text-fg-muted">Duração do trecho</dt>
-            <dd className="font-mono tabular-nums text-fg">{formatTime(range.end - range.start)}</dd>
+            <dt className="text-fg-muted">Vídeo final</dt>
+            <dd className="font-mono tabular-nums text-fg">{formatTime(editor.finalDuration)}</dd>
           </dl>
         )
       }

@@ -1,3 +1,4 @@
+import { canEncodeAudio } from 'mediabunny'
 import { afterAll, describe, expect, it } from 'vitest'
 import cortadoUrl from '../../tests/fixtures/videos/cortado.mp4?url'
 import giradoUrl from '../../tests/fixtures/videos/girado.mp4?url'
@@ -18,6 +19,8 @@ afterAll(() => client.dispose())
 
 const SLOW = { timeout: 30_000 }
 
+const canEncodeAac = () => canEncodeAudio('aac', { numberOfChannels: 2, sampleRate: 48_000 })
+
 describe('Worker de vídeo: abrir', () => {
   it('MP4 com som: formato, duração, medidas, codec e o que o navegador consegue fazer', async () => {
     const { info } = await client.run({ kind: 'inspect', file: await fixtureBlob(segundosMp4Url) })
@@ -28,7 +31,8 @@ describe('Worker de vídeo: abrir', () => {
       codec: 'avc',
       hasAudio: true,
       canTranscodeVideo: true,
-      canTranscodeAudio: true,
+      // Som do MP4 recodificado sai em AAC: o Firefox não codifica AAC.
+      canTranscodeAudio: await canEncodeAac(),
       extraTracks: false,
     })
     expect(info.duration).toBeCloseTo(4, 1)
@@ -140,6 +144,79 @@ describe('Worker de vídeo: cortar trecho', () => {
     const file = await fixtureBlob(segundosMp4Url)
     await expect(client.run({ kind: 'trim', file, start: 5, end: 6, mode: 'exact' })).rejects.toEqual(new VideoJobError('unexpected'))
     await expect(client.run({ kind: 'trim', file, start: 2, end: 1, mode: 'exact' })).rejects.toEqual(new VideoJobError('unexpected'))
+  })
+})
+
+describe('Worker de vídeo: remover partes (juntar trechos)', () => {
+  it('MP4 sem 1,5–2,5 s: o resto se junta, sem quadros da parte removida, com som do mesmo tamanho', SLOW, async () => {
+    const file = await fixtureBlob(segundosMp4Url)
+    const ranges = [
+      { start: 0, end: 1.5 },
+      { start: 2.5, end: 4 },
+    ]
+    if (!(await canEncodeAac())) {
+      // Sem codificador de AAC (Firefox), o som do MP4 não pode ser refeito: erro claro, nada pela metade.
+      await expect(client.run({ kind: 'join', file, ranges })).rejects.toEqual(new VideoJobError('encode-unsupported'))
+      return
+    }
+    const progress: number[] = []
+    const result = await client.run({ kind: 'join', file, ranges }, { onProgress: (value) => progress.push(value) })
+    expect(result.blob.type).toBe('video/mp4')
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ format: 'MP4', videoCodec: 'avc', audioCodec: 'aac', width: 320, height: 240 })
+      expect(video.duration).toBeCloseTo(3, 1)
+      expect(video.audioDuration).toBeCloseTo(3, 1)
+      expect(video.firstTimestamp).toBeGreaterThanOrEqual(0)
+      expect(await video.colorAt(0.5, 160, 120)).toBe('red')
+      expect(await video.colorAt(1.4, 160, 120)).toBe('green') // 1,4 s do original, logo antes da emenda
+      expect(await video.colorAt(1.55, 160, 120)).toBe('blue') // 2,55 s do original, logo depois
+      expect(await video.colorAt(2.6, 160, 120)).toBe('yellow') // 3,6 s do original
+    } finally {
+      video.dispose()
+    }
+    expect(progress.length).toBeGreaterThan(0)
+  })
+
+  it('WEBM com várias partes removidas: cada emenda no lugar certo, som em Opus', SLOW, async () => {
+    const ranges = [
+      { start: 0, end: 0.5 },
+      { start: 1, end: 2 },
+      { start: 3, end: 4 },
+    ]
+    const result = await client.run({ kind: 'join', file: await fixtureBlob(segundosWebmUrl), ranges })
+    expect(result.blob.type).toBe('video/webm')
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ format: 'WebM', videoCodec: 'vp9', audioCodec: 'opus' })
+      expect(video.duration).toBeCloseTo(2.5, 1)
+      expect(video.audioDuration).toBeCloseTo(2.5, 1)
+      expect(await video.colorAt(0.25, 160, 120)).toBe('red')
+      expect(await video.colorAt(0.75, 160, 120)).toBe('green') // 1,25 s do original
+      expect(await video.colorAt(1.4, 160, 120)).toBe('green') // 1,9 s do original
+      expect(await video.colorAt(1.6, 160, 120)).toBe('yellow') // 3,1 s do original: o azul (2–3 s) saiu
+    } finally {
+      video.dispose()
+    }
+  })
+
+  it('trechos fora de ordem, sobrepostos ou fora do vídeo são recusados', async () => {
+    const file = await fixtureBlob(segundosWebmUrl)
+    const bad = [
+      [
+        { start: 0, end: 2 },
+        { start: 1, end: 3 },
+      ],
+      [
+        { start: 2, end: 3 },
+        { start: 0, end: 1 },
+      ],
+      [{ start: 1, end: 9 }],
+      [],
+    ]
+    for (const ranges of bad) {
+      await expect(client.run({ kind: 'join', file, ranges })).rejects.toEqual(new VideoJobError('unexpected'))
+    }
   })
 })
 

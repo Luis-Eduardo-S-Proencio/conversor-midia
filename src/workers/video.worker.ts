@@ -19,23 +19,31 @@ import {
   WebMOutputFormat,
   getFirstEncodableAudioCodec,
   getFirstEncodableVideoCodec,
+  type AudioCodec,
+  type AudioSample,
+  type ConversionAudioOptions,
   type ConversionVideoOptions,
   type DiscardedTrack,
   type InputAudioTrack,
   type InputFormat,
   type InputVideoTrack,
   type VideoCodec,
+  type VideoSample,
 } from 'mediabunny'
 import { isCropWithin, type CropRect } from '../core/image/crop'
 import type { Dimensions } from '../core/image/resize'
 import { MIN_VIDEO_CROP_SIDE, encodableCrop, encodableSize } from '../core/video/crop'
 import { VIDEO_FORMATS, type VideoFormat } from '../core/video/formats'
 import type { VideoErrorCode } from '../core/video/messages'
+import { joinSegments, keptPieces, segmentAt, type JoinSegment } from '../core/video/remove'
+import { TIME_TOLERANCE, type TrimRange } from '../core/video/trim'
 import type {
   CropJob,
   CropOutput,
   InspectJob,
   InspectOutput,
+  JoinJob,
+  JoinOutput,
   TrimJob,
   TrimOutput,
   VideoJob,
@@ -60,6 +68,16 @@ const TRANSCODE_CODECS: Record<VideoFormat, VideoCodec[]> = {
   mp4: ['avc'],
   mov: ['avc'],
   webm: ['vp9', 'vp8', 'av1'],
+}
+
+/**
+ * Som recodificado (remover partes, corte exato de WEBM): AAC no MP4 e no MOV, para tocar em todo lugar,
+ * inclusive nos aparelhos da Apple; Opus (ou Vorbis) no WEBM.
+ */
+const AUDIO_CODECS: Record<VideoFormat, AudioCodec[]> = {
+  mp4: ['aac'],
+  mov: ['aac'],
+  webm: ['opus', 'vorbis'],
 }
 
 const QUALITY = new Quality('high')
@@ -177,6 +195,8 @@ function throttled(report: ProgressReporter): ProgressReporter {
 interface ConvertOptions {
   trim?: { start: number; end: number }
   video: ConversionVideoOptions
+  /** Sem opções, o som é copiado quando possível. */
+  audio?: ConversionAudioOptions
 }
 
 /** Gera o vídeo no mesmo formato do original, sem metadados (localização, data, aparelho). */
@@ -190,7 +210,7 @@ async function convert(opened: OpenedVideo, options: ConvertOptions, onProgress:
       output,
       trim: options.trim,
       video: (track) => (track.id === video.id ? options.video : { discard: true }),
-      audio: (track) => (audio && track.id === audio.id ? {} : { discard: true }),
+      audio: (track) => (audio && track.id === audio.id ? (options.audio ?? {}) : { discard: true }),
       tags: {},
       showWarnings: false,
     })
@@ -254,10 +274,11 @@ async function inspect(job: InspectJob): Promise<InspectOutput> {
     const even = encodableSize({ width, height })
     const canTranscodeVideo =
       (await video.canDecode()) && (await getFirstEncodableVideoCodec(TRANSCODE_CODECS[format], { ...even, quality: QUALITY })) !== null
-    // Só o corte exato de WEBM recodifica o áudio (o formato não aceita começar antes do zero).
+    // Recodificam o som: remover partes (emendas) e o corte exato de WEBM (o formato não começa antes do zero).
     const canTranscodeAudio =
       !audio ||
-      ((await audio.canDecode()) && (await getFirstEncodableAudioCodec(['opus', 'vorbis'], { numberOfChannels: 2, sampleRate: 48_000 })) !== null)
+      ((await audio.canDecode()) &&
+        (await getFirstEncodableAudioCodec(AUDIO_CODECS[format], { numberOfChannels: 2, sampleRate: 48_000 })) !== null)
     return {
       kind: 'inspect',
       info: {
@@ -297,6 +318,75 @@ async function trim(job: TrimJob, onProgress: ProgressReporter): Promise<TrimOut
   }
 }
 
+/** Quadro dentro de um pedaço que fica: encosta no pedaço anterior. Fora dos pedaços, sai do vídeo. */
+function joinVideoSample(segments: readonly JoinSegment[], sample: VideoSample): VideoSample | null {
+  const segment = segmentAt(segments, sample.timestamp)
+  if (!segment) return null
+  const start = sample.timestamp
+  const end = Math.min(start + sample.duration, segment.end)
+  sample.setTimestamp(start - segment.shift)
+  sample.setDuration(end - start)
+  return sample
+}
+
+/**
+ * Bloco de som (cerca de 20 ms): fica só o que cai dentro dos pedaços, cortado na amostra exata e
+ * encostado no pedaço anterior. Assim o som emendado continua contínuo e junto da imagem.
+ */
+function joinAudioSample(segments: readonly JoinSegment[], sample: AudioSample): AudioSample[] | null {
+  const parts: AudioSample[] = []
+  for (const piece of keptPieces(segments, sample.timestamp, sample.duration)) {
+    const from = Math.round((piece.from - sample.timestamp) * sample.sampleRate)
+    const to = Math.min(sample.numberOfFrames, Math.round((piece.to - sample.timestamp) * sample.sampleRate))
+    if (to <= from) continue
+    const part = sample.trim(from, to)
+    part.setTimestamp(piece.outputStart)
+    parts.push(part)
+  }
+  return parts.length > 0 ? parts : null
+}
+
+/** Trechos em ordem, sem sobreposição, dentro do vídeo. */
+function validRanges(ranges: readonly TrimRange[], duration: number): boolean {
+  return (
+    ranges.length > 0 &&
+    ranges.every(
+      (range, index) =>
+        Number.isFinite(range.start) &&
+        range.start >= 0 &&
+        range.end > range.start &&
+        range.end <= duration + TIME_TOLERANCE &&
+        range.start >= (ranges[index - 1]?.end ?? 0),
+    )
+  )
+}
+
+async function join(job: JoinJob, onProgress: ProgressReporter): Promise<JoinOutput> {
+  const opened = await openVideo(job.file)
+  try {
+    const duration = await reading(opened.input.computeDuration(selectedTracks(opened)))
+    if (!validRanges(job.ranges, duration)) throw new JobError('unexpected')
+    const ranges = job.ranges.map((range) => ({ start: range.start, end: Math.min(range.end, duration) }))
+    const first = ranges[0]
+    const last = ranges.at(-1)
+    if (!first || !last) throw new JobError('unexpected')
+    // O Mediabunny entrega os quadros já com o tempo contado a partir do início do primeiro pedaço.
+    const segments = joinSegments(ranges)
+    const video: ConversionVideoOptions = {
+      ...(await reading(transcodeOptions(opened))),
+      process: (sample) => joinVideoSample(segments, sample),
+    }
+    const audio: ConversionAudioOptions = {
+      ...(opened.format !== 'webm' && { codec: 'aac' as const }),
+      process: (sample) => joinAudioSample(segments, sample),
+    }
+    const blob = await convert(opened, { trim: { start: first.start, end: last.end }, video, audio }, onProgress)
+    return { kind: 'join', blob }
+  } finally {
+    opened.input.dispose()
+  }
+}
+
 async function crop(job: CropJob, onProgress: ProgressReporter): Promise<CropOutput> {
   const opened = await openVideo(job.file)
   try {
@@ -321,6 +411,8 @@ function run(job: VideoJob, onProgress: ProgressReporter): Promise<VideoJobOutpu
       return inspect(job)
     case 'trim':
       return trim(job, onProgress)
+    case 'join':
+      return join(job, onProgress)
     case 'crop':
       return crop(job, onProgress)
   }

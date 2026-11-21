@@ -9,7 +9,7 @@ Scaffold, Design System, navegação e páginas institucionais prontos (Início,
 
 ## Funcionalidades
 - **Imagens (primeira versão)**: converter JPG/JPEG, PNG e WEBP para JPG, PNG, WEBP, BMP, TIFF, ICO e PDF; comprimir; redimensionar; recortar, girar e espelhar; processar vários arquivos; baixar os resultados.
-- **Vídeos**: prontos: cortar trecho (início e fim, modos Exato e Rápido) e recortar o quadro, com entrada MP4, MOV e WEBM de até 1 GB e saída no mesmo formato. Etapa futura: converter formatos; comprimir; redimensionar resolução; extrair áudio; criar GIF animado a partir de um trecho (o GIF fica com os vídeos, não com as imagens).
+- **Vídeos**: prontos: cortar trecho (manter um trecho, com modos Exato e Rápido, ou remover partes do meio e juntar o resto) e recortar o quadro, com entrada MP4, MOV e WEBM de até 1 GB e saída no mesmo formato. Etapa futura: converter formatos; comprimir; redimensionar resolução; extrair áudio; criar GIF animado a partir de um trecho (o GIF fica com os vídeos, não com as imagens).
 - Fora de escopo agora: autenticação, banco de dados, backend, SVG como entrada, HEIC, qualquer formato fora da lista acima (entrada só JPG, PNG e WEBP; vídeo só MP4, MOV e WEBM). Só entram mediante pedido explícito. AVIF, HEIC e JPEG XL como saída exigem codificador em WebAssembly (dependência pesada; HEIC também tem questão de patentes): decidir quando pedidos.
 
 ## Tecnologias
@@ -41,7 +41,7 @@ src/
   core/                # TypeScript puro, sem DOM nem React: formatação, nome-base de arquivo, campos de recorte (crop-fields), só algarismos (digits)
     image/             # formatos, assinatura de bytes, cabeçalho, inspeção com limites, nomes de saída, mensagens, medidas de redimensionamento, orientação (giros e espelhos), área de recorte
       encode/          # codificadores próprios (BMP, TIFF, ICO, PDF), lendo os pixels em faixas
-    video/             # formatos, assinatura de bytes, limite, mensagens, tempos ("1:05,30"), trecho e modos de corte, regras do recorte (lados pares, mínimo), nomes de saída
+    video/             # formatos, assinatura de bytes, limite, mensagens, tempos ("1:05,30"), trecho e modos de corte, partes a remover e emendas (remove.ts), regras do recorte (lados pares, mínimo), nomes de saída
   styles/              # tokens.css (valores), base.css, index.css
   test/                # configuração dos testes de navegador, construtores de bytes de imagem e de vídeo e leitor de vídeos (video-reader)
   features/
@@ -54,7 +54,7 @@ src/
       crop/            # Recortar imagem: prévia sob a área de recorte (components/tool), regra por arquivo (crop-file.ts)
     video-tools/
       shared/          # base das ferramentas de vídeo: um vídeo por vez (useVideoTool), tela (VideoToolPage), ações com progresso
-      trim/            # Cortar trecho: player com marcar início e fim, campos de tempo, modos Exato e Rápido
+      trim/            # Cortar trecho: manter um trecho (modos Exato e Rápido) ou remover partes; player com marcar início e fim, linha do tempo e "Ver como fica"
       crop/            # Recortar vídeo: vídeo sob a área de recorte, reproduzir e escolher o momento
   workers/             # Workers de imagens e de vídeo (Mediabunny), protocolos tipados e clientes com fila e cancelamento (o de vídeo com progresso)
 scripts/               # geração de ícones e de fixtures
@@ -133,6 +133,7 @@ Antes de instalar qualquer pacote, justificar ao usuário: o problema, por que a
 - Feature isolada (`features/video-tools`), Worker próprio (`workers/video.worker.ts`, com o Mediabunny), carregado sob demanda só nas páginas de vídeo.
 - Limites: arquivo e resultado ficam na memória (`BufferTarget`): 1 GB por vídeo, avisado antes de escolher; progresso real e cancelamento (encerra o Worker) sempre. Falta de memória vira mensagem própria.
 - Preferir não recodificar. Cortar trecho: **Exato** copia o vídeo quando o início cai num quadro-chave (ou no começo) e recodifica quando não cai (não há "corte inteligente" que recodifique só o começo); **Rápido** sempre copia, a partir do quadro-chave anterior, que fica escondido antes do zero (MP4 e MOV). WEBM não guarda quadros antes do zero: lá só existe o Exato, e o som pode ser recodificado em Opus.
+- Remover partes (juntar pedaços): uma conversão do Mediabunny com `process` nos quadros e no som (`core/video/remove.ts` dá os pedaços e quanto cada um anda para encostar no anterior). Quadro em parte removida sai; o som é cortado na amostra exata, então a emenda fica contínua e junto da imagem. Vídeo e som são sempre refeitos: o som sai em AAC no MP4 e no MOV (o Firefox não gera AAC: lá a opção fica indisponível com explicação) e em Opus no WEBM. Sobrando um pedaço só, vira um corte comum (que pode copiar).
 - Recodificar: MP4 e MOV saem só em H.264 (toca em todo lugar), WEBM em VP9 (ou VP8, AV1), em qualidade alta. H.264 exige lados pares: a área de recorte perde 1 px onde for ímpar (`core/video/crop.ts`), e a tela mostra o tamanho final real. Área mínima de 16 px.
 - O que o navegador consegue (decodificar o vídeo, codificar o resultado) é conferido ao abrir; sem isso, o corte exato e o recorte ficam indisponíveis com explicação (ex.: HEVC do iPhone em navegador sem o decodificador), e o corte rápido continua.
 - Faixas: só a principal de vídeo e a de áudio (com codec conhecido); havendo outras, a tela avisa.

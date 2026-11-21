@@ -1,7 +1,7 @@
 import type { CropRect } from '../core/image/crop'
 import type { VideoFormat } from '../core/video/formats'
 import type { VideoErrorCode } from '../core/video/messages'
-import type { TrimMode } from '../core/video/trim'
+import type { TrimMode, TrimRange } from '../core/video/trim'
 
 /* Tarefas que o Worker de vídeo executa. O resultado sai sempre no mesmo formato do original. */
 
@@ -20,6 +20,16 @@ export interface TrimJob {
   mode: TrimMode
 }
 
+/**
+ * Mantém os trechos pedidos (em segundos, em ordem e sem sobreposição) e os junta, um logo depois do
+ * outro: é assim que partes do meio são removidas. O vídeo e o som são recodificados.
+ */
+export interface JoinJob {
+  kind: 'join'
+  file: Blob
+  ranges: TrimRange[]
+}
+
 /** Mantém só a área pedida, em pixels do quadro como ele aparece (rotação já aplicada). */
 export interface CropJob {
   kind: 'crop'
@@ -27,7 +37,7 @@ export interface CropJob {
   crop: CropRect
 }
 
-export type VideoJob = InspectJob | TrimJob | CropJob
+export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob
 
 /* Resultados, um por tipo de tarefa. */
 
@@ -43,7 +53,10 @@ export interface VideoInfo {
   hasAudio: boolean
   /** O navegador decodifica o vídeo e codifica o resultado: sem isso, só dá para copiar (corte rápido). */
   canTranscodeVideo: boolean
-  /** Idem para o áudio (sempre verdadeiro sem áudio). Só o corte exato de WEBM recodifica o áudio. */
+  /**
+   * O navegador decodifica o som e o codifica no formato de som do arquivo (AAC no MP4 e no MOV, Opus
+   * no WEBM); sempre verdadeiro sem som. Recodificam o som: remover partes e o corte exato de WEBM.
+   */
   canTranscodeAudio: boolean
   /** Há mais de uma faixa de vídeo ou de áudio: o resultado fica só com as principais. */
   extraTracks: boolean
@@ -61,6 +74,11 @@ export interface TrimOutput {
   copied: boolean
 }
 
+export interface JoinOutput {
+  kind: 'join'
+  blob: Blob
+}
+
 export interface CropOutput {
   kind: 'crop'
   blob: Blob
@@ -68,7 +86,7 @@ export interface CropOutput {
   height: number
 }
 
-export type VideoJobOutput = InspectOutput | TrimOutput | CropOutput
+export type VideoJobOutput = InspectOutput | TrimOutput | JoinOutput | CropOutput
 
 export type VideoOutputFor<J extends VideoJob> = Extract<VideoJobOutput, { kind: J['kind'] }>
 

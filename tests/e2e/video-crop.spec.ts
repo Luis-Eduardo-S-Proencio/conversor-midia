@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { button, download, expectNoAxeViolations, fileInput } from './image-tool.ts'
 import {
+  OPEN_TIMEOUT,
   UNSUPPORTED_DECODING,
   canDecodeVideo,
   expectVideoFormat,
@@ -35,7 +36,7 @@ async function openWithDecoding(page: Page) {
 
 async function load(page: Page, name: string) {
   await fileInput(page).setInputFiles(videoFixture(name))
-  await expect(cropArea(page)).toBeVisible()
+  await expect(cropArea(page)).toBeVisible({ timeout: OPEN_TIMEOUT })
 }
 
 test.describe('Recortar vídeo', () => {

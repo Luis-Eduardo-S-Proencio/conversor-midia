@@ -56,6 +56,21 @@ describe('BatchFiles', () => {
     expect(screen.getByRole('img', { name: /Pré-visualização/ }).elements()).toHaveLength(0)
   })
 
+  it('várias imagens: a primeira aparece grande, e tocar noutra miniatura a leva para a prévia', async () => {
+    const screen = await renderFiles([
+      { id: 'a', name: 'foto.jpg', size: 1000, status: 'ready', image, previewUrl: 'blob:a', thumbnailUrl: 'blob:a-mini' },
+      { id: 'b', name: 'outra.jpg', size: 1000, status: 'ready', image, previewUrl: 'blob:b', thumbnailUrl: 'blob:b-mini' },
+    ])
+    await expect.element(screen.getByRole('img', { name: 'Pré-visualização de foto.jpg' })).toBeInTheDocument()
+    await expect.element(screen.getByRole('button', { name: 'Mostrar foto.jpg' })).toHaveAttribute('aria-pressed', 'true')
+
+    await screen.getByRole('button', { name: 'Mostrar outra.jpg' }).click()
+    await expect.element(screen.getByRole('img', { name: 'Pré-visualização de outra.jpg' })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Pré-visualização de foto.jpg' }).elements()).toHaveLength(0)
+    await expect.element(screen.getByRole('button', { name: 'Mostrar outra.jpg' })).toHaveAttribute('aria-pressed', 'true')
+    await expect.element(screen.getByRole('button', { name: 'Mostrar foto.jpg' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('observação do resultado aparece junto do arquivo, sem tom de erro', async () => {
     const screen = await renderFiles([
       { id: 'a', name: 'foto.jpg', size: 1000, status: 'done', image, output: { name: 'foto.jpg', size: 1000, note: 'Mantida a original.' } },

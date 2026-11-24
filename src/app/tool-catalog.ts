@@ -1,4 +1,5 @@
 import { ArrowLeftRight, Crop, ImagePlay, Minimize2, Monitor, Music, RotateCw, Scaling, Scissors } from 'lucide-react'
+import type { SwitcherTool } from '../components/tool/ToolSwitcher'
 import type { NavListItem } from '../components/ui/NavList'
 import type { ToolTone } from '../components/ui/ToolIcon'
 import type { MediaKind } from '../core/media-kind'
@@ -10,11 +11,14 @@ export interface ToolEntry extends NavListItem {
   media: MediaKind
   /** Nome curto para a grade de ícones do celular (cabe em duas linhas). */
   shortTitle: string
+  /** Uma palavra, para a troca de ferramenta dentro do editor ("Converter", "Tamanho"). */
+  switchLabel: string
 }
 
 export const IMAGE_TOOLS: readonly ToolEntry[] = [
   {
     id: 'image-convert',
+    switchLabel: 'Converter',
     title: 'Converter imagem',
     shortTitle: 'Converter imagem',
     description: 'Para JPG, PNG, WEBP, PDF e mais',
@@ -25,6 +29,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'image-compress',
+    switchLabel: 'Comprimir',
     title: 'Comprimir imagem',
     shortTitle: 'Comprimir imagem',
     description: 'Arquivo menor, mesma cara',
@@ -35,6 +40,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'image-resize',
+    switchLabel: 'Tamanho',
     title: 'Redimensionar imagem',
     shortTitle: 'Tamanho da imagem',
     description: 'Por porcentagem ou em pixels',
@@ -45,6 +51,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'image-crop',
+    switchLabel: 'Recortar',
     title: 'Recortar imagem',
     shortTitle: 'Recortar imagem',
     description: 'Mantenha só a área que importa',
@@ -55,6 +62,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'image-rotate-flip',
+    switchLabel: 'Girar',
     title: 'Girar e espelhar',
     shortTitle: 'Girar e espelhar',
     description: 'Corrija a orientação da foto',
@@ -68,6 +76,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
 export const VIDEO_TOOLS: readonly ToolEntry[] = [
   {
     id: 'video-edit',
+    switchLabel: 'Editar',
     title: 'Editar vídeo',
     shortTitle: 'Editar vídeo',
     description: 'Divida e exclua partes, vendo na hora',
@@ -78,6 +87,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-crop',
+    switchLabel: 'Recortar',
     title: 'Recortar vídeo',
     shortTitle: 'Recortar vídeo',
     description: 'Só a parte do quadro que importa',
@@ -88,6 +98,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-compress',
+    switchLabel: 'Comprimir',
     title: 'Comprimir vídeo',
     shortTitle: 'Comprimir vídeo',
     description: 'Menor para enviar ou guardar',
@@ -98,6 +109,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-audio',
+    switchLabel: 'Áudio',
     title: 'Extrair áudio',
     shortTitle: 'Extrair áudio',
     description: 'Só o som, em M4A, WEBM ou MP3',
@@ -108,6 +120,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-resize',
+    switchLabel: 'Resolução',
     title: 'Mudar resolução',
     shortTitle: 'Resolução do vídeo',
     description: 'Diminua para 1080p, 720p, 480p ou 360p',
@@ -118,6 +131,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-convert',
+    switchLabel: 'Converter',
     title: 'Converter vídeo',
     shortTitle: 'Converter vídeo',
     description: 'Entre MP4, MOV e WEBM',
@@ -128,6 +142,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-gif',
+    switchLabel: 'GIF',
     title: 'Criar GIF',
     shortTitle: 'Criar GIF',
     description: 'Um trecho de até 15 segundos',
@@ -137,6 +152,11 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
     to: '/videos/gif',
   },
 ]
+
+/** Ferramentas na forma da troca de ferramenta do editor. */
+export function switcherTools(media: MediaKind): SwitcherTool[] {
+  return toolsFor(media).map(({ id, to, switchLabel, icon, tone }) => ({ id, to, label: switchLabel, icon, tone }))
+}
 
 /** Ferramentas que abrem este tipo de arquivo. */
 export function toolsFor(media: MediaKind): readonly ToolEntry[] {

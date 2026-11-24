@@ -116,8 +116,12 @@ export function BatchFiles({
   const viewingHeadingId = useId()
   const viewingHeading = useRef<HTMLHeadingElement>(null)
   const [viewingId, setViewingId] = useState<string>()
+  const [shownId, setShownId] = useState<string>()
   const [first] = items
   const single = items.length === 1 && first?.previewUrl ? first : undefined
+  // Várias imagens: uma delas aparece grande no palco (a primeira, até tocar em outra miniatura).
+  const several = items.length > 1
+  const shown = several ? (items.find((item) => item.id === shownId) ?? first) : undefined
   // No lote, a comparação de um arquivo pronto abre acima da lista; some quando o resultado é descartado.
   const viewing = single ? undefined : items.find((item) => item.id === viewingId && item.status === 'done' && item.output?.url)
 
@@ -172,6 +176,15 @@ export function BatchFiles({
           />
         ))}
 
+      {shown?.previewUrl && !viewing && (
+        <FilePreview
+          src={shown.previewUrl}
+          alt={`Pré-visualização de ${shown.name}`}
+          backdrop={shown.image?.hasAlpha ? backdrop : undefined}
+          orientation={orientation}
+        />
+      )}
+
       {viewing && (
         <section aria-labelledby={viewingHeadingId} className="grid gap-3 rounded-lg border border-border bg-surface p-3">
           <div className="flex items-center justify-between gap-3">
@@ -192,6 +205,8 @@ export function BatchFiles({
             thumbnailUrl={single ? undefined : item.thumbnailUrl}
             showThumbnail={!single}
             orientation={orientation}
+            onShow={several ? () => setShownId(item.id) : undefined}
+            shown={several && item.id === shown?.id}
             progressLabel={`${progressVerb} ${item.name}`}
             {...describeItem(item)}
             actions={

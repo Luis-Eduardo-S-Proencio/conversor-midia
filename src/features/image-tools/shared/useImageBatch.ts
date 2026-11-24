@@ -248,6 +248,15 @@ export function useImageBatch(labels: BatchLabels, { singleImage = false }: { si
 
   const getResultFile = useCallback((id: string) => results.current.get(id), [])
 
+  /** Os arquivos originais abertos, na ordem da lista (os recusados já saíram): para levar a outra ferramenta. */
+  const getOriginalFiles = useCallback(
+    () => items.current.flatMap((item) => {
+      const file = files.current.get(item.id)
+      return file ? [file] : []
+    }),
+    [],
+  )
+
   const getResultFiles = useCallback(
     () => items.current.flatMap((item) => results.current.get(item.id) ?? []),
     [],
@@ -280,6 +289,7 @@ export function useImageBatch(labels: BatchLabels, { singleImage = false }: { si
     invalidateResults,
     getResultFile,
     getResultFiles,
+    getOriginalFiles,
     createZip,
   }
 }

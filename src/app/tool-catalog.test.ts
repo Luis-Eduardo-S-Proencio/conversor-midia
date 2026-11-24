@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { IMAGE_TOOLS, TOOL_GROUPS, VIDEO_TOOLS, toolsFor } from './tool-catalog'
+import { IMAGE_TOOLS, TOOL_GROUPS, VIDEO_TOOLS, switcherTools, toolsFor } from './tool-catalog'
 
 describe('catálogo de ferramentas', () => {
   it('GIF fica na aba Vídeos, com rota própria', () => {
@@ -38,6 +38,12 @@ describe('catálogo de ferramentas', () => {
     expect(VIDEO_TOOLS.every((tool) => tool.media === 'video' && tool.to.startsWith('/videos/'))).toBe(true)
     expect(toolsFor('image')).toBe(IMAGE_TOOLS)
     expect(toolsFor('video')).toBe(VIDEO_TOOLS)
+  })
+
+  it('a troca de ferramenta do editor usa uma palavra por ferramenta, na ordem do catálogo', () => {
+    expect(switcherTools('image').map((tool) => tool.label)).toEqual(['Converter', 'Comprimir', 'Tamanho', 'Recortar', 'Girar'])
+    expect(switcherTools('video').map((tool) => tool.label)).toEqual(['Editar', 'Recortar', 'Comprimir', 'Áudio', 'Resolução', 'Converter', 'GIF'])
+    expect(switcherTools('video').every((tool) => tool.to.startsWith('/videos/'))).toBe(true)
   })
 
   it('o nome curto do celular cabe em duas linhas da grade', () => {

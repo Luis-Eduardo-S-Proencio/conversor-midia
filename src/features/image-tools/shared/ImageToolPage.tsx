@@ -1,23 +1,26 @@
 import { ArrowLeft, Eye, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { switcherTools } from '../../../app/tool-catalog'
 import { ActionBar } from '../../../components/layout/ActionBar'
-import { Container } from '../../../components/layout/Container'
-import { PageHeader } from '../../../components/layout/PageHeader'
 import { saveBlob } from '../../../components/tool/download'
 import { Dropzone } from '../../../components/tool/Dropzone'
+import { ToolSwitcher } from '../../../components/tool/ToolSwitcher'
 import { usePageFileDrop } from '../../../components/tool/usePageFileDrop'
 import { Alert } from '../../../components/ui/Alert'
 import { Button } from '../../../components/ui/Button'
 import { Icon } from '../../../components/ui/Icon'
 import type { Orientation } from '../../../core/image/orientation'
 import { supportsImageWorker } from '../../../workers/image-client'
+import { handOffFiles } from '../../shared/file-handoff'
 import { BatchActions } from './BatchActions'
 import { BatchFiles } from './BatchFiles'
 import { BatchResult } from './BatchResult'
 import type { BatchItem } from './batch-state'
 import { ACCEPTED_TYPES, type BatchLabels } from './constants'
 import type { ImageBatch } from './useImageBatch'
+
+const IMAGE_SWITCHER = switcherTools('image')
 
 function BackToImages() {
   return (
@@ -137,46 +140,67 @@ export function ImageToolPage({
   return (
     <>
       <title>{`${title} · Media Tools`}</title>
-      <Container className="grid gap-6 py-8 md:gap-8 md:py-12">
-        <PageHeader breadcrumb={<BackToImages />} title={title} description={description} />
+      {/* Editor: título no alto; ferramentas, palco com a imagem e painel de opções lado a lado a partir de 1024 px. */}
+      <div className="mx-auto grid w-full max-w-editor gap-4 px-4 pt-4 pb-6 sm:px-6 lg:grid-cols-[6.5rem_minmax(0,1fr)_21rem] lg:gap-x-5 lg:pt-5">
+        <header className="grid gap-1 border-b border-border pb-4 lg:col-span-3">
+          <div className="text-sm">
+            <BackToImages />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-balance">{title}</h1>
+          <p className="max-w-3xl text-sm text-fg-muted">{description}</p>
+        </header>
+
+        <ToolSwitcher
+          label="Ferramentas de imagem"
+          tools={IMAGE_SWITCHER}
+          onSwitch={() => handOffFiles('image', batch.getOriginalFiles())}
+          className="lg:sticky lg:top-5 lg:self-start"
+        />
 
         {!supported ? (
-          <Alert variant="error" title="Navegador sem suporte" live={false}>
-            Este navegador não tem os recursos necessários para processar imagens. Use uma versão recente do Chrome, Edge,
-            Firefox ou Safari.
-          </Alert>
+          <div className="lg:col-span-2">
+            <Alert variant="error" title="Navegador sem suporte" live={false}>
+              Este navegador não tem os recursos necessários para processar imagens. Use uma versão recente do Chrome, Edge,
+              Firefox ou Safari.
+            </Alert>
+          </div>
         ) : items.length === 0 ? (
-          <Dropzone
-            buttonRef={pickerButton}
-            accept={ACCEPTED_TYPES}
-            onFiles={batch.addFiles}
-            multiple={!singleImage}
-            buttonLabel={singleImage ? 'Selecionar imagem' : 'Selecionar imagens'}
-            dragLabel={singleImage ? 'Arraste uma imagem para cá' : 'Arraste imagens para cá'}
-            hint={singleImage ? 'JPG, PNG ou WEBP · até 50 MB' : 'JPG, PNG ou WEBP · até 50 MB por arquivo · até 20 arquivos'}
-          />
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-            <BatchFiles
-              items={items}
-              busy={summary.isProcessing}
-              notice={batch.notice}
-              headingRef={filesHeading}
-              backdrop={backdrop}
-              orientation={orientation}
-              singleImage={singleImage}
-              renderPreview={renderPreview}
-              progressVerb={labels.progress}
-              compareRef={compareRef}
-              onAdd={batch.addFiles}
-              onRemove={handleRemove}
-              onClear={handleReset}
-              onDownload={handleDownload}
+          <div className="grid place-items-center rounded-xl bg-stage p-3 sm:p-6 lg:col-span-2 lg:min-h-112">
+            <Dropzone
+              buttonRef={pickerButton}
+              accept={ACCEPTED_TYPES}
+              onFiles={batch.addFiles}
+              multiple={!singleImage}
+              buttonLabel={singleImage ? 'Selecionar imagem' : 'Selecionar imagens'}
+              dragLabel={singleImage ? 'Arraste uma imagem para cá' : 'Arraste imagens para cá'}
+              hint={singleImage ? 'JPG, PNG ou WEBP · até 50 MB' : 'JPG, PNG ou WEBP · até 50 MB por arquivo · até 20 arquivos'}
+              className="w-full max-w-xl"
             />
+          </div>
+        ) : (
+          <>
+            <div className="min-w-0 rounded-xl bg-stage p-3 sm:p-4">
+              <BatchFiles
+                items={items}
+                busy={summary.isProcessing}
+                notice={batch.notice}
+                headingRef={filesHeading}
+                backdrop={backdrop}
+                orientation={orientation}
+                singleImage={singleImage}
+                renderPreview={renderPreview}
+                progressVerb={labels.progress}
+                compareRef={compareRef}
+                onAdd={batch.addFiles}
+                onRemove={handleRemove}
+                onClear={handleReset}
+                onDownload={handleDownload}
+              />
+            </div>
             <section
               aria-labelledby={summary.hasResults ? undefined : optionsHeadingId}
               aria-label={summary.hasResults ? 'Resultado' : undefined}
-              className="grid gap-5 rounded-lg border border-border bg-surface p-4 md:p-5 lg:sticky lg:top-20"
+              className="grid content-start gap-5 rounded-xl border border-border bg-surface p-4 md:p-5 lg:sticky lg:top-5 lg:self-start"
             >
               {summary.hasResults ? (
                 <>
@@ -189,7 +213,7 @@ export function ImageToolPage({
                 </>
               ) : (
                 <>
-                  <h2 id={optionsHeadingId} className="text-lg font-semibold tracking-tight">
+                  <h2 id={optionsHeadingId} className="text-lg font-bold tracking-tight">
                     Opções
                   </h2>
                   {options}
@@ -203,15 +227,15 @@ export function ImageToolPage({
                 </Button>
               )}
             </section>
-          </div>
+          </>
         )}
 
         {supported && items.length > 0 && <ActionBar className="md:hidden">{actions('lg')}</ActionBar>}
+      </div>
 
-        <p role="status" className="sr-only">
-          {batch.announcement}
-        </p>
-      </Container>
+      <p role="status" className="sr-only">
+        {batch.announcement}
+      </p>
     </>
   )
 }

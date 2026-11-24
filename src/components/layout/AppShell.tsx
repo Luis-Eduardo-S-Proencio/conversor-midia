@@ -52,7 +52,8 @@ export function AppShell() {
         <main id="conteudo" ref={mainRef} tabIndex={-1} className="flex-1 focus:outline-none">
           <Outlet />
         </main>
-        <Footer />
+        {/* Nos editores, a tela é da ferramenta (como num app); o caminho de volta fica no alto. */}
+        {!editor && <Footer />}
       </div>
       {!editor && <BottomNav />}
       <ScrollRestoration />

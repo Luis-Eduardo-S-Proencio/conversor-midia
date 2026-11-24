@@ -33,6 +33,10 @@ interface FileListItemProps {
   showThumbnail?: boolean
   /** Giro e espelhamento escolhidos, mostrados na miniatura. */
   orientation?: Orientation
+  /** Com várias imagens: a miniatura vira o botão "Mostrar", que leva a imagem para a prévia grande. */
+  onShow?: () => void
+  /** Esta é a imagem da prévia grande. */
+  shown?: boolean
 }
 
 function StatusBadge({ state, label }: { state: FileItemState; label: string }) {
@@ -69,6 +73,8 @@ export function FileListItem({
   actions,
   showThumbnail = true,
   orientation,
+  onShow,
+  shown = false,
 }: FileListItemProps) {
   return (
     <li
@@ -77,11 +83,22 @@ export function FileListItem({
         showThumbnail ? 'grid-cols-[3rem_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]',
       )}
     >
-      {showThumbnail && (
-        <span className="grid size-12 place-items-center overflow-hidden rounded-sm bg-checker text-fg-subtle">
-          <Thumbnail url={thumbnailUrl} state={state} orientation={orientation} />
-        </span>
-      )}
+      {showThumbnail &&
+        (onShow ? (
+          <button
+            type="button"
+            aria-label={`Mostrar ${name}`}
+            aria-pressed={shown}
+            onClick={onShow}
+            className="grid size-12 place-items-center overflow-hidden rounded-sm bg-checker text-fg-subtle ring-offset-2 ring-offset-surface transition-shadow aria-pressed:ring-2 aria-pressed:ring-accent"
+          >
+            <Thumbnail url={thumbnailUrl} state={state} orientation={orientation} />
+          </button>
+        ) : (
+          <span className="grid size-12 place-items-center overflow-hidden rounded-sm bg-checker text-fg-subtle">
+            <Thumbnail url={thumbnailUrl} state={state} orientation={orientation} />
+          </span>
+        ))}
       <div className="grid min-w-0 gap-1">
         <p className="truncate text-sm font-medium text-fg" title={name}>
           {name}

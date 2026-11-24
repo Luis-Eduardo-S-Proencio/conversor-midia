@@ -110,6 +110,16 @@ Marque ✔ ou ✘ e anote o que estranhar.
 46. Baixe o `.gif`, abra na galeria ou no app de arquivos e envie pelo WhatsApp: ele anima e repete sem parar.
 47. Com o vídeo longo, marque mais de 15 segundos: aparece o aviso de que o GIF pode ter no máximo 15 segundos, e tocar em "Criar GIF" leva ao campo do fim.
 
+**Visual novo** (redesenho de 24/11/2026; itens novos, no fim para não mudar a numeração acima)
+
+48. Abra o site: aparece a logo nova (lâminas de câmera brancas num quadrado violeta e rosa). No celular, as abas Início, Imagens, Vídeos e Sobre ficam embaixo; no computador ou no tablet, numa barra à esquerda. Se o app já estiver instalado na tela inicial, o ícone novo pode demorar a aparecer: o aparelho guarda o antigo por um tempo (desinstalar e instalar de novo resolve).
+49. No Início, toque em "Abrir foto ou vídeo" e escolha uma foto: aparece "O que fazer com [nome da foto]?" com as ferramentas de imagem. Toque em "Comprimir imagem": a ferramenta já abre com a foto, sem escolher de novo.
+50. Volte ao Início e abra um vídeo: aparecem as 7 ferramentas de vídeo. "Editar vídeo" abre com o vídeo.
+51. No Início, escolha 3 fotos de uma vez: aparece "O que fazer com as 3 imagens?". Em "Converter imagem", as 3 estão na lista.
+52. Numa ferramenta de imagem com fotos abertas, use a fileira de ferramentas do alto (Converter, Comprimir, Tamanho, Recortar, Girar): ao trocar, as fotos continuam abertas. Com várias fotos, toque na miniatura de uma delas: ela aparece grande.
+53. Numa ferramenta de vídeo com um vídeo aberto, troque de ferramenta (por exemplo, Editar, depois GIF, depois Converter): o vídeo continua aberto em cada uma.
+54. Gire o celular (paisagem) e, se tiver, abra num tablet ou computador: a barra lateral aparece à esquerda e nada fica cortado para os lados.
+
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.

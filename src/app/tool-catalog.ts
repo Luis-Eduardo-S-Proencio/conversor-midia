@@ -79,7 +79,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
     switchLabel: 'Editar',
     title: 'Editar vídeo',
     shortTitle: 'Editar vídeo',
-    description: 'Divida e exclua partes, vendo na hora',
+    description: 'Tire as partes que não quer, vendo na hora',
     icon: Scissors,
     tone: 'edit',
     media: 'video',

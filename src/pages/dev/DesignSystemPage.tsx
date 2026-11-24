@@ -1,5 +1,6 @@
 import { ArrowLeftRight, Check, Lock, LockOpen, Plus, Trash2, X } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
+import { IMAGE_TOOLS, VIDEO_TOOLS, switcherTools } from '../../app/tool-catalog'
 import { LogoMark, Logo } from '../../components/brand/Logo'
 import { ActionBar } from '../../components/layout/ActionBar'
 import { Container } from '../../components/layout/Container'
@@ -9,6 +10,7 @@ import { Dropzone } from '../../components/tool/Dropzone'
 import { FileInfo } from '../../components/tool/FileInfo'
 import { FilePreview } from '../../components/tool/FilePreview'
 import { ResultSummary } from '../../components/tool/ResultSummary'
+import { ToolSwitcher } from '../../components/tool/ToolSwitcher'
 import { Alert } from '../../components/ui/Alert'
 import { Badge } from '../../components/ui/Badge'
 import { Button, IconButton } from '../../components/ui/Button'
@@ -17,6 +19,7 @@ import { Input } from '../../components/ui/Input'
 import { ProgressBar } from '../../components/ui/ProgressBar'
 import { SegmentedControl } from '../../components/ui/SegmentedControl'
 import { Slider } from '../../components/ui/Slider'
+import { ToolIcon } from '../../components/ui/ToolIcon'
 
 const COLOR_TOKENS = [
   'bg',
@@ -56,6 +59,9 @@ const FORMAT_OPTIONS = [
 ] as const
 
 type OutputFormat = (typeof FORMAT_OPTIONS)[number]['value']
+
+/** Uma ferramenta de cada tipo, para mostrar as oito cores de ferramenta. */
+const TONE_SAMPLES = [...IMAGE_TOOLS, ...VIDEO_TOOLS].filter((tool, index, all) => all.findIndex((other) => other.tone === tool.tone) === index)
 
 const SAMPLE_FILE = new File(['Arquivo de exemplo da vitrine do Media Tools.'], 'exemplo.txt', { type: 'text/plain' })
 
@@ -160,6 +166,20 @@ export function DesignSystemPage() {
               <Badge variant="warning">Arquivo grande</Badge>
               <Badge variant="danger">Erro</Badge>
             </div>
+          </Panel>
+        </Section>
+
+        <Section title="Ferramentas">
+          <Panel>
+            <ul className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-3">
+              {TONE_SAMPLES.map((tool) => (
+                <li key={tool.tone} className="flex items-center gap-3 text-sm text-fg-muted">
+                  <ToolIcon icon={tool.icon} tone={tool.tone} />
+                  {tool.tone}
+                </li>
+              ))}
+            </ul>
+            <ToolSwitcher label="Troca de ferramenta (exemplo)" tools={switcherTools('image')} onSwitch={() => {}} />
           </Panel>
         </Section>
 

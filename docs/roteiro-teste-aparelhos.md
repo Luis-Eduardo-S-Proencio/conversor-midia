@@ -62,8 +62,8 @@ Marque ✔ ou ✘ e anote o que estranhar.
 
 23. "Selecionar vídeo" abre a galeria. Escolha o vídeo curto: o player mostra o vídeo, a linha técnica traz formato, medidas, duração e tamanho, e a barra embaixo ganha miniaturas do vídeo em alguns segundos. Anote se apareceu aviso de que este navegador não refaz o vídeo (HEVC num navegador que não o lê).
 24. Arraste a barra com o dedo: o vídeo passa por baixo da linha branca, e o player mostra o quadro daquele ponto. Os botões − e + de zoom deixam a barra mais curta ou mais longa.
-25. Leve a linha a uns 3 s e toque em "Dividir"; leve a uns 8 s e divida de novo. Toque no pedaço do meio (fica com moldura azul e alças nas pontas) e em "Excluir": o pedaço some da barra na hora, e "Tocar" mostra o vídeo já sem ele. Salve e baixe: o vídeo não mostra nada da parte excluída, o som acompanha a imagem depois da emenda e não há estalo forte. Anote o tempo.
-26. "Desfazer" traz o pedaço de volta e "Refazer" o tira de novo. Selecione um pedaço e arraste uma alça: o player mostra o quadro exato do novo corte.
+25. Toque no vídeo na barra: ele fica marcado em violeta, com as alças ‹ e › nas pontas. Arraste a alça ‹ até uns 3 s e a › até uns 8 s (o player mostra o quadro de cada alça) e toque em "Excluir": a parte some da barra na hora, e "Tocar" mostra o vídeo já sem ela. Salve e baixe: o vídeo não mostra nada da parte excluída, o som acompanha a imagem depois da emenda e não há estalo forte. Anote o tempo.
+26. "Desfazer" traz a parte de volta e "Refazer" a tira de novo. "Dividir" (opcional) corta o vídeo em dois pedaços no ponto da linha branca: toque num deles e em "Excluir" para tirar o pedaço inteiro.
 27. Vídeo longo: exclua uma parte, salve, anote o tempo e toque em "Cancelar" no meio de uma segunda tentativa; a página volta à edição, do jeito que estava.
 28. Só tirar o começo (divida e exclua o primeiro pedaço): salvar termina rápido quando o corte cai num ponto-chave do vídeo, e o resultado continua em pé na galeria, com som.
 

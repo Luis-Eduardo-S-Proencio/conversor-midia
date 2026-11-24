@@ -2,7 +2,18 @@ import { Pause, Play, Redo2, SquareSplitHorizontal, Trash2, Undo2, ZoomIn, ZoomO
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Button, IconButton } from '../../../components/ui/Button'
 import { formatTime } from '../../../core/video/time'
-import { canSplitAt, edgeLimits, editedDuration, pieceOffsets, sourceTimeAt, type Edge, type Edit, type Piece } from '../../../core/video/timeline'
+import {
+  canRemoveSelection,
+  canSplitAt,
+  editedDuration,
+  pieceOffsets,
+  selectionLimits,
+  sourceTimeAt,
+  type Edge,
+  type Edit,
+  type Piece,
+  type Selection,
+} from '../../../core/video/timeline'
 import { EditTimeline } from './EditTimeline'
 import { ZOOM_LEVELS, initialZoom } from './settings'
 import type { Thumbnails } from './useEditTool'
@@ -20,7 +31,8 @@ interface VideoEditorProps {
   /** Duração do vídeo original, em segundos. */
   duration: number
   edit: Edit
-  selected?: number
+  /** A parte marcada para sair. */
+  selection?: Selection
   thumbnails?: Thumbnails
   canUndo: boolean
   canRedo: boolean
@@ -29,7 +41,7 @@ interface VideoEditorProps {
   onUndo: () => void
   onRedo: () => void
   onSelect: (id: number) => void
-  onEdge: (id: number, edge: Edge, sourceTime: number, done: boolean) => void
+  onSelectionEdge: (edge: Edge, sourceTime: number) => void
   disabled?: boolean
 }
 
@@ -41,10 +53,11 @@ function pieceIndexAt(pieces: readonly Piece[], sourceTime: number): number {
 
 /**
  * Editor do vídeo: o player mostra o vídeo como ele está ficando (as partes excluídas são puladas, sem
- * processar nada), os botões dividem, excluem, desfazem e mudam o zoom, e a barra embaixo escolhe o ponto.
+ * processar nada). Na barra embaixo, tocar num pedaço o marca, e as alças ajustam a parte marcada; "Excluir"
+ * tira essa parte. "Dividir" corta o vídeo em dois pedaços no ponto da linha; os outros botões desfazem e mudam o zoom.
  */
 export function VideoEditor(props: VideoEditorProps) {
-  const { src, name, duration, edit, selected, thumbnails, canUndo, canRedo, disabled = false } = props
+  const { src, name, duration, edit, selection, thumbnails, canUndo, canRedo, disabled = false } = props
   const video = useRef<HTMLVideoElement>(null)
   const wrapper = useRef<HTMLDivElement>(null)
   const playing = useRef(false)
@@ -141,23 +154,23 @@ export function VideoEditor(props: VideoEditorProps) {
     speakTimer.current = window.setTimeout(() => setSpoken(`${formatTime(editedTime)} de ${formatTime(total)}`), SPEAK_DELAY)
   }
 
-  /** Arrastar uma ponta mostra no player o quadro exato do novo corte. */
-  function handleEdge(id: number, edge: Edge, sourceTime: number, done: boolean) {
+  /** Arrastar uma alça mostra no player o quadro exato daquela ponta da parte marcada. */
+  function handleSelectionEdge(edge: Edge, sourceTime: number) {
+    if (!selection) return
     pause()
-    props.onEdge(id, edge, sourceTime, done)
-    const index = edit.pieces.findIndex((piece) => piece.id === id)
+    props.onSelectionEdge(edge, sourceTime)
+    const index = edit.pieces.findIndex((piece) => piece.id === selection.id)
     const piece = edit.pieces[index]
     if (!piece) return
-    const { min, max } = edgeLimits(edit, id, edge, duration)
+    const { min, max } = selectionLimits(edit, selection, edge)
     const value = Math.min(max, Math.max(min, sourceTime))
-    const offset = pieceOffsets(edit.pieces)[index] ?? 0
-    setTime(edge === 'start' ? offset : offset + value - piece.start)
+    setTime((pieceOffsets(edit.pieces)[index] ?? 0) + value - piece.start)
     if (video.current) video.current.currentTime = value
   }
 
   const zoomIndex = ZOOM_LEVELS.findIndex((level) => level === zoom)
   const canSplit = canSplitAt(edit, shown)
-  const canDelete = selected !== undefined && edit.pieces.length > 1
+  const canDelete = canRemoveSelection(edit, selection)
 
   return (
     <div ref={wrapper} className="grid min-w-0 grid-cols-1 gap-3">
@@ -208,13 +221,13 @@ export function VideoEditor(props: VideoEditorProps) {
       <EditTimeline
         edit={edit}
         duration={duration}
-        selected={selected}
+        selection={selection}
         thumbnails={thumbnails}
         pixelsPerSecond={zoom}
         time={shown}
         onScrub={scrub}
         onSelect={props.onSelect}
-        onEdge={handleEdge}
+        onSelectionEdge={handleSelectionEdge}
         disabled={disabled}
         hintId={hintId}
       />
@@ -226,8 +239,8 @@ export function VideoEditor(props: VideoEditorProps) {
         {spoken}
       </p>
       <p id={hintId} className="text-xs text-fg-muted">
-        Arraste a barra (ou use as setas) para levar a linha branca ao ponto do corte. Dividir corta ali; toque num pedaço para
-        selecioná-lo e excluir ou ajustar as pontas.
+        Para tirar uma parte: toque no vídeo na barra, arraste as alças ‹ e › até cobrir só o que quer tirar e toque em
+        Excluir. Arrastar a barra (ou as setas) leva a linha branca a um ponto; Dividir corta o vídeo ali em dois pedaços.
       </p>
     </div>
   )

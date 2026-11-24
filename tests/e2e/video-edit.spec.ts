@@ -83,7 +83,7 @@ test.describe('Editar vídeo', () => {
     await load(page)
     await expect(detail(page, 'Vídeo final')).toHaveText('0:04,01')
     await expect(button(page, 'Salvar vídeo')).toBeDisabled() // nada cortado ainda
-    await expect(page.getByText(/^Divida o vídeo e exclua partes/)).toBeVisible()
+    await expect(page.getByText(/^Marque na barra a parte que quer tirar/)).toBeVisible()
 
     await splitAt(page, 1)
     await splitAt(page, 2)
@@ -145,25 +145,54 @@ test.describe('Editar vídeo', () => {
     await expect(detail(page, 'Vídeo final')).toHaveText('0:02,00')
   })
 
-  test('a ponta do pedaço selecionado anda pelas setas (alça) e pelo ajuste fino', async ({ page }) => {
+  test('marcar uma parte no meio com as alças e excluir, sem dividir', async ({ page }) => {
+    await openWithDecoding(page)
+    await load(page)
+    await selectPiece(page, 1, 1) // marca o vídeo inteiro: as alças ficam nas pontas
+    await expect(button(page, 'Excluir')).toBeDisabled() // tirar tudo não pode
+    const start = page.getByRole('slider', { name: 'Começo da parte marcada' })
+    const end = page.getByRole('slider', { name: 'Fim da parte marcada' })
+    await start.focus()
+    await page.keyboard.press('Shift+ArrowRight') // começo em 1 s
+    await end.focus()
+    await page.keyboard.press('Shift+ArrowLeft')
+    await page.keyboard.press('Shift+ArrowLeft') // fim em 2,01 s
+    await expect(start).toHaveAttribute('aria-valuetext', '0:01,00 do vídeo original')
+    await expect(end).toHaveAttribute('aria-valuetext', '0:02,01 do vídeo original')
+    await expect(detail(page, 'Parte marcada')).toHaveText('0:01,00 a 0:02,01 · 0:01,01')
+    await expect(detail(page, 'Vídeo final')).toHaveText('0:04,01') // marcar não muda o vídeo
+    // O player mostra o quadro da alça que andou por último: 2,01 s do original (azul).
+    await expect.poll(() => player(page).evaluate((video: HTMLVideoElement) => video.currentTime)).toBeCloseTo(2.01, 1)
+
+    await button(page, 'Excluir').click()
+    await expect(detail(page, 'Vídeo final')).toHaveText('0:03,00')
+    await expect(detail(page, 'Pedaços')).toHaveText('2')
+    await expect(page.getByRole('status')).toContainText('Parte de 0:01,00 a 0:02,01 excluída')
+
+    await save(page)
+    const result = await download(page, button(page, 'Baixar vídeo'))
+    const probe = await probeVideo(result.bytes)
+    expect(probe.duration).toBeCloseTo(3, 1)
+    // Fica 0–1 s (vermelho) e 2,01–4,01 s (azul, amarelo).
+    expect(await frameColors(page, result.bytes, 0.5, [[160, 120]])).toEqual(['red'])
+    expect(await frameColors(page, result.bytes, 1.5, [[160, 120]])).toEqual(['blue'])
+  })
+
+  test('o ajuste fino digita as pontas da parte marcada, com aviso fora do vídeo', async ({ page }) => {
     await openWithDecoding(page)
     await load(page)
     await selectPiece(page, 1, 1)
-    const end = page.getByRole('slider', { name: 'Fim do pedaço 1' })
-    await end.focus()
-    await page.keyboard.press('Shift+ArrowLeft')
-    await page.keyboard.press('Shift+ArrowLeft')
-    await expect(detail(page, 'Vídeo final')).toHaveText('0:02,01')
-    await expect(end).toHaveAttribute('aria-valuetext', '0:02,01 do vídeo original')
-
     await page.getByText('Ajuste fino', { exact: true }).click()
-    await page.getByRole('textbox', { name: 'Início', exact: true }).fill('0:00,50')
-    await page.getByRole('textbox', { name: 'Fim', exact: true }).fill('0:01,50')
-    await button(page, 'Aplicar').click()
-    await expect(detail(page, 'Vídeo final')).toHaveText('0:01,00')
     await page.getByRole('textbox', { name: 'Fim', exact: true }).fill('0:09,00')
     await button(page, 'Aplicar').click()
     await expect(page.getByRole('alert')).toContainText('O vídeo tem 0:04,01: o fim não pode passar disso.')
+
+    await page.getByRole('textbox', { name: 'Início', exact: true }).fill('0:00,50')
+    await page.getByRole('textbox', { name: 'Fim', exact: true }).fill('0:03,50')
+    await button(page, 'Aplicar').click()
+    await expect(detail(page, 'Parte marcada')).toHaveText('0:00,50 a 0:03,50 · 0:03,00')
+    await button(page, 'Excluir').click()
+    await expect(detail(page, 'Vídeo final')).toHaveText('0:01,01')
 
     await save(page)
     const result = await download(page, button(page, 'Baixar vídeo'))

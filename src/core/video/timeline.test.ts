@@ -1,16 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
+  canRemoveSelection,
   canSplitAt,
   commit,
-  deletePiece,
   editedDuration,
   editedTimeAt,
-  edgeLimits,
   initialEdit,
-  moveEdge,
+  moveSelectionEdge,
   pieceOffsets,
   redo,
+  removeSelection,
   savePlan,
+  selectPiece,
+  selectionLimits,
   sourceTimeAt,
   splitAt,
   startHistory,
@@ -18,6 +20,7 @@ import {
   undo,
   visibleTiles,
   type Edit,
+  type Selection,
 } from './timeline'
 
 /** Vídeo de 10 s dividido em 2, 5 e 8 s: pedaços 0–2, 2–5, 5–8 e 8–10. */
@@ -28,6 +31,9 @@ function fourPieces(): Edit {
 }
 
 const ranges = (edit: Edit) => edit.pieces.map(({ start, end }) => [start, end])
+
+/** Marca o pedaço inteiro da posição pedida. */
+const whole = (edit: Edit, index: number): Selection => selectPiece(edit, edit.pieces[index]?.id ?? -1) as Selection
 
 describe('dividir', () => {
   it('divide o pedaço no ponto da linha; os dois continuam encostados', () => {
@@ -49,7 +55,7 @@ describe('dividir', () => {
   })
 
   it('o ponto é do vídeo editado: depois de excluir, divide no lugar certo do original', () => {
-    const withoutSecond = deletePiece(fourPieces(), fourPieces().pieces[1]?.id ?? -1) // tira 2–5
+    const withoutSecond = removeSelection(fourPieces(), whole(fourPieces(), 1)) // tira 2–5
     expect(withoutSecond).not.toBeNull()
     // No editado, 3 s caem 1 s depois do começo do pedaço 5–8.
     const split = splitAt(withoutSecond as Edit, 3)
@@ -62,10 +68,11 @@ describe('dividir', () => {
   })
 })
 
-describe('excluir', () => {
-  it('tira o pedaço; o vídeo editado encurta', () => {
+describe('marcar e excluir', () => {
+  it('tocar num pedaço marca ele inteiro; excluir tira o pedaço e o vídeo encurta', () => {
     const edit = fourPieces()
-    const without = deletePiece(edit, edit.pieces[2]?.id ?? -1) as Edit
+    expect(whole(edit, 2)).toEqual({ id: edit.pieces[2]?.id, start: 5, end: 8 })
+    const without = removeSelection(edit, whole(edit, 2)) as Edit
     expect(ranges(without)).toEqual([
       [0, 2],
       [2, 5],
@@ -74,33 +81,58 @@ describe('excluir', () => {
     expect(editedDuration(without.pieces)).toBe(7)
   })
 
-  it('o último pedaço não sai: o vídeo ficaria vazio', () => {
+  it('a marca no meio do pedaço tira só aquela parte: o pedaço vira dois, sem precisar dividir', () => {
     const edit = initialEdit(10)
-    expect(deletePiece(edit, edit.pieces[0]?.id ?? -1)).toBeNull()
+    const marked = { ...whole(edit, 0), start: 3, end: 6 }
+    const without = removeSelection(edit, marked) as Edit
+    expect(ranges(without)).toEqual([
+      [0, 3],
+      [6, 10],
+    ])
+    expect(new Set(without.pieces.map((piece) => piece.id)).size).toBe(2)
+    expect(editedDuration(without.pieces)).toBe(7)
+  })
+
+  it('a marca encostada numa ponta tira o começo ou o fim do pedaço', () => {
+    const edit = initialEdit(10)
+    expect(ranges(removeSelection(edit, { ...whole(edit, 0), end: 4 }) as Edit)).toEqual([[4, 10]])
+    expect(ranges(removeSelection(edit, { ...whole(edit, 0), start: 7 }) as Edit)).toEqual([[0, 7]])
+  })
+
+  it('sobra menor que 0,1 s sai junto com a parte marcada', () => {
+    const edit = initialEdit(10)
+    expect(ranges(removeSelection(edit, { ...whole(edit, 0), start: 0.05, end: 4 }) as Edit)).toEqual([[4, 10]])
+  })
+
+  it('não dá para tirar o vídeo inteiro', () => {
+    const edit = initialEdit(10)
+    expect(removeSelection(edit, whole(edit, 0))).toBeNull()
+    expect(canRemoveSelection(edit, whole(edit, 0))).toBe(false)
+    expect(canRemoveSelection(edit, { ...whole(edit, 0), end: 9 })).toBe(true)
+    expect(canRemoveSelection(edit, undefined)).toBe(false)
   })
 })
 
-describe('pontas', () => {
-  it('cada ponta anda até o pedaço vizinho (ou o começo e o fim do vídeo), sem passar da outra ponta', () => {
-    let edit = fourPieces()
-    const [first, second, third] = edit.pieces
-    edit = deletePiece(edit, second?.id ?? -1) as Edit // tira 2–5: o pedaço 5–8 pode voltar até 2
-    expect(edgeLimits(edit, third?.id ?? -1, 'start', 10)).toEqual({ min: 2, max: 7.9 })
-    expect(edgeLimits(edit, third?.id ?? -1, 'end', 10)).toEqual({ min: 5.1, max: 8 })
-    expect(edgeLimits(edit, first?.id ?? -1, 'start', 10)).toEqual({ min: 0, max: 1.9 })
+describe('alças da marca', () => {
+  it('cada ponta anda dentro do pedaço, sem a marca ficar menor que 0,1 s', () => {
+    const edit = fourPieces()
+    const marked = { ...whole(edit, 1), start: 3, end: 4 } // pedaço 2–5
+    expect(selectionLimits(edit, marked, 'start')).toEqual({ min: 2, max: 3.9 })
+    expect(selectionLimits(edit, marked, 'end')).toEqual({ min: 3.1, max: 5 })
   })
 
-  it('mover uma ponta respeita os limites', () => {
-    const edit = deletePiece(fourPieces(), fourPieces().pieces[1]?.id ?? -1) as Edit
-    const id = edit.pieces[1]?.id ?? -1 // 5–8
-    expect(ranges(moveEdge(edit, id, 'start', 3.5, 10))[1]).toEqual([3.5, 8])
-    expect(ranges(moveEdge(edit, id, 'start', 0, 10))[1]).toEqual([2, 8]) // não invade o pedaço 0–2
-    expect(ranges(moveEdge(edit, id, 'end', 5, 10))[1]).toEqual([5, 5.1]) // fica com 0,1 s
+  it('mover uma ponta respeita os limites e não mexe no vídeo', () => {
+    const edit = fourPieces()
+    const marked = whole(edit, 1) // 2–5
+    expect(moveSelectionEdge(edit, marked, 'start', 3.5)).toMatchObject({ start: 3.5, end: 5 })
+    expect(moveSelectionEdge(edit, marked, 'start', 0)).toMatchObject({ start: 2 }) // não sai do pedaço
+    expect(moveSelectionEdge(edit, marked, 'end', 2)).toMatchObject({ start: 2, end: 2.1 }) // fica com 0,1 s
+    expect(ranges(edit)[1]).toEqual([2, 5])
   })
 })
 
 describe('tempo editado e tempo do original', () => {
-  const edit = deletePiece(fourPieces(), fourPieces().pieces[1]?.id ?? -1) as Edit // 0–2, 5–8, 8–10
+  const edit = removeSelection(fourPieces(), whole(fourPieces(), 1)) as Edit // 0–2, 5–8, 8–10
 
   it('onde cada pedaço começa no vídeo editado', () => {
     expect(pieceOffsets(edit.pieces)).toEqual([0, 2, 5])
@@ -124,12 +156,12 @@ describe('salvar', () => {
   })
 
   it('um trecho só: corte comum (pode copiar sem refazer)', () => {
-    const edit = deletePiece(fourPieces(), fourPieces().pieces[0]?.id ?? -1) as Edit
+    const edit = removeSelection(fourPieces(), whole(fourPieces(), 0)) as Edit
     expect(savePlan(edit, 10)).toEqual({ kind: 'trim', range: { start: 2, end: 10 } })
   })
 
   it('vários trechos: junta os pedaços, com os encostados unidos', () => {
-    const edit = deletePiece(fourPieces(), fourPieces().pieces[2]?.id ?? -1) as Edit
+    const edit = removeSelection(fourPieces(), whole(fourPieces(), 2)) as Edit
     expect(savePlan(edit, 10)).toEqual({
       kind: 'join',
       ranges: [
@@ -173,7 +205,7 @@ describe('miniaturas da barra', () => {
   })
 
   it('só as miniaturas visíveis, presas ao pedaço, com o tempo do original de cada uma', () => {
-    const edit = deletePiece(fourPieces(), fourPieces().pieces[1]?.id ?? -1) as Edit // 0–2, 5–8, 8–10
+    const edit = removeSelection(fourPieces(), whole(fourPieces(), 1)) as Edit // 0–2, 5–8, 8–10
     // 10 px por segundo, miniaturas de 10 px (1 s); janela de 15 a 45 px do vídeo editado (1,5 a 4,5 s).
     const tiles = visibleTiles(edit.pieces, 10, 10, 15, 45)
     expect(tiles.map((tile) => [tile.piece, tile.left, tile.source])).toEqual([

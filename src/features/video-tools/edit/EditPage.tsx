@@ -17,7 +17,7 @@ export function EditPage() {
   return (
     <VideoToolPage
       title="Editar vídeo"
-      description="Divida o vídeo, exclua as partes que não quer e veja na hora como fica. MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
+      description="Marque na barra as partes que não quer, exclua e veja na hora como fica. MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
       labels={EDIT_LABELS}
       actionIcon={Save}
       tool={tool}
@@ -33,7 +33,7 @@ export function EditPage() {
             name={state.file?.name ?? ''}
             duration={info.duration}
             edit={edit}
-            selected={editor.selected}
+            selection={editor.selection}
             thumbnails={editor.thumbnails}
             canUndo={editor.canUndo}
             canRedo={editor.canRedo}
@@ -42,7 +42,7 @@ export function EditPage() {
             onUndo={editor.undo}
             onRedo={editor.redo}
             onSelect={editor.select}
-            onEdge={editor.moveSelectedEdge}
+            onSelectionEdge={editor.moveSelection}
             disabled={busy}
           />
         )
@@ -54,10 +54,10 @@ export function EditPage() {
           <EditOptions
             edit={edit}
             duration={info.duration}
-            selected={editor.selected}
+            selection={editor.selection}
             plan={plan}
             saveBlocker={editor.saveBlocker}
-            onRangeChange={editor.setSelectedRange}
+            onSelectionChange={editor.setSelectionRange}
             extraTracks={info.extraTracks}
             disabled={busy}
           />

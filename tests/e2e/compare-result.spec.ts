@@ -68,12 +68,13 @@ test.describe('Ver como ficou', () => {
     await page.goto('/videos/editar')
     test.skip(!(await canDecodeVideo(page)), UNSUPPORTED_DECODING)
     await fileInput(page).setInputFiles(videoFixture('segundos.mp4')) // 4 s
-    // Ajuste fino do pedaço único: fica de 1,5 a 3 s.
+    // Marca do 1,5 s até o fim pelo ajuste fino e exclui: fica de 0 a 1,5 s.
     await page.getByRole('button', { name: /^Pedaço 1 de 1/ }).click({ timeout: OPEN_TIMEOUT })
     await page.getByText('Ajuste fino', { exact: true }).click()
     await timeField(page, 'Início').fill('0:01,50')
-    await timeField(page, 'Fim').fill('0:03,00')
+    await timeField(page, 'Fim').fill('0:04,01')
     await button(page, 'Aplicar').click()
+    await button(page, 'Excluir').click()
     await button(page, 'Salvar vídeo').click()
     await expect(page.getByRole('heading', { name: 'Vídeo editado' })).toBeFocused({ timeout: PROCESS_TIMEOUT })
 

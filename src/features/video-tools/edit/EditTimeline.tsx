@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type 
 import { Icon } from '../../../components/ui/Icon'
 import { cx } from '../../../components/ui/cx'
 import { formatDuration, formatTime } from '../../../core/video/time'
-import { edgeLimits, editedDuration, pieceOffsets, thumbnailCell, visibleTiles, type Edge, type Edit } from '../../../core/video/timeline'
+import { editedDuration, pieceOffsets, selectionLimits, thumbnailCell, visibleTiles, type Edge, type Edit, type Selection } from '../../../core/video/timeline'
 import { STRIP_HEIGHT, keyStep, rulerStep } from './settings'
 import type { Thumbnails } from './useEditTool'
 
@@ -26,7 +26,8 @@ interface EditTimelineProps {
   edit: Edit
   /** Duração do vídeo original, em segundos. */
   duration: number
-  selected?: number
+  /** A parte marcada para sair (dentro de um pedaço). */
+  selection?: Selection
   thumbnails?: Thumbnails
   pixelsPerSecond: number
   /** Ponto atual no vídeo editado (a linha do meio). */
@@ -34,7 +35,7 @@ interface EditTimelineProps {
   /** A pessoa moveu a barra (arrastando, rolando ou pelas setas, `keyboard`). */
   onScrub: (time: number, keyboard?: boolean) => void
   onSelect: (id: number) => void
-  onEdge: (id: number, edge: Edge, sourceTime: number, done: boolean) => void
+  onSelectionEdge: (edge: Edge, sourceTime: number) => void
   disabled?: boolean
   /** Explica como usar a barra (leitores de tela). */
   hintId: string
@@ -43,18 +44,18 @@ interface EditTimelineProps {
 /**
  * A barra do vídeo editado: os pedaços encostados um no outro, com miniaturas, sob uma linha fixa no meio
  * que marca o ponto atual. Arrastar (ou rolar, ou as setas) move o vídeo por baixo da linha. Tocar num
- * pedaço o seleciona; as alças nas pontas do selecionado encurtam ou estendem o pedaço.
+ * pedaço marca ele inteiro; as alças encolhem a marca até cobrir só a parte que deve sair.
  */
 export function EditTimeline({
   edit,
   duration,
-  selected,
+  selection,
   thumbnails,
   pixelsPerSecond,
   time,
   onScrub,
   onSelect,
-  onEdge,
+  onSelectionEdge,
   disabled = false,
   hintId,
 }: EditTimelineProps) {
@@ -160,7 +161,7 @@ export function EditTimeline({
   const firstTick = Math.max(0, Math.floor(viewStart / pixelsPerSecond / step) * step)
   const ticks: number[] = []
   for (let tick = firstTick; tick <= total && tick * pixelsPerSecond <= viewEnd; tick += step) ticks.push(tick)
-  const selectedIndex = pieces.findIndex((piece) => piece.id === selected)
+  const selectedIndex = selection ? pieces.findIndex((piece) => piece.id === selection.id) : -1
 
   return (
     // A largura vem do espaço disponível, nunca do conteúdo (que é a barra inteira): sem isso, medir a barra
@@ -189,7 +190,7 @@ export function EditTimeline({
           {pieces.map((piece, index) => {
             const left = pad + (offsets[index] ?? 0) * pixelsPerSecond
             const pieceWidth = (piece.end - piece.start) * pixelsPerSecond
-            const isSelected = piece.id === selected
+            const isSelected = piece.id === selection?.id
             return (
               <button
                 key={piece.id}
@@ -226,28 +227,35 @@ export function EditTimeline({
                         }}
                       />
                     ))}
-                {/* Moldura da seleção, por cima das miniaturas. */}
-                {isSelected && <span aria-hidden="true" className="pointer-events-none absolute inset-0 border-y-[3px] border-accent" />}
+                {/* A parte marcada, por cima das miniaturas: moldura e um véu violeta. */}
+                {isSelected && selection && (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-y-0 border-y-[3px] border-accent bg-accent/30"
+                    style={{ left: (selection.start - piece.start) * pixelsPerSecond, width: (selection.end - selection.start) * pixelsPerSecond }}
+                  />
+                )}
               </button>
             )
           })}
 
-          {selectedIndex >= 0 &&
+          {selection &&
+            selectedIndex >= 0 &&
             (['start', 'end'] as const).map((edge) => {
               const piece = pieces[selectedIndex]
               if (!piece) return null
               const offset = offsets[selectedIndex] ?? 0
-              const x = pad + (edge === 'start' ? offset : offset + piece.end - piece.start) * pixelsPerSecond
+              const x = pad + (offset + selection[edge] - piece.start) * pixelsPerSecond
               return (
                 <EdgeHandle
                   key={edge}
                   edge={edge}
-                  label={`${edge === 'start' ? 'Começo' : 'Fim'} do pedaço ${selectedIndex + 1}`}
-                  value={piece[edge]}
-                  limits={edgeLimits(edit, piece.id, edge, duration)}
+                  label={`${edge === 'start' ? 'Começo' : 'Fim'} da parte marcada`}
+                  value={selection[edge]}
+                  limits={selectionLimits(edit, selection, edge)}
                   left={edge === 'start' ? x - HANDLE_WIDTH : x}
                   pixelsPerSecond={pixelsPerSecond}
-                  onChange={(value, done) => onEdge(piece.id, edge, value, done)}
+                  onChange={(value) => onSelectionEdge(edge, value)}
                   disabled={disabled}
                 />
               )
@@ -284,11 +292,11 @@ interface EdgeHandleProps {
   limits: { min: number; max: number }
   left: number
   pixelsPerSecond: number
-  onChange: (value: number, done: boolean) => void
+  onChange: (value: number) => void
   disabled: boolean
 }
 
-/** Alça de uma ponta: arrastar ou usar as setas (0,1 s; com Shift, 1 s). Um controle deslizante para o leitor de tela. */
+/** Alça de uma ponta da parte marcada: arrastar ou usar as setas (0,1 s; com Shift, 1 s). Um controle deslizante para o leitor de tela. */
 function EdgeHandle({ edge, label, value, limits, left, pixelsPerSecond, onChange, disabled }: EdgeHandleProps) {
   const start = useRef<{ x: number; value: number } | null>(null)
   const clamp = (next: number) => Math.min(limits.max, Math.max(limits.min, next))
@@ -298,7 +306,7 @@ function EdgeHandle({ edge, label, value, limits, left, pixelsPerSecond, onChang
     const next = event.key === 'ArrowLeft' ? value - step : event.key === 'ArrowRight' ? value + step : null
     if (next === null || disabled) return
     event.preventDefault()
-    onChange(clamp(next), true)
+    onChange(clamp(next))
   }
 
   return (
@@ -320,11 +328,11 @@ function EdgeHandle({ edge, label, value, limits, left, pixelsPerSecond, onChang
       }}
       onPointerMove={(event) => {
         if (!start.current) return
-        onChange(clamp(start.current.value + (event.clientX - start.current.x) / pixelsPerSecond), false)
+        onChange(clamp(start.current.value + (event.clientX - start.current.x) / pixelsPerSecond))
       }}
       onPointerUp={(event) => {
         if (!start.current) return
-        onChange(clamp(start.current.value + (event.clientX - start.current.x) / pixelsPerSecond), true)
+        onChange(clamp(start.current.value + (event.clientX - start.current.x) / pixelsPerSecond))
         start.current = null
       }}
       className={cx(

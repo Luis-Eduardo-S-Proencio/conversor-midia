@@ -1,6 +1,6 @@
 /**
  * Editar vídeo: os pedaços que ficam (em segundos do vídeo original, em ordem e sem sobreposição), as
- * operações da barra (dividir, excluir, ajustar as pontas), desfazer e refazer, a conversão entre o tempo do
+ * operações da barra (dividir, marcar a parte a tirar e excluí-la), desfazer e refazer, a conversão entre o tempo do
  * vídeo editado (os pedaços encostados um no outro) e o do original, e o que salvar. Funções puras: sem
  * React nem DOM.
  */
@@ -83,32 +83,61 @@ export function splitAt(edit: Edit, editedTime: number): Edit | null {
 }
 
 /** Tira o pedaço; `null` para o último que sobra (o vídeo ficaria vazio). */
-export function deletePiece(edit: Edit, id: number): Edit | null {
-  if (edit.pieces.length <= 1 || !edit.pieces.some((piece) => piece.id === id)) return null
-  return { ...edit, pieces: edit.pieces.filter((piece) => piece.id !== id) }
-}
-
 export type Edge = 'start' | 'end'
 
 /**
- * Até onde uma ponta anda: de volta até o pedaço vizinho (ou o começo e o fim do vídeo), o que devolve
- * partes já excluídas; para dentro, até deixar 0,1 s.
+ * A parte marcada para sair, dentro de um pedaço, em tempo do vídeo original. Tocar num pedaço marca
+ * ele inteiro; as alças encolhem a marca até cobrir só o que deve sair; "Excluir" tira essa parte.
  */
-export function edgeLimits(edit: Edit, id: number, edge: Edge, duration: number): { min: number; max: number } {
-  const index = edit.pieces.findIndex((piece) => piece.id === id)
-  const piece = edit.pieces[index]
-  if (!piece) return { min: 0, max: duration }
-  const round = (value: number) => Math.round(value * 1000) / 1000
-  if (edge === 'start') return { min: edit.pieces[index - 1]?.end ?? 0, max: round(piece.end - MIN_TRIM_SECONDS) }
-  return { min: round(piece.start + MIN_TRIM_SECONDS), max: edit.pieces[index + 1]?.start ?? duration }
+export interface Selection extends TrimRange {
+  /** O pedaço onde a parte está. */
+  id: number
 }
 
-/** Move uma ponta do pedaço para o tempo pedido do original, dentro dos limites. */
-export function moveEdge(edit: Edit, id: number, edge: Edge, sourceTime: number, duration: number): Edit {
-  const { min, max } = edgeLimits(edit, id, edge, duration)
-  const time = Math.min(max, Math.max(min, sourceTime))
-  return { ...edit, pieces: edit.pieces.map((piece) => (piece.id === id ? { ...piece, [edge]: time } : piece)) }
+/** Marca o pedaço inteiro (o primeiro passo ao tocar num pedaço). */
+export function selectPiece(edit: Edit, id: number): Selection | undefined {
+  const piece = edit.pieces.find((item) => item.id === id)
+  return piece ? { id, start: piece.start, end: piece.end } : undefined
 }
+
+/** Até onde uma ponta da marca anda: dentro do pedaço, sem a marca ficar menor que 0,1 s. */
+export function selectionLimits(edit: Edit, selection: Selection, edge: Edge): { min: number; max: number } {
+  const piece = edit.pieces.find((item) => item.id === selection.id)
+  if (!piece) return { min: selection.start, max: selection.end }
+  const round = (value: number) => Math.round(value * 1000) / 1000
+  if (edge === 'start') return { min: piece.start, max: round(selection.end - MIN_TRIM_SECONDS) }
+  return { min: round(selection.start + MIN_TRIM_SECONDS), max: piece.end }
+}
+
+/** Move uma ponta da marca para o tempo pedido do original, dentro dos limites. */
+export function moveSelectionEdge(edit: Edit, selection: Selection, edge: Edge, sourceTime: number): Selection {
+  const { min, max } = selectionLimits(edit, selection, edge)
+  return { ...selection, [edge]: Math.min(max, Math.max(min, sourceTime)) }
+}
+
+/**
+ * Tira do vídeo a parte marcada: o pedaço some inteiro, perde uma ponta ou vira dois (antes e depois da
+ * parte). Sobra menor que 0,1 s sai junto, em vez de virar um pedaço que ninguém consegue tocar.
+ * `null` quando não sobraria vídeo nenhum.
+ */
+export function removeSelection(edit: Edit, selection: Selection): Edit | null {
+  const index = edit.pieces.findIndex((piece) => piece.id === selection.id)
+  const piece = edit.pieces[index]
+  if (!piece) return null
+  const keepBefore = selection.start - piece.start >= MIN_TRIM_SECONDS - TIME_TOLERANCE
+  const keepAfter = piece.end - selection.end >= MIN_TRIM_SECONDS - TIME_TOLERANCE
+  const rest: Piece[] = []
+  if (keepBefore) rest.push({ ...piece, end: selection.start })
+  if (keepAfter) rest.push({ id: keepBefore ? edit.nextId : piece.id, start: selection.end, end: piece.end })
+  const pieces = [...edit.pieces]
+  pieces.splice(index, 1, ...rest)
+  if (pieces.length === 0) return null
+  return { pieces, nextId: keepBefore && keepAfter ? edit.nextId + 1 : edit.nextId }
+}
+
+/** Dá para excluir a parte marcada sem apagar o vídeo inteiro. */
+export const canRemoveSelection = (edit: Edit, selection: Selection | undefined): boolean =>
+  selection !== undefined && removeSelection(edit, selection) !== null
 
 export type SavePlan = { kind: 'unchanged' } | { kind: 'trim'; range: TrimRange } | { kind: 'join'; ranges: TrimRange[] }
 

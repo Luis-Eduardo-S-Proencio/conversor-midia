@@ -3,12 +3,13 @@ import { videoOutputName } from '../../../core/video/output-name'
 import { formatTime } from '../../../core/video/time'
 import {
   commit,
-  deletePiece,
   editedDuration,
   initialEdit,
-  moveEdge,
+  moveSelectionEdge,
   redo,
+  removeSelection,
   savePlan,
+  selectPiece,
   splitAt,
   startHistory,
   undo,
@@ -16,6 +17,7 @@ import {
   type Edit,
   type History,
   type SavePlan,
+  type Selection,
 } from '../../../core/video/timeline'
 import { TIME_TOLERANCE, availableTrimModes, canRemoveParts } from '../../../core/video/trim'
 import { codecLabel } from '../../../core/video/formats'
@@ -34,14 +36,13 @@ export interface Thumbnails {
 interface Session {
   fileId: number
   history: History<Edit>
-  /** Enquanto uma ponta é arrastada: a edição provisória, que vira um passo só ao soltar. */
-  draft?: Edit
-  selected?: number
+  /** A parte marcada para sair (as alças a ajustam; só "Excluir" muda o vídeo). */
+  selection?: Selection
 }
 
 /**
- * Editar vídeo: um vídeo por vez. A pessoa divide, exclui pedaços e ajusta as pontas na barra, vendo o
- * resultado no player na hora; só ao salvar o arquivo é gerado (um trecho pode ser copiado sem refazer;
+ * Editar vídeo: um vídeo por vez. A pessoa marca na barra a parte que quer tirar (tocando num pedaço e
+ * arrastando as alças) e exclui, ou divide o vídeo em pedaços, vendo o resultado no player na hora; só ao salvar o arquivo é gerado (um trecho pode ser copiado sem refazer;
  * vários são juntados). Cada mudança pode ser desfeita.
  */
 export function useEditTool() {
@@ -56,7 +57,7 @@ export function useEditTool() {
     if (!info) return undefined
     return stored?.fileId === fileId ? stored : { fileId, history: startHistory(initialEdit(info.duration)) }
   }, [info, fileId, stored])
-  const edit = session ? (session.draft ?? session.history.present) : undefined
+  const edit = session?.history.present
   const duration = info?.duration ?? 0
 
   // Miniaturas da barra, geradas logo depois de abrir. Sem elas (vídeo que o navegador não lê), a barra funciona igual.
@@ -95,56 +96,61 @@ export function useEditTool() {
       if (!session) return
       const next = splitAt(session.history.present, editedTime)
       if (!next) return
-      update((current) => ({ ...current, history: commit(current.history, next) }))
-      setAnnouncement(`Dividido em ${formatTime(editedTime)}. Toque num pedaço para selecionar.`)
+      update((current) => ({ ...current, history: commit(current.history, next), selection: undefined }))
+      setAnnouncement(`Dividido em ${formatTime(editedTime)}. Toque num pedaço para marcá-lo.`)
     },
     [session, update, setAnnouncement],
   )
 
+  /** Tira do vídeo a parte marcada (um passo para desfazer). */
   const remove = useCallback(() => {
-    if (!session?.selected) return
-    const next = deletePiece(session.history.present, session.selected)
+    if (!session?.selection) return
+    const { start, end } = session.selection
+    const next = removeSelection(session.history.present, session.selection)
     if (!next) return
-    update((current) => ({ ...current, history: commit(current.history, next), selected: undefined }))
-    setAnnouncement(`Pedaço excluído. O vídeo agora tem ${formatTime(editedDuration(next.pieces))}.`)
+    update((current) => ({ ...current, history: commit(current.history, next), selection: undefined }))
+    setAnnouncement(`Parte de ${formatTime(start)} a ${formatTime(end)} excluída. O vídeo agora tem ${formatTime(editedDuration(next.pieces))}.`)
   }, [session, update, setAnnouncement])
 
+  /** Tocar num pedaço marca ele inteiro; tocar de novo no marcado desmarca. */
   const select = useCallback(
     (id: number | undefined) => {
-      if (session) setStored({ ...session, selected: id })
+      if (!session) return
+      const selection = id === undefined || session.selection?.id === id ? undefined : selectPiece(session.history.present, id)
+      setStored({ ...session, selection })
     },
     [session],
   )
 
-  /** Arrastar uma ponta muda a edição provisória; soltar (`done`) vira um passo para desfazer. */
-  const moveSelectedEdge = useCallback(
-    (id: number, edge: Edge, sourceTime: number, done: boolean) => {
-      update((current) => {
-        const next = moveEdge(current.history.present, id, edge, sourceTime, duration)
-        return done ? { ...current, history: commit(current.history, next), draft: undefined } : { ...current, draft: next }
-      })
+  /** Arrastar uma alça muda só a marca: o vídeo não muda até "Excluir". */
+  const moveSelection = useCallback(
+    (edge: Edge, sourceTime: number) => {
+      if (!session?.selection) return
+      setStored({ ...session, selection: moveSelectionEdge(session.history.present, session.selection, edge, sourceTime) })
     },
-    [update, duration],
+    [session],
   )
 
-  /** Ajuste fino: as duas pontas de uma vez, pelos campos de tempo. */
-  const setSelectedRange = useCallback(
-    (id: number, start: number, end: number) => {
-      update((current) => {
-        const withStart = moveEdge(current.history.present, id, 'start', Math.min(start, end), duration)
-        return { ...current, history: commit(current.history, moveEdge(withStart, id, 'end', end, duration)) }
-      })
+  /** Ajuste fino: as duas pontas da marca de uma vez, pelos campos de tempo. */
+  const setSelectionRange = useCallback(
+    (start: number, end: number) => {
+      if (!session?.selection) return
+      const present = session.history.present
+      // A ponta que encolhe primeiro: assim a outra não fica presa à posição antiga.
+      const widened = { ...session.selection, start: Math.min(start, session.selection.start), end: Math.max(end, session.selection.end) }
+      const withStart = moveSelectionEdge(present, widened, 'start', start)
+      setStored({ ...session, selection: moveSelectionEdge(present, withStart, 'end', end) })
     },
-    [update, duration],
+    [session],
   )
 
   const undoEdit = useCallback(() => {
-    update((current) => ({ ...current, history: undo(current.history), selected: undefined }))
+    update((current) => ({ ...current, history: undo(current.history), selection: undefined }))
     setAnnouncement('Desfeito.')
   }, [update, setAnnouncement])
 
   const redoEdit = useCallback(() => {
-    update((current) => ({ ...current, history: redo(current.history), selected: undefined }))
+    update((current) => ({ ...current, history: redo(current.history), selection: undefined }))
     setAnnouncement('Refeito.')
   }, [update, setAnnouncement])
 
@@ -181,7 +187,7 @@ export function useEditTool() {
   return {
     tool,
     edit,
-    selected: session?.selected,
+    selection: session?.selection,
     canUndo: (session?.history.past.length ?? 0) > 0,
     canRedo: (session?.history.future.length ?? 0) > 0,
     thumbnails: thumbnails?.fileId === fileId ? thumbnails.value : undefined,
@@ -190,8 +196,8 @@ export function useEditTool() {
     split,
     remove,
     select,
-    moveSelectedEdge,
-    setSelectedRange,
+    moveSelection,
+    setSelectionRange,
     undo: undoEdit,
     redo: redoEdit,
     apply,

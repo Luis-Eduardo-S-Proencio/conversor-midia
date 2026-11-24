@@ -52,7 +52,7 @@ describe('trecho do GIF', () => {
     }
   })
 
-  it('as regras do Cortar trecho continuam: início antes do fim, campo vazio, fora do vídeo', () => {
+  it('as regras dos campos de tempo continuam: início antes do fim, campo vazio, fora do vídeo', () => {
     const backwards = validateGifRange({ start: '0:05', end: '0:02' }, 60)
     expect(backwards.ok || backwards.error.message).toBe('O início precisa vir antes do fim.')
     const empty = validateGifRange({ start: '', end: '0:02' }, 60)

@@ -56,7 +56,7 @@ export function gifDimensions(video: Dimensions, size: GifSize | undefined): Dim
 export const defaultGifFields = (duration: number): TrimFields =>
   fieldsOfRange({ start: 0, end: duration <= MAX_GIF_SECONDS + TIME_TOLERANCE ? duration : DEFAULT_GIF_SECONDS })
 
-/** Confere os campos como no Cortar trecho e, além disso, a duração máxima do GIF. */
+/** Confere os campos de início e fim (formato, dentro do vídeo, ordem) e, além disso, a duração máxima do GIF. */
 export function validateGifRange(fields: TrimFields, duration: number): TrimValidation {
   const checked = checkTimeValues(fields, duration)
   if (!checked.ok) return checked

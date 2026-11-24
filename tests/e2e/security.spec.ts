@@ -60,13 +60,18 @@ test.describe('cabeçalhos de segurança', () => {
     await expect(page.getByRole('heading', { name: 'Imagem comprimida' })).toBeVisible()
 
     // Vídeo: o player carrega o vídeo escolhido (media-src blob:) e o Worker de vídeo processa.
-    await page.goto('/videos/cortar')
+    // As miniaturas da barra do editor também vêm de blob: (img-src).
+    await page.goto('/videos/editar')
     await page.locator('input[type="file"]').first().setInputFiles(videoFixture('segundos.mp4'))
     const player = page.locator('video')
     await expect.poll(() => player.evaluate((video: HTMLVideoElement) => video.readyState)).toBeGreaterThanOrEqual(1)
-    await page.getByRole('textbox', { name: 'Início' }).fill('0:01,00')
-    await page.getByRole('button', { name: 'Cortar', exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Vídeo cortado' })).toBeVisible()
+    await page.getByRole('group', { name: /^Linha do tempo/ }).focus()
+    await page.keyboard.press('Shift+ArrowRight')
+    await page.getByRole('button', { name: 'Dividir', exact: true }).click()
+    await page.getByRole('button', { name: /^Pedaço 1 de 2/ }).click()
+    await page.getByRole('button', { name: 'Excluir', exact: true }).click()
+    await page.getByRole('button', { name: 'Salvar vídeo', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Vídeo editado' })).toBeVisible()
 
     // MP3: o codificador carrega sob demanda e roda em WebAssembly, num Worker criado pelo Worker de vídeo.
     await page.goto('/videos/extrair-audio')

@@ -11,7 +11,7 @@ export function VideosPage() {
       <Container className="grid gap-8 py-10 md:py-14">
         <PageHeader
           title="Ferramentas de vídeo"
-          description="Corte, recorte, comprima, converta e diminua a resolução de vídeos MP4, MOV ou WEBM, salve só o som ou crie um GIF, direto no navegador."
+          description="Edite, recorte, comprima, converta e diminua a resolução de vídeos MP4, MOV ou WEBM, salve só o som ou crie um GIF, direto no navegador."
         />
         <NavList items={VIDEO_TOOLS} columns={2} />
         <Alert variant="info" live={false} title="Vídeos de até 1 GB">

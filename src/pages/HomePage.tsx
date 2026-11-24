@@ -36,7 +36,7 @@ export function HomePage() {
               to="/videos"
               icon={Film}
               title="Vídeos"
-              description="Cortar, recortar, comprimir, converter, extrair o som e criar GIF."
+              description="Editar, recortar, comprimir, converter, extrair o som e criar GIF."
               meta="MP4 · MOV · WEBM"
             />
           </div>

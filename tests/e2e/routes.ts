@@ -9,7 +9,7 @@ export const PUBLIC_ROUTES = [
   { path: '/imagens/redimensionar', heading: 'Redimensionar imagem' },
   { path: '/imagens/girar', heading: 'Girar e espelhar' },
   { path: '/imagens/recortar', heading: 'Recortar imagem' },
-  { path: '/videos/cortar', heading: 'Cortar trecho' },
+  { path: '/videos/editar', heading: 'Editar vídeo' },
   { path: '/videos/recortar', heading: 'Recortar vídeo' },
   { path: '/videos/comprimir', heading: 'Comprimir vídeo' },
   { path: '/videos/extrair-audio', heading: 'Extrair áudio' },

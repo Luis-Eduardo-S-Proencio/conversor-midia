@@ -47,7 +47,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
 
 // As disponíveis primeiro; as que estão por vir, depois.
 export const VIDEO_TOOLS: readonly ToolEntry[] = [
-  { id: 'video-trim', title: 'Cortar trecho', description: 'Fique com um trecho ou tire partes do meio', icon: Scissors, to: '/videos/cortar' },
+  { id: 'video-edit', title: 'Editar vídeo', description: 'Divida, exclua partes e veja na hora como fica', icon: Scissors, to: '/videos/editar' },
   { id: 'video-crop', title: 'Recortar vídeo', description: 'Mantenha só a parte do quadro que importa', icon: Crop, to: '/videos/recortar' },
   { id: 'video-compress', title: 'Comprimir vídeo', description: 'Reduza o tamanho para enviar ou guardar', icon: Minimize2, to: '/videos/comprimir' },
   { id: 'video-audio', title: 'Extrair áudio', description: 'Salve só o som do vídeo, em M4A ou MP3', icon: Music, to: '/videos/extrair-audio' },

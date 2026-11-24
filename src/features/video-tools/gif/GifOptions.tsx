@@ -109,7 +109,7 @@ export function GifOptions({ plan, onFieldChange, onSizeChange, onFpsChange, foc
         </div>
       </dl>
 
-      <Note>O GIF é um formato antigo e pesado. Para mandar por mensagem, um vídeo curto (no Cortar trecho) costuma ficar bem menor.</Note>
+      <Note>O GIF é um formato antigo e pesado. Para mandar por mensagem, um vídeo curto (no Editar vídeo) costuma ficar bem menor.</Note>
       <Note>O GIF não tem som e usa no máximo 256 cores: degradês, como um céu, podem aparecer em faixas.</Note>
     </div>
   )

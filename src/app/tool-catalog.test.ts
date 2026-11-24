@@ -27,13 +27,13 @@ describe('catálogo de ferramentas', () => {
   })
 
   it('todas as ferramentas de vídeo planejadas estão disponíveis', () => {
-    expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-trim')?.to).toBe('/videos/cortar')
+    expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-edit')?.to).toBe('/videos/editar')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-crop')?.to).toBe('/videos/recortar')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-compress')?.to).toBe('/videos/comprimir')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-audio')?.to).toBe('/videos/extrair-audio')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-resize')?.to).toBe('/videos/resolucao')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-convert')?.to).toBe('/videos/converter')
-    expect(VIDEO_TOOLS.slice(0, 6).map((tool) => tool.id)).toEqual(['video-trim', 'video-crop', 'video-compress', 'video-audio', 'video-resize', 'video-convert'])
+    expect(VIDEO_TOOLS.slice(0, 6).map((tool) => tool.id)).toEqual(['video-edit', 'video-crop', 'video-compress', 'video-audio', 'video-resize', 'video-convert'])
     expect(VIDEO_TOOLS.filter((tool) => !tool.to)).toEqual([])
   })
 })

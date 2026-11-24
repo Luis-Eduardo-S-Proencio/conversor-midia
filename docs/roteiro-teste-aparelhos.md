@@ -58,14 +58,14 @@ Marque ✔ ou ✘ e anote o que estranhar.
 21. Escolha 1:1, toque em "Recortar" e baixe: a foto sai quadrada, com o que estava dentro da área. Numa foto tirada em pé, as opções aparecem como 3:4 e 9:16.
 22. Digite a largura e a altura nos campos: a área na foto acompanha. "Trocar imagem" abre outra foto e recomeça a área.
 
-**Cortar trecho** (`/videos/cortar`)
+**Editar vídeo** (`/videos/editar`; era o Cortar trecho, e o endereço antigo `/videos/cortar` leva para cá)
 
-23. "Selecionar vídeo" abre a galeria. Escolha o vídeo curto: o player mostra o vídeo, e a linha técnica traz formato, medidas, duração e tamanho. Anote se apareceu "só o corte rápido está disponível" (vídeo HEVC num navegador que não o recodifica).
-24. Toque no player para ir a uns 3 s e em "Marcar início aqui"; vá a uns 8 s e toque em "Marcar fim aqui". "Ver como fica" toca só esse pedaço, e a linha azul abaixo do player mostra o que fica.
-25. Modo Exato: corte e baixe. O vídeo baixado começa e termina nos pontos marcados, com som, e continua em pé na galeria. Anote o tempo.
-26. Modo Rápido, com o mesmo trecho: termina quase na hora. Abra o arquivo na galeria e em outro app (WhatsApp, por exemplo) e anote se algum mostra segundos antes do início.
-27. Vídeo longo, modo Exato: anote o tempo e toque em "Cancelar" no meio de uma segunda tentativa; a página volta às opções.
-28. Em "Remover partes", marque uma parte do meio do vídeo curto (por exemplo, de 5 a 7 s) e outra perto do fim, com "Adicionar parte". "Ver como fica" pula as duas. Corte e baixe: o vídeo não mostra nada das partes removidas, o som acompanha a imagem depois de cada emenda e não há estalo forte. Anote o tempo.
+23. "Selecionar vídeo" abre a galeria. Escolha o vídeo curto: o player mostra o vídeo, a linha técnica traz formato, medidas, duração e tamanho, e a barra embaixo ganha miniaturas do vídeo em alguns segundos. Anote se apareceu aviso de que este navegador não refaz o vídeo (HEVC num navegador que não o lê).
+24. Arraste a barra com o dedo: o vídeo passa por baixo da linha branca, e o player mostra o quadro daquele ponto. Os botões − e + de zoom deixam a barra mais curta ou mais longa.
+25. Leve a linha a uns 3 s e toque em "Dividir"; leve a uns 8 s e divida de novo. Toque no pedaço do meio (fica com moldura azul e alças nas pontas) e em "Excluir": o pedaço some da barra na hora, e "Tocar" mostra o vídeo já sem ele. Salve e baixe: o vídeo não mostra nada da parte excluída, o som acompanha a imagem depois da emenda e não há estalo forte. Anote o tempo.
+26. "Desfazer" traz o pedaço de volta e "Refazer" o tira de novo. Selecione um pedaço e arraste uma alça: o player mostra o quadro exato do novo corte.
+27. Vídeo longo: exclua uma parte, salve, anote o tempo e toque em "Cancelar" no meio de uma segunda tentativa; a página volta à edição, do jeito que estava.
+28. Só tirar o começo (divida e exclua o primeiro pedaço): salvar termina rápido quando o corte cai num ponto-chave do vídeo, e o resultado continua em pé na galeria, com som.
 
 **Recortar vídeo** (`/videos/recortar`)
 
@@ -84,7 +84,7 @@ Marque ✔ ou ✘ e anote o que estranhar.
 **Uso geral**
 
 34. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels e no Recortar, os campos abrem o teclado numérico.
-35. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar."), cada toque em girar ou espelhar diz como a imagem ficou, e a área de recorte e os cantos têm nomes em português. No Cortar trecho, "Marcar início aqui" anuncia o tempo marcado.
+35. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar."), cada toque em girar ou espelhar diz como a imagem ficou, e a área de recorte e os cantos têm nomes em português. No Editar vídeo, "Dividir" e "Excluir" anunciam o que aconteceu, e as alças dizem o tempo da ponta.
 36. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
 
 **Extrair áudio** (`/videos/extrair-audio`; itens novos, no fim para não mudar a numeração acima)
@@ -119,9 +119,9 @@ Confirme se acontecem; não precisam ser tratados como erro.
 - O limite é de 50 milhões de pixels. Fotos "50 MP" de alguns Android têm 8160 × 6144 (50,1 milhões) e são recusadas com explicação. **Anote se acontecer** (item 9): o limite pode ser revisto.
 - BMP e TIFF saem sem compressão (o jeito mais compatível): uma foto de 12 MP vira um arquivo de uns 35 MB.
 - PNG de foto grande leva alguns segundos a mais que os outros formatos: o app comprime mais que o navegador (no computador, cerca de 4 s para uma foto de 12 MP, com um arquivo 38% menor). Logotipos e prints saem rápido e bem menores.
-- Converter, comprimir, redimensionar, girar, espelhar e recortar removem metadados, como localização e data. A exceção é quando a original é mantida. Os vídeos cortados e recortados também saem sem metadados.
+- Converter, comprimir, redimensionar, girar, espelhar e recortar removem metadados, como localização e data. A exceção é quando a original é mantida. Os vídeos editados e recortados também saem sem metadados.
 - Vídeo recortado ou cortado no modo Exato sai em H.264 (MP4 e MOV) ou VP9 (WEBM), recodificado em alta qualidade: pode ficar maior que o original.
-- O corte rápido guarda escondidos alguns segundos antes do início (até o quadro-chave anterior). A maioria dos players começa no ponto escolhido; alguns aplicativos e editores mostram esses segundos.
+- Editar vídeo: com um pedaço só, salvar copia o vídeo sem refazer quando o corte cai num ponto-chave (rápido); senão, e sempre com mais de um pedaço, o vídeo é refeito. Na prévia, pode haver um "soluço" curtinho nas emendas; no arquivo salvo, não.
 - Comprimir mostra um tamanho estimado: o real pode ficar um pouco acima ou abaixo. Se não ficar menor que o original, o app entrega o original.
 - O limite é de 1 GB por vídeo. Num celular com pouca memória, vídeos bem menores que isso podem falhar com a mensagem de memória. **Anote o tamanho e a duração se acontecer.**
 - Extrair áudio: o M4A copiado é instantâneo; o MP3 é refeito e leva mais tempo (no computador, cerca de 10 s para cada 3 minutos de som). O som de vídeos WEBM sai em WEBM, que iPhones mais antigos podem não tocar: para eles, existem M4A e MP3.
@@ -138,7 +138,7 @@ Navegador e versão: (ex.: Safari; Chrome 131)
 Acesso: Vercel (https) ou rede local (http)
 Itens com problema: (número do item + o que aconteceu)
 Foto grande: resolução ___ · ___ s até a prévia · ___ s para converter · ___ s para redimensionar a 50%
-Vídeo: duração ___ · tamanho ___ · formato (HEVC/H.264) ___ · ___ s no corte exato · ___ s no corte rápido · ___ s para recortar · comprimir (Média): ___ MB → ___ MB em ___ s
+Vídeo: duração ___ · tamanho ___ · formato (HEVC/H.264) ___ · ___ s para salvar a edição com uma parte excluída · ___ s para recortar · comprimir (Média): ___ MB → ___ MB em ___ s
 Extrair áudio (vídeo longo): ___ s em M4A · ___ s em MP3
 Mudar resolução (vídeo longo, 480p): ___ s · ___ MB → ___ MB
 Converter vídeo (vídeo longo): ___ s em Compatível (iPhone) · ___ s para WEBM · ___ MB → ___ MB

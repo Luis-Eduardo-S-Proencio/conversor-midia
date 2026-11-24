@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { checkVideoFile, type VideoCheck } from '../../../core/video/inspect'
 import { videoErrorMessage, videoRejectionMessage } from '../../../core/video/messages'
 import { VideoJobError, createVideoWorkerClient, isAbortError, type VideoWorkerClient } from '../../../workers/video-client'
-import type { ProcessingJob, VideoInfo } from '../../../workers/video-protocol'
+import type { ProcessingJob, ThumbnailsJob, VideoInfo, VideoOutputFor } from '../../../workers/video-protocol'
+
+/** Tarefas auxiliares, que não geram o arquivo final. */
+type AsideJob = ThumbnailsJob
 
 /** Textos que mudam de uma ferramenta de vídeo para outra ("Cortar" / "Recortar"). */
 export interface VideoToolLabels {
@@ -21,7 +24,12 @@ export interface VideoToolLabels {
   output?: 'video' | 'audio' | 'gif'
   /** Botão para recomeçar com outro vídeo; o padrão é "{action} outro vídeo". */
   again?: string
+  /** O que a ferramenta faz, no infinitivo, para "Vídeo pronto para editar."; o padrão é a ação em minúsculas. */
+  purpose?: string
 }
+
+/** "Vídeo pronto para {purpose}." e "Escolha outro vídeo para {purpose}." */
+export const purposeOf = (labels: VideoToolLabels) => labels.purpose ?? labels.action.toLowerCase()
 
 const OUTPUT_TEXTS = {
   video: { noun: 'Vídeo', object: 'o vídeo', download: 'Baixar vídeo', view: 'Ver como ficou' },
@@ -150,7 +158,7 @@ export function useVideoTool(labels: VideoToolLabels, { checkSizeControl = false
         const url = URL.createObjectURL(chosen)
         sourceUrl.current = url
         setState((current) => (current.fileId === fileId ? { ...current, phase: 'ready', info, sourceUrl: url } : current))
-        setAnnouncement(`Vídeo pronto para ${labels.action.toLowerCase()}.`)
+        setAnnouncement(`Vídeo pronto para ${purposeOf(labels)}.`)
       } catch (error) {
         if (isAbortError(error) || stale()) return
         reject(errorMessage(error))
@@ -243,7 +251,18 @@ export function useVideoTool(labels: VideoToolLabels, { checkSizeControl = false
 
   const getResultFile = useCallback(() => result.current, [])
 
-  return { state, announcement, setAnnouncement, completedRuns, selectFiles, run, cancel, reset, invalidateResult, getResultFile }
+  /**
+   * Tarefa auxiliar com o vídeo escolhido (ex.: miniaturas para a barra do editor), sem mudar a fase da
+   * ferramenta. Usa a mesma fila do Worker: quem chama a cancela pelo `signal` ao trocar de vídeo ou sair.
+   */
+  const runAside = useCallback(async <J extends AsideJob>(makeJob: (file: File) => J, signal: AbortSignal): Promise<VideoOutputFor<J> | null> => {
+    const worker = client.current
+    const chosen = file.current
+    if (!worker || !chosen) return null
+    return worker.run(makeJob(chosen), { signal })
+  }, [])
+
+  return { state, announcement, setAnnouncement, completedRuns, selectFiles, run, runAside, cancel, reset, invalidateResult, getResultFile }
 }
 
 export type VideoTool = ReturnType<typeof useVideoTool>

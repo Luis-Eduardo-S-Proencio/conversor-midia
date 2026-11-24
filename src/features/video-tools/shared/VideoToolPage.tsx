@@ -19,7 +19,7 @@ import { formatBytes } from '../../../core/format'
 import { ACCEPTED_VIDEO_TYPES } from '../../../core/video/formats'
 import { supportsVideoWorker } from '../../../workers/video-client'
 import { VideoActions } from './VideoActions'
-import { outputTexts, type VideoTool, type VideoToolLabels, type VideoToolState } from './useVideoTool'
+import { outputTexts, purposeOf, type VideoTool, type VideoToolLabels, type VideoToolState } from './useVideoTool'
 import { describeVideo } from './video-meta'
 
 function BackToVideos() {
@@ -135,7 +135,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
     />
   )
 
-  const waiting = state.phase === 'opening' ? 'Abrindo o vídeo…' : `Escolha outro vídeo para ${labels.action.toLowerCase()}.`
+  const waiting = state.phase === 'opening' ? 'Abrindo o vídeo…' : `Escolha outro vídeo para ${purposeOf(labels)}.`
 
   return (
     <>

@@ -36,16 +36,15 @@ export interface TrimError {
 
 export type TrimValidation = { ok: true; range: TrimRange } | { ok: false; error: TrimError }
 
-/** Pedido de foco: um objeto novo a cada pedido (tentativa de cortar com problema, parte nova). */
+/** Pedido de foco: um objeto novo a cada pedido (tentativa com problema), para o efeito rodar de novo. */
 export interface TrimFocusRequest {
   field: TrimField
-  /** Ao remover partes, qual delas (o `id` da parte). */
-  part?: number
 }
 
 /**
  * Como cortar. Exato recodifica o começo do vídeo quando o início não cai num quadro-chave; Rápido
- * copia o vídeo sem recodificar, a partir do quadro-chave anterior ao início.
+ * copia o vídeo sem recodificar, a partir do quadro-chave anterior ao início. O Editar vídeo usa só o
+ * Exato (o que a pessoa vê é o que sai); o Rápido continua no Worker.
  */
 export type TrimMode = 'exact' | 'fast'
 
@@ -68,21 +67,11 @@ export function availableTrimModes({ format, canTranscodeVideo, canTranscodeAudi
   }
 }
 
-/** O que fazer com o vídeo: manter só um trecho, ou remover partes e juntar o que sobra. */
-export type TrimAction = 'keep' | 'remove'
-
 /**
- * Remover partes emenda pedaços: o vídeo e o som são sempre recodificados (o som em AAC no MP4 e no
- * MOV, em Opus no WEBM), então o navegador precisa conseguir as duas coisas.
+ * Juntar pedaços (salvar mais de um no Editar vídeo): o vídeo e o som são sempre recodificados (o som em
+ * AAC no MP4 e no MOV, em Opus no WEBM), então o navegador precisa conseguir as duas coisas.
  */
 export const canRemoveParts = ({ canTranscodeVideo, canTranscodeAudio }: TrimCapabilities) => canTranscodeVideo && canTranscodeAudio
-
-/** O modo escolhido, se possível; senão o outro; `null` quando não dá para cortar este vídeo aqui. */
-export function resolveTrimMode(preferred: TrimMode, available: Record<TrimMode, boolean>): TrimMode | null {
-  if (available[preferred]) return preferred
-  if (available.exact) return 'exact'
-  return available.fast ? 'fast' : null
-}
 
 const FIELD_NAMES: Record<TrimField, string> = { start: 'o início', end: 'o fim' }
 
@@ -92,15 +81,6 @@ const invalid = (message: string, fields: TrimField[], missing = false): TrimVal
 })
 
 export const fieldsOfRange = (range: TrimRange): TrimFields => ({ start: formatTime(range.start), end: formatTime(range.end) })
-
-/** O vídeo inteiro: começa no início e vai até o fim. */
-export const wholeRange = (duration: number): TrimRange => ({ start: 0, end: duration })
-
-/** O trecho é o vídeo inteiro (nada a cortar)? */
-export const isWholeVideo = (range: TrimRange, duration: number) => range.start <= TOLERANCE && range.end >= duration - TOLERANCE
-
-/** Aviso de tentativa sem nada cortado. */
-export const NOTHING_TRIMMED = 'Ajuste o início ou o fim antes: o trecho ainda é o vídeo inteiro.'
 
 /** Folga das comparações de tempo, em segundos (ver TOLERANCE), para as outras regras de corte. */
 export const TIME_TOLERANCE = TOLERANCE
@@ -147,11 +127,4 @@ export function checkRange(fields: TrimFields, { start, end }: TimeValues, durat
     return invalid(`${subject} precisa ter pelo menos 0,1 segundo.`, ['end', 'start'])
   }
   return { ok: true, range }
-}
-
-/** Confere os campos e os traduz no trecho. Valor errado vem antes de campo vazio. */
-export function validateTrim(fields: TrimFields, duration: number): TrimValidation {
-  const checked = checkTimeValues(fields, duration)
-  if (!checked.ok) return checked
-  return checkRange(fields, checked.values, duration, 'O trecho')
 }

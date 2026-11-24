@@ -1,5 +1,5 @@
 /**
- * Worker de vídeo: abre, corta, recorta, comprime e converte vídeos, extrai o som e cria GIFs, com o Mediabunny (WebCodecs),
+ * Worker de vídeo: abre, corta, recorta, comprime e converte vídeos, extrai o som, cria GIFs e miniaturas, com o Mediabunny (WebCodecs),
  * fora da thread principal. O arquivo é lido aos pedaços e o resultado é montado na memória do Worker;
  * nada sai do aparelho. Cada pedido recebe exatamente uma resposta, de sucesso ou com um código de erro estável.
  */
@@ -63,6 +63,8 @@ import type {
   InspectOutput,
   JoinJob,
   JoinOutput,
+  ThumbnailsJob,
+  ThumbnailsOutput,
   TrimJob,
   TrimOutput,
   VideoJob,
@@ -771,6 +773,44 @@ async function createGif(job: GifJob, onProgress: ProgressReporter): Promise<Gif
   }
 }
 
+/** Limites das miniaturas: bastam para a barra, e a imagem com todas continua pequena. */
+const MAX_THUMBNAILS = 120
+const MAX_THUMBNAIL_HEIGHT = 240
+
+async function thumbnails(job: ThumbnailsJob, onProgress: ProgressReporter): Promise<ThumbnailsOutput> {
+  const valid =
+    Number.isInteger(job.count) && job.count >= 1 && job.count <= MAX_THUMBNAILS && Number.isInteger(job.height) && job.height >= 8 && job.height <= MAX_THUMBNAIL_HEIGHT
+  if (!valid) throw new JobError('unexpected')
+  const opened = await openVideo(job.file)
+  try {
+    const { input, video } = opened
+    const full = await reading(displaySize(video))
+    const duration = await reading(input.computeDuration(selectedTracks(opened)))
+    if (!(await reading(video.canDecode()))) throw new JobError('decode-unsupported')
+    const { count, height } = job
+    const width = Math.max(1, Math.round((height * full.width) / full.height))
+    const strip = new OffscreenCanvas(width * count, height)
+    const context = strip.getContext('2d')
+    if (!context) throw new JobError('unexpected')
+    // O quadro do meio de cada parte do vídeo: é o que `thumbnailCell` (core/video/timeline) escolhe para cada tempo.
+    const times = Array.from({ length: count }, (_, index) => ((index + 0.5) * duration) / count)
+    const sink = new CanvasSink(video, { width, height, fit: 'fill' })
+    const report = throttled(onProgress)
+    let index = 0
+    for await (const wrapped of sink.canvasesAtTimestamps(times)) {
+      if (wrapped) context.drawImage(wrapped.canvas, index * width, 0)
+      index += 1
+      report(index / count)
+    }
+    const blob = await strip.convertToBlob({ type: 'image/jpeg', quality: 0.7 })
+    return { kind: 'thumbnails', blob, count, width, height }
+  } catch (error) {
+    throw toJobError(error, 'unexpected')
+  } finally {
+    opened.input.dispose()
+  }
+}
+
 function run(job: VideoJob, onProgress: ProgressReporter): Promise<VideoJobOutput> {
   switch (job.kind) {
     case 'inspect':
@@ -789,6 +829,8 @@ function run(job: VideoJob, onProgress: ProgressReporter): Promise<VideoJobOutpu
       return convertFormat(job, onProgress)
     case 'gif':
       return createGif(job, onProgress)
+    case 'thumbnails':
+      return thumbnails(job, onProgress)
   }
 }
 

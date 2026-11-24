@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { availableTrimModes, canRemoveParts, fieldsOfRange, isWholeVideo, resolveTrimMode, validateTrim, wholeRange } from './trim'
+import { availableTrimModes, canRemoveParts, checkRange, checkTimeValues, fieldsOfRange, type TrimFields } from './trim'
+
+/** As duas etapas da validação dos campos, como o Criar GIF e o ajuste fino do Editar vídeo usam. */
+function validateTrim(fields: TrimFields, duration: number) {
+  const checked = checkTimeValues(fields, duration)
+  return checked.ok ? checkRange(fields, checked.values, duration, 'O trecho') : checked
+}
 
 describe('modos de corte', () => {
   const capable = { canTranscodeVideo: true, canTranscodeAudio: true }
@@ -25,18 +31,11 @@ describe('modos de corte', () => {
     expect(canRemoveParts({ format: 'mp4', canTranscodeVideo: true, canTranscodeAudio: false })).toBe(false)
     expect(canRemoveParts({ format: 'webm', canTranscodeVideo: false, canTranscodeAudio: true })).toBe(false)
   })
-
-  it('usa o modo escolhido quando possível; senão o outro; senão nenhum', () => {
-    expect(resolveTrimMode('fast', { exact: true, fast: true })).toBe('fast')
-    expect(resolveTrimMode('fast', { exact: true, fast: false })).toBe('exact')
-    expect(resolveTrimMode('exact', { exact: false, fast: true })).toBe('fast')
-    expect(resolveTrimMode('exact', { exact: false, fast: false })).toBeNull()
-  })
 })
 
 const fields = (start: string, end: string) => ({ start, end })
 
-describe('validateTrim', () => {
+describe('campos de início e fim', () => {
   it('início e fim dentro do vídeo viram o trecho', () => {
     expect(validateTrim(fields('0:01,50', '0:03,00'), 4.6)).toEqual({ ok: true, range: { start: 1.5, end: 3 } })
     expect(validateTrim(fields('0', '4,6'), 4.6)).toEqual({ ok: true, range: { start: 0, end: 4.6 } })
@@ -93,15 +92,7 @@ describe('validateTrim', () => {
 })
 
 describe('trecho', () => {
-  it('o vídeo inteiro vai do zero à duração, e os campos o mostram', () => {
-    expect(wholeRange(4.6)).toEqual({ start: 0, end: 4.6 })
-    expect(fieldsOfRange(wholeRange(4.6))).toEqual(fields('0:00,00', '0:04,60'))
-  })
-
-  it('reconhece quando nada foi cortado', () => {
-    expect(isWholeVideo({ start: 0, end: 4.6 }, 4.6)).toBe(true)
-    expect(isWholeVideo({ start: 0, end: 4.596 }, 4.6)).toBe(true)
-    expect(isWholeVideo({ start: 0.5, end: 4.6 }, 4.6)).toBe(false)
-    expect(isWholeVideo({ start: 0, end: 4 }, 4.6)).toBe(false)
+  it('os campos mostram o trecho em minutos, segundos e centésimos', () => {
+    expect(fieldsOfRange({ start: 0, end: 4.6 })).toEqual(fields('0:00,00', '0:04,60'))
   })
 })

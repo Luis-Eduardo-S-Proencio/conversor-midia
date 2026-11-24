@@ -64,27 +64,30 @@ test.describe('Ver como ficou', () => {
     await expect(button(page, 'Baixar imagem')).toBeVisible()
   })
 
-  test('vídeo: depois de cortar, o player mostra o resultado; dá para ver o original e voltar', async ({ page }) => {
-    await page.goto('/videos/cortar')
+  test('vídeo: depois de editar, o player mostra o resultado; dá para ver o original e voltar', async ({ page }) => {
+    await page.goto('/videos/editar')
     test.skip(!(await canDecodeVideo(page)), UNSUPPORTED_DECODING)
     await fileInput(page).setInputFiles(videoFixture('segundos.mp4')) // 4 s
-    await expect(timeField(page, 'Início')).toBeVisible({ timeout: OPEN_TIMEOUT })
+    // Ajuste fino do pedaço único: fica de 1,5 a 3 s.
+    await page.getByRole('button', { name: /^Pedaço 1 de 1/ }).click({ timeout: OPEN_TIMEOUT })
+    await page.getByText('Ajuste fino', { exact: true }).click()
     await timeField(page, 'Início').fill('0:01,50')
     await timeField(page, 'Fim').fill('0:03,00')
-    await button(page, 'Cortar').click()
-    await expect(page.getByRole('heading', { name: 'Vídeo cortado' })).toBeFocused({ timeout: PROCESS_TIMEOUT })
+    await button(page, 'Aplicar').click()
+    await button(page, 'Salvar vídeo').click()
+    await expect(page.getByRole('heading', { name: 'Vídeo editado' })).toBeFocused({ timeout: PROCESS_TIMEOUT })
 
     await expect(page.getByRole('radio', { name: 'Como ficou' })).toBeChecked()
-    const result = page.getByLabel('Como ficou: segundos-trecho.mp4')
+    const result = page.getByLabel('Como ficou: segundos-editado.mp4')
     // O player toca o arquivo gerado: 1,5 s, e não os 4 s do original.
     await expect.poll(() => result.evaluate((video: HTMLVideoElement) => video.duration)).toBeCloseTo(1.5, 1)
 
     await page.getByRole('radio', { name: 'Original' }).click()
-    await expect(page.getByLabel('Vídeo segundos.mp4')).toBeVisible()
+    await expect(page.getByLabel('Vídeo segundos.mp4, como está ficando')).toBeVisible()
     await expect(result).toHaveCount(0)
 
     await button(page, 'Ver como ficou').click()
     await expect(page.getByRole('radio', { name: 'Como ficou' })).toBeFocused()
-    await expect(page.getByLabel('Como ficou: segundos-trecho.mp4')).toBeVisible()
+    await expect(page.getByLabel('Como ficou: segundos-editado.mp4')).toBeVisible()
   })
 })

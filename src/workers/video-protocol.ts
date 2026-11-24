@@ -96,10 +96,21 @@ export interface GifJob {
   fps: GifFrameRate
 }
 
-export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob | CompressJob | ExtractAudioJob | ConvertJob | GifJob
+/**
+ * Miniaturas para a barra do editor: `count` quadros espalhados por igual pelo vídeo (o do meio de cada
+ * parte), lado a lado numa imagem só (JPG), com `height` pixels de altura e a proporção do vídeo.
+ */
+export interface ThumbnailsJob {
+  kind: 'thumbnails'
+  file: Blob
+  count: number
+  height: number
+}
 
-/** Tarefas que geram um arquivo (todas menos abrir). */
-export type ProcessingJob = Exclude<VideoJob, InspectJob>
+export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob | CompressJob | ExtractAudioJob | ConvertJob | GifJob | ThumbnailsJob
+
+/** Tarefas que geram o arquivo final (todas menos abrir e as miniaturas). */
+export type ProcessingJob = Exclude<VideoJob, InspectJob | ThumbnailsJob>
 
 /* Resultados, um por tipo de tarefa. */
 
@@ -199,7 +210,26 @@ export interface GifOutput {
   frames: number
 }
 
-export type VideoJobOutput = InspectOutput | TrimOutput | JoinOutput | CropOutput | CompressOutput | ExtractAudioOutput | ConvertOutput | GifOutput
+export interface ThumbnailsOutput {
+  kind: 'thumbnails'
+  /** As miniaturas lado a lado, da primeira à última. */
+  blob: Blob
+  count: number
+  /** Medidas de cada miniatura, em pixels. */
+  width: number
+  height: number
+}
+
+export type VideoJobOutput =
+  | InspectOutput
+  | TrimOutput
+  | JoinOutput
+  | CropOutput
+  | CompressOutput
+  | ExtractAudioOutput
+  | ConvertOutput
+  | GifOutput
+  | ThumbnailsOutput
 
 export type VideoOutputFor<J extends VideoJob> = Extract<VideoJobOutput, { kind: J['kind'] }>
 

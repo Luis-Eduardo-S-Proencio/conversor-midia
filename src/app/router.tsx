@@ -1,4 +1,4 @@
-import { createBrowserRouter, type RouteObject } from 'react-router'
+import { Navigate, createBrowserRouter, type RouteObject } from 'react-router'
 import { AppShell } from '../components/layout/AppShell'
 import type { RouteHandle } from '../components/layout/route-handle'
 import { AboutPage } from '../pages/AboutPage'
@@ -79,13 +79,15 @@ export const router = createBrowserRouter([
       },
       {
         // O Worker de vídeo (com o Mediabunny) só carrega nas ferramentas de vídeo.
-        path: 'videos/cortar',
+        path: 'videos/editar',
         handle: { hideBottomNav: true } satisfies RouteHandle,
         lazy: async () => {
-          const { TrimPage } = await import('../features/video-tools/trim/TrimPage')
-          return { Component: TrimPage }
+          const { EditPage } = await import('../features/video-tools/edit/EditPage')
+          return { Component: EditPage }
         },
       },
+      // Endereço antigo do "Cortar trecho", que virou o "Editar vídeo": links salvos continuam funcionando.
+      { path: 'videos/cortar', element: <Navigate to="/videos/editar" replace /> },
       {
         path: 'videos/comprimir',
         handle: { hideBottomNav: true } satisfies RouteHandle,

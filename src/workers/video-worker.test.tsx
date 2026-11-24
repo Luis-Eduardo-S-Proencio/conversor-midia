@@ -542,6 +542,35 @@ describe('Worker de vídeo: extrair áudio', () => {
   })
 })
 
+describe('Worker de vídeo: miniaturas da barra do editor', () => {
+  it('quadros espalhados por igual, lado a lado, com a proporção do vídeo e a cor de cada momento', SLOW, async () => {
+    // "segundos.mp4": 320 × 240, vermelho, verde, azul e amarelo, um por segundo. 8 miniaturas: uma a cada 0,5 s.
+    const result = await client.run({ kind: 'thumbnails', file: await fixtureBlob(segundosMp4Url), count: 8, height: 60 })
+    expect(result).toMatchObject({ count: 8, width: 80, height: 60 })
+    expect(result.blob.type).toBe('image/jpeg')
+    const bitmap = await createImageBitmap(result.blob)
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+    const context = canvas.getContext('2d') as OffscreenCanvasRenderingContext2D
+    context.drawImage(bitmap, 0, 0)
+    expect([bitmap.width, bitmap.height]).toEqual([640, 60])
+    bitmap.close()
+    const colorOf = (index: number) => classify(Array.from(context.getImageData(index * 80 + 40, 30, 1, 1).data))
+    expect([0, 1, 2, 3, 4, 5, 6, 7].map(colorOf)).toEqual(['red', 'red', 'green', 'green', 'blue', 'blue', 'yellow', 'yellow'])
+  })
+
+  it('vídeo gravado em pé: miniaturas em pé', SLOW, async () => {
+    const result = await client.run({ kind: 'thumbnails', file: await fixtureBlob(giradoUrl), count: 2, height: 64 })
+    expect(result).toMatchObject({ width: 48, height: 64 })
+  })
+
+  it('quantidade ou altura fora dos limites são recusadas', async () => {
+    const file = await fixtureBlob(segundosMp4Url)
+    await expect(client.run({ kind: 'thumbnails', file, count: 0, height: 60 })).rejects.toEqual(new VideoJobError('unexpected'))
+    await expect(client.run({ kind: 'thumbnails', file, count: 500, height: 60 })).rejects.toEqual(new VideoJobError('unexpected'))
+    await expect(client.run({ kind: 'thumbnails', file, count: 8, height: 4000 })).rejects.toEqual(new VideoJobError('unexpected'))
+  })
+})
+
 describe('Worker de vídeo: criar GIF', () => {
   const gifJob = (file: Blob, overrides: Partial<GifJob> = {}): GifJob => ({ kind: 'gif', file, start: 0.5, end: 2.5, width: 320, height: 240, fps: 10, ...overrides })
   /** Cor do pixel (x, y) na tela depois do quadro `index`. */

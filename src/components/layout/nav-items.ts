@@ -8,7 +8,7 @@ export interface NavItem {
   end?: boolean
 }
 
-/** Destinos principais, compartilhados pelo menu superior e pela barra inferior. */
+/** Destinos principais, compartilhados pela barra lateral e pela barra inferior do celular. */
 export const NAV_ITEMS: readonly NavItem[] = [
   { to: '/', label: 'Início', icon: House, end: true },
   { to: '/imagens', label: 'Imagens', icon: ImageIcon },

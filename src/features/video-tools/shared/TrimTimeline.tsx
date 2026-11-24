@@ -7,17 +7,17 @@ interface TrimTimelineProps {
   kept: readonly TrimRange[]
   /** Ponto atual do player, em segundos. */
   time: number
-  /** Explica a parte azul da barra. */
+  /** Explica a parte destacada (violeta) da barra. */
   legend?: string
 }
 
 const percent = (value: number, duration: number) => `${Math.min(100, Math.max(0, (value / duration) * 100))}%`
 
 /**
- * O vídeo inteiro numa barra: em azul o que fica, o resto sai; a linha clara é o ponto do player.
+ * O vídeo inteiro numa barra: em violeta o que fica, o resto sai; a linha clara é o ponto do player.
  * Só visual: o leitor de tela recebe a mesma informação pelos campos e pela duração final.
  */
-export function TrimTimeline({ duration, kept, time, legend = 'Em azul, o que fica no vídeo' }: TrimTimelineProps) {
+export function TrimTimeline({ duration, kept, time, legend = 'Em violeta, o que fica no vídeo' }: TrimTimelineProps) {
   return (
     <div aria-hidden="true" className="grid gap-1.5">
       <div className="relative h-3 overflow-hidden rounded-full bg-border">

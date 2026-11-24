@@ -37,7 +37,7 @@ export function GifPage() {
             duration={info.duration}
             kept={plan.range ? [plan.range] : []}
             target="o trecho do GIF"
-            timelineLegend="Em azul, o que vira GIF"
+            timelineLegend="Em violeta, o que vira GIF"
             onMark={gif.mark}
             disabled={busy}
           />

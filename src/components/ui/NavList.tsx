@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { Badge } from './Badge'
 import { cx } from './cx'
 import { Icon } from './Icon'
+import { ToolIcon, type ToolTone } from './ToolIcon'
 
 export interface NavListItem {
   id: string
@@ -12,6 +13,8 @@ export interface NavListItem {
   icon: LucideIcon
   /** Sem destino, o item aparece como indisponível. */
   to?: string
+  /** Ferramenta: o ícone ganha o ladrilho na cor do tipo de ferramenta. */
+  tone?: ToolTone
 }
 
 interface NavListProps {
@@ -21,14 +24,14 @@ interface NavListProps {
   className?: string
 }
 
-const ROW = 'grid min-h-16 grid-cols-[1.25rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3'
+const ROW = 'grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3.5 px-4 py-3'
 
 function RowContent({ item, trailing }: { item: NavListItem; trailing: ReactNode }) {
   return (
     <>
-      <Icon icon={item.icon} className="text-fg-muted" />
+      {item.tone ? <ToolIcon icon={item.icon} tone={item.tone} /> : <Icon icon={item.icon} className="text-fg-muted" />}
       <span className="grid min-w-0 gap-0.5">
-        <span className="text-sm font-medium text-fg">{item.title}</span>
+        <span className="text-sm font-semibold text-fg">{item.title}</span>
         <span className="text-xs text-fg-subtle">{item.description}</span>
       </span>
       {trailing}

@@ -15,7 +15,7 @@ const devRoutes: RouteObject[] = import.meta.env.DEV
   ? [
       {
         path: 'design-system',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { DesignSystemPage } = await import('../pages/dev/DesignSystemPage')
           return { Component: DesignSystemPage }
@@ -38,7 +38,7 @@ export const router = createBrowserRouter([
       {
         // Ferramentas carregam sob demanda: o código e o Worker não pesam na página inicial.
         path: 'imagens/converter',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { ConvertPage } = await import('../features/image-tools/convert/ConvertPage')
           return { Component: ConvertPage }
@@ -46,7 +46,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'imagens/comprimir',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { CompressPage } = await import('../features/image-tools/compress/CompressPage')
           return { Component: CompressPage }
@@ -54,7 +54,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'imagens/redimensionar',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { ResizePage } = await import('../features/image-tools/resize/ResizePage')
           return { Component: ResizePage }
@@ -62,7 +62,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'imagens/girar',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { RotatePage } = await import('../features/image-tools/rotate/RotatePage')
           return { Component: RotatePage }
@@ -71,7 +71,7 @@ export const router = createBrowserRouter([
       {
         // A biblioteca de recorte (react-image-crop) só carrega aqui e no recorte de vídeo.
         path: 'imagens/recortar',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { CropPage } = await import('../features/image-tools/crop/CropPage')
           return { Component: CropPage }
@@ -80,7 +80,7 @@ export const router = createBrowserRouter([
       {
         // O Worker de vídeo (com o Mediabunny) só carrega nas ferramentas de vídeo.
         path: 'videos/editar',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { EditPage } = await import('../features/video-tools/edit/EditPage')
           return { Component: EditPage }
@@ -90,7 +90,7 @@ export const router = createBrowserRouter([
       { path: 'videos/cortar', element: <Navigate to="/videos/editar" replace /> },
       {
         path: 'videos/comprimir',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { CompressPage } = await import('../features/video-tools/compress/CompressPage')
           return { Component: CompressPage }
@@ -98,7 +98,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'videos/recortar',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { VideoCropPage } = await import('../features/video-tools/crop/VideoCropPage')
           return { Component: VideoCropPage }
@@ -106,7 +106,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'videos/resolucao',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { ResizePage } = await import('../features/video-tools/resize/ResizePage')
           return { Component: ResizePage }
@@ -114,7 +114,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'videos/extrair-audio',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { ExtractAudioPage } = await import('../features/video-tools/audio/ExtractAudioPage')
           return { Component: ExtractAudioPage }
@@ -122,7 +122,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'videos/converter',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { ConvertPage } = await import('../features/video-tools/convert/ConvertPage')
           return { Component: ConvertPage }
@@ -130,7 +130,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'videos/gif',
-        handle: { hideBottomNav: true } satisfies RouteHandle,
+        handle: { editor: true } satisfies RouteHandle,
         lazy: async () => {
           const { GifPage } = await import('../features/video-tools/gif/GifPage')
           return { Component: GifPage }

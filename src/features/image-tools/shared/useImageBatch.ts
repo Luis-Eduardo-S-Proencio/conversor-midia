@@ -3,6 +3,7 @@ import { IMAGE_LIMITS, inspectImageFile, type Inspection } from '../../../core/i
 import { batchLimitMessage, processingErrorMessage, rejectionMessage } from '../../../core/image/messages'
 import { uniqueFileNames } from '../../../core/image/output-name'
 import { ImageJobError, createImageWorkerClient, isAbortError, type ImageWorkerClient } from '../../../workers/image-client'
+import { useHandedOffFiles } from '../../shared/file-handoff'
 import { BatchItemError, type BatchProcess } from './batch-process'
 import { INITIAL_BATCH_STATE, batchReducer, summarizeBatch } from './batch-state'
 import { PREVIEW_SIZE, THUMBNAIL_SIZE, type BatchLabels } from './constants'
@@ -241,6 +242,9 @@ export function useImageBatch(labels: BatchLabels, { singleImage = false }: { si
     dispatch({ type: 'reset' })
     setAnnouncement('')
   }, [releaseAll])
+
+  // Imagens abertas em outra tela (ex.: no Início) chegam já escolhidas. Depois do efeito que cria o Worker.
+  useHandedOffFiles('image', addFiles, reset)
 
   const getResultFile = useCallback((id: string) => results.current.get(id), [])
 

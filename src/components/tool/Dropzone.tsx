@@ -16,6 +16,8 @@ interface DropzoneProps {
   className?: string
   /** Permite levar o foco ao botão (ex.: ao recomeçar, quando o botão anterior some). */
   buttonRef?: Ref<HTMLButtonElement>
+  /** Botão maior, como a entrada principal da página inicial. */
+  size?: 'md' | 'lg'
 }
 
 function carriesFiles(event: DragEvent): boolean {
@@ -36,6 +38,7 @@ export function Dropzone({
   disabled = false,
   className,
   buttonRef,
+  size = 'md',
 }: DropzoneProps) {
   const dragDepth = useRef(0)
   const [dragging, setDragging] = useState(false)
@@ -80,18 +83,19 @@ export function Dropzone({
       onDrop={handleDrop}
       data-dragging={dragging || undefined}
       className={cx(
-        'grid justify-items-center gap-3 rounded-lg border-2 border-dashed border-border-strong bg-surface px-5 py-8 text-center transition-colors',
+        'grid justify-items-center gap-3 rounded-xl border-2 border-dashed border-accent/40 bg-drop px-5 py-8 text-center transition-colors',
         'data-dragging:border-accent data-dragging:bg-accent-subtle',
         className,
       )}
     >
-      <span className="grid size-12 place-items-center rounded-full bg-surface-raised text-fg-muted">
-        <Icon icon={Upload} />
+      <span className="mb-1 grid size-14 place-items-center rounded-lg bg-brand text-on-accent shadow-accent">
+        <Icon icon={Upload} size="lg" />
       </span>
       <p className="hidden font-semibold text-fg pointer-fine:block">{dragLabel}</p>
       <FilePickerButton
         ref={buttonRef}
         variant="primary"
+        size={size}
         accept={accept}
         multiple={multiple}
         disabled={disabled}

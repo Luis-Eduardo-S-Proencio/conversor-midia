@@ -15,7 +15,7 @@ test.describe('navegação', () => {
     await expect(nav.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current')
   })
 
-  test('o menu fica no topo a partir de 768 px e embaixo no celular', async ({ page }, testInfo) => {
+  test('o menu fica na lateral esquerda a partir de 768 px e embaixo no celular', async ({ page }, testInfo) => {
     await page.goto('/')
     const box = await page.getByRole('navigation', { name: 'Principal' }).boundingBox()
     const viewport = page.viewportSize()
@@ -24,7 +24,8 @@ test.describe('navegação', () => {
     if (testInfo.project.name === 'mobile') {
       expect(Math.round(box.y + box.height)).toBe(viewport.height)
     } else {
-      expect(box.y).toBeLessThan(60)
+      expect(box.x).toBeLessThan(10)
+      expect(box.y).toBeLessThan(200)
     }
   })
 

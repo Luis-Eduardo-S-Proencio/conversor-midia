@@ -5,7 +5,7 @@ Plataforma web **gratuita** para converter, comprimir e editar imagens e vídeos
 Este arquivo é a fonte das regras do projeto. Os **métodos** de trabalho (checklists, procedimentos) estão nas Skills de `.claude/skills/` e **não são repetidos aqui**.
 
 ## Estado atual
-Scaffold, Design System, navegação e páginas institucionais prontos (Início, Imagens, Vídeos, Sobre, página não encontrada). Todas as ferramentas de imagem da primeira versão funcionam, sobre a base comum `features/image-tools/shared/`: **Converter** (`/imagens/converter`), **Comprimir** (`/imagens/comprimir`), **Redimensionar** (`/imagens/redimensionar`), **Girar e espelhar** (`/imagens/girar`) e **Recortar** (`/imagens/recortar`, uma imagem por vez). Vídeo, sobre a base comum `features/video-tools/shared/` (um vídeo por vez, com o Mediabunny num Worker próprio): **Editar vídeo** (`/videos/editar`; o antigo `/videos/cortar` leva para lá), **Recortar vídeo** (`/videos/recortar`), **Comprimir vídeo** (`/videos/comprimir`), **Extrair áudio** (`/videos/extrair-audio`), **Mudar resolução** (`/videos/resolucao`), **Converter vídeo** (`/videos/converter`) e **Criar GIF** (`/videos/gif`). Todas as ferramentas do catálogo (`src/app/tool-catalog.ts`) estão prontas. Em todas, depois de processar, a pessoa vê como ficou (e o original, para comparar) antes de baixar. Baixar vídeos por link (YouTube, Instagram) **não** será feito até o usuário decidir. Ainda sem teste em aparelho real: roteiro em `docs/roteiro-teste-aparelhos.md`. Confirme o que existe no disco antes de assumir.
+Scaffold, Design System, navegação e páginas institucionais prontos (Início, Imagens, Vídeos, Sobre, página não encontrada). Redesenho em andamento (aprovado em 24/11/2026), publicado por partes: identidade e componentes, navegação lateral e Início com "Abrir foto ou vídeo" (que entrega o arquivo à ferramenta escolhida) prontos; faltam os editores de imagem e de vídeo no novo formato e a revisão final. Todas as ferramentas de imagem da primeira versão funcionam, sobre a base comum `features/image-tools/shared/`: **Converter** (`/imagens/converter`), **Comprimir** (`/imagens/comprimir`), **Redimensionar** (`/imagens/redimensionar`), **Girar e espelhar** (`/imagens/girar`) e **Recortar** (`/imagens/recortar`, uma imagem por vez). Vídeo, sobre a base comum `features/video-tools/shared/` (um vídeo por vez, com o Mediabunny num Worker próprio): **Editar vídeo** (`/videos/editar`; o antigo `/videos/cortar` leva para lá), **Recortar vídeo** (`/videos/recortar`), **Comprimir vídeo** (`/videos/comprimir`), **Extrair áudio** (`/videos/extrair-audio`), **Mudar resolução** (`/videos/resolucao`), **Converter vídeo** (`/videos/converter`) e **Criar GIF** (`/videos/gif`). Todas as ferramentas do catálogo (`src/app/tool-catalog.ts`) estão prontas. Em todas, depois de processar, a pessoa vê como ficou (e o original, para comparar) antes de baixar. Baixar vídeos por link (YouTube, Instagram) **não** será feito até o usuário decidir. Ainda sem teste em aparelho real: roteiro em `docs/roteiro-teste-aparelhos.md`. Confirme o que existe no disco antes de assumir.
 
 ## Funcionalidades
 - **Imagens (primeira versão)**: converter JPG/JPEG, PNG e WEBP para JPG, PNG, WEBP, BMP, TIFF, ICO e PDF; comprimir; redimensionar; recortar, girar e espelhar; processar vários arquivos; baixar os resultados.
@@ -32,19 +32,20 @@ Navegadores suportados (piso herdado do Tailwind 4): Safari/iOS 16.4+, Chrome/Ed
 ```
 src/
   app/                 # roteador e catálogo de ferramentas
-  pages/               # páginas (Início, Imagens, Vídeos, Sobre, erros); pages/dev só em desenvolvimento
+  pages/               # páginas (Início com o "Abrir foto ou vídeo" (QuickOpen), Imagens, Vídeos, Sobre, erros); pages/dev só em desenvolvimento
   components/
     ui/                # primitivos visuais (Button, Field, SegmentedControl...)
-    layout/            # AppShell, navegação, rodapé, Container, PageHeader, ActionBar
+    layout/            # AppShell, barra lateral (SideNav, o cabeçalho do site a partir de 768 px), cabeçalho e abas do celular, rodapé, Container, PageHeader, ActionBar
     tool/              # padrão das ferramentas (Dropzone, FilePreview, DownloadActions, CropArea e CropOptions de imagem e vídeo...), sem processamento
     brand/             # logotipo e sua geometria
-  core/                # TypeScript puro, sem DOM nem React: formatação, nome-base de arquivo, campos de recorte (crop-fields), só algarismos (digits)
+  core/                # TypeScript puro, sem DOM nem React: formatação, nome-base de arquivo, campos de recorte (crop-fields), só algarismos (digits), foto ou vídeo pelo conteúdo e o que fazer com vários arquivos (media-kind)
     image/             # formatos, assinatura de bytes, cabeçalho, inspeção com limites, nomes de saída, mensagens, medidas de redimensionamento, orientação (giros e espelhos), área de recorte, qualidade estimada do JPG (jpeg-quality.ts)
       encode/          # codificadores próprios (PNG, BMP, TIFF, ICO, PDF, lendo os pixels em faixas; GIF animado, com paleta por corte mediano e LZW)
     video/             # formatos, assinatura de bytes, limite, mensagens, tempos ("1:05,30"), campos de tempo e modos de corte (trim.ts), pedaços do editor, dividir, excluir, pontas, desfazer, tempo editado e do original, o que salvar e miniaturas visíveis (timeline.ts), pedaços encostados e emendas para o Worker (remove.ts), medidas pelo lado menor e taxa por área, comuns ao Comprimir e ao Mudar resolução (sizing.ts), níveis e estimativa da compressão (compress.ts), resoluções e taxa limitada à do original (resize.ts), o que copiar e o que refazer ao converter, modos do HEVC e taxas (convert.ts), tamanhos, fluidez, limite de 15 s, momentos e tempos dos quadros do GIF (gif.ts), regras do recorte (lados pares, mínimo), nomes de saída, formatos do som extraído (audio.ts: cópia ou refeito)
   styles/              # tokens.css (valores), base.css, index.css
   test/                # configuração dos testes de navegador, construtores de bytes de imagem e de vídeo e leitores de vídeo e de som (video-reader, audio-reader)
   features/
+    shared/            # entrega de arquivos entre telas (file-handoff.ts): o Início entrega o arquivo à ferramenta escolhida, só na memória da aba
     image-tools/
       shared/          # base das ferramentas de imagem: estado do lote, fila, tela (ImageToolPage), modo de uma imagem por vez
       convert/         # Converter imagem: opções e regra de formato

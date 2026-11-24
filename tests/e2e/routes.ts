@@ -1,6 +1,6 @@
 /** Páginas públicas verificadas em todas as larguras. */
 export const PUBLIC_ROUTES = [
-  { path: '/', heading: 'Converta e edite imagens e vídeos no navegador' },
+  { path: '/', heading: 'Edite fotos e vídeos direto no navegador' },
   { path: '/imagens', heading: 'Ferramentas de imagem' },
   { path: '/videos', heading: 'Ferramentas de vídeo' },
   { path: '/sobre', heading: 'Sobre o Media Tools' },

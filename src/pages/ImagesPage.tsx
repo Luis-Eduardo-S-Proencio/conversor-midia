@@ -13,7 +13,6 @@ export function ImagesPage() {
           description="Converta, comprima e edite fotos em JPG, PNG e WEBP. Tudo acontece no seu navegador."
         />
         <NavList items={IMAGE_TOOLS} columns={2} />
-        <p className="text-sm text-fg-subtle">As ferramentas estão em construção e serão liberadas uma a uma.</p>
       </Container>
     </>
   )

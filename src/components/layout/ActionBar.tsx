@@ -8,7 +8,7 @@ interface ActionBarProps {
 
 /**
  * Ação principal de uma ferramenta. No celular fica fixa no rodapé, ao alcance do polegar;
- * a rota da ferramenta deve declarar `handle: { hideBottomNav: true }`.
+ * a rota da ferramenta deve declarar `handle: { editor: true }`.
  * A partir de 768 px volta ao fluxo normal da página.
  */
 export function ActionBar({ className, children }: ActionBarProps) {

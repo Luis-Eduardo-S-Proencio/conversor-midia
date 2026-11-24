@@ -1,66 +1,104 @@
-import { Film, Image as ImageIcon, ShieldCheck } from 'lucide-react'
+import { ChevronRight, ShieldCheck } from 'lucide-react'
+import { useCallback, useRef } from 'react'
 import { Link } from 'react-router'
-import { POPULAR_TOOLS } from '../app/tool-catalog'
+import { TOOL_GROUPS, type ToolEntry, type ToolGroup } from '../app/tool-catalog'
 import { Container } from '../components/layout/Container'
 import { Icon } from '../components/ui/Icon'
-import { NavCard } from '../components/ui/NavCard'
-import { NavList } from '../components/ui/NavList'
+import { ToolIcon } from '../components/ui/ToolIcon'
+import { handOffFiles } from '../features/shared/file-handoff'
+import { QuickOpen, type OpenedMedia } from './QuickOpen'
+
+/**
+ * Um grupo de ferramentas. No celular, grade de ícones com o nome curto (como nos apps);
+ * a partir de 768 px, linhas com o nome completo e a descrição.
+ */
+function ToolGroupCard({ group, onOpen }: { group: ToolGroup; onOpen: (tool: ToolEntry) => void }) {
+  return (
+    <section aria-labelledby={`grupo-${group.id}`} className="grid content-start gap-3 rounded-xl border border-border bg-surface p-3 md:gap-1 md:p-2">
+      <header className="grid gap-0.5 px-1 pt-1 md:px-3 md:pt-3 md:pb-2">
+        <h3 id={`grupo-${group.id}`} className="font-bold tracking-tight text-fg">
+          {group.title}
+        </h3>
+        <p className="text-xs text-fg-subtle">{group.description}</p>
+      </header>
+      <ul className="grid grid-cols-4 gap-x-1 gap-y-3 md:grid-cols-2 md:gap-1 lg:grid-cols-1">
+        {group.tools.map((tool) => (
+          <li key={tool.id}>
+            <Link
+              to={tool.to}
+              onClick={() => onOpen(tool)}
+              className="group flex h-full flex-col items-center gap-2 rounded-lg p-1.5 text-center transition-colors hover:bg-surface-raised md:flex-row md:gap-3 md:p-2.5 md:text-left"
+            >
+              <ToolIcon icon={tool.icon} tone={tool.tone} size="lg" className="md:hidden" />
+              <ToolIcon icon={tool.icon} tone={tool.tone} className="hidden md:grid" />
+              <span className="text-xs leading-tight font-medium text-fg-muted md:hidden">{tool.shortTitle}</span>
+              <span className="hidden min-w-0 flex-1 gap-0.5 md:grid">
+                <span className="text-sm font-semibold text-fg">{tool.title}</span>
+                <span className="text-xs text-fg-subtle">{tool.description}</span>
+              </span>
+              <Icon
+                icon={ChevronRight}
+                size="sm"
+                className="hidden text-fg-subtle transition-transform group-hover:translate-x-0.5 md:block"
+              />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
 
 export function HomePage() {
+  // Com um arquivo já aberto, qualquer ferramenta do mesmo tipo o recebe (não só as da pergunta).
+  const opened = useRef<OpenedMedia | null>(null)
+  const remember = useCallback((media: OpenedMedia | null) => {
+    opened.current = media
+  }, [])
+  const openTool = useCallback((tool: ToolEntry) => {
+    const media = opened.current
+    if (media && media.kind === tool.media) handOffFiles(media.kind, media.files)
+  }, [])
+
   return (
     <>
-      <title>Media Tools · Imagens e vídeos no navegador</title>
-      <Container className="grid gap-12 py-10 md:gap-16 md:py-16">
-        <section aria-labelledby="home-title" className="grid gap-3">
-          <h1 id="home-title" className="max-w-3xl text-3xl font-semibold tracking-tight text-balance md:text-4xl">
-            Converta e edite imagens e vídeos no navegador
-          </h1>
-          <p className="max-w-2xl text-base text-fg-muted md:text-lg">
-            Gratuito e sem cadastro. Escolha um arquivo, ajuste o que precisa e baixe o resultado.
-          </p>
+      <title>Media Tools · Edite fotos e vídeos no navegador</title>
+      <Container className="grid gap-10 py-8 md:gap-12 md:py-12">
+        <section aria-labelledby="home-title" className="grid items-center gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-12">
+          <div className="grid gap-4">
+            <p className="text-sm font-semibold text-accent-soft">Grátis · sem cadastro · sem marca d'água</p>
+            <h1 id="home-title" className="text-3xl font-extrabold tracking-tight text-balance md:text-5xl">
+              Edite fotos e vídeos <span className="text-brand">direto no navegador</span>
+            </h1>
+            <p className="max-w-xl text-base text-fg-muted md:text-lg">
+              Converta, comprima, recorte e corte em segundos, sem instalar nada.
+            </p>
+            <p className="flex gap-2.5 text-sm text-fg-muted">
+              <Icon icon={ShieldCheck} className="text-success" />
+              <span>
+                Tudo acontece no seu aparelho: nenhum arquivo é enviado.{' '}
+                <Link
+                  to="/sobre#processamento-local"
+                  className="whitespace-nowrap text-accent-soft underline underline-offset-4 transition-colors hover:text-fg"
+                >
+                  Como funciona
+                </Link>
+              </span>
+            </p>
+          </div>
+          <QuickOpen onOpened={remember} />
         </section>
 
-        <section aria-labelledby="categories-title">
-          <h2 id="categories-title" className="sr-only">
-            Categorias
+        <section aria-labelledby="tools-title" className="grid gap-4">
+          <h2 id="tools-title" className="text-xl font-bold tracking-tight">
+            Todas as ferramentas
           </h2>
-          <div className="grid gap-3 md:grid-cols-2 md:gap-4">
-            <NavCard
-              to="/imagens"
-              icon={ImageIcon}
-              title="Imagens"
-              description="Converter, comprimir, redimensionar, recortar, girar e espelhar."
-              meta="JPG · PNG · WEBP"
-            />
-            <NavCard
-              to="/videos"
-              icon={Film}
-              title="Vídeos"
-              description="Editar, recortar, comprimir, converter, extrair o som e criar GIF."
-              meta="MP4 · MOV · WEBM"
-            />
+          <div className="grid gap-4 lg:grid-cols-3">
+            {TOOL_GROUPS.map((group) => (
+              <ToolGroupCard key={group.id} group={group} onOpen={openTool} />
+            ))}
           </div>
         </section>
-
-        <section aria-labelledby="popular-title" className="grid gap-4">
-          <h2 id="popular-title" className="text-xl font-semibold tracking-tight">
-            Ferramentas populares
-          </h2>
-          <NavList items={POPULAR_TOOLS} columns={2} />
-        </section>
-
-        <p className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3 text-sm text-fg-muted">
-          <Icon icon={ShieldCheck} className="text-success" />
-          <span>
-            Imagens e vídeos são abertos e processados pelo seu navegador. Nenhum arquivo é enviado para servidores.{' '}
-            <Link
-              to="/sobre#processamento-local"
-              className="whitespace-nowrap text-accent-soft underline underline-offset-4 transition-colors hover:text-fg"
-            >
-              Como funciona
-            </Link>
-          </span>
-        </p>
       </Container>
     </>
   )

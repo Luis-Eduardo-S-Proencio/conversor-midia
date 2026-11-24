@@ -3,6 +3,7 @@ import { checkVideoFile, type VideoCheck } from '../../../core/video/inspect'
 import { videoErrorMessage, videoRejectionMessage } from '../../../core/video/messages'
 import { VideoJobError, createVideoWorkerClient, isAbortError, type VideoWorkerClient } from '../../../workers/video-client'
 import type { ProcessingJob, ThumbnailsJob, VideoInfo, VideoOutputFor } from '../../../workers/video-protocol'
+import { useHandedOffFiles } from '../../shared/file-handoff'
 
 /** Tarefas auxiliares, que não geram o arquivo final. */
 type AsideJob = ThumbnailsJob
@@ -248,6 +249,9 @@ export function useVideoTool(labels: VideoToolLabels, { checkSizeControl = false
     setState((current) => ({ ...EMPTY, fileId: current.fileId }))
     setAnnouncement('')
   }, [release])
+
+  // Vídeo aberto em outra tela (ex.: no Início) chega já escolhido. Depois do efeito que cria o Worker.
+  useHandedOffFiles('video', selectFiles, reset)
 
   const getResultFile = useCallback(() => result.current, [])
 

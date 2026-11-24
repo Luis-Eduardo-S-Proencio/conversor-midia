@@ -3,16 +3,18 @@ import { Outlet, ScrollRestoration, useLocation, useMatches } from 'react-router
 import { cx } from '../ui/cx'
 import { BottomNav } from './BottomNav'
 import { Footer } from './Footer'
+import { MobileHeader } from './MobileHeader'
 import { isRouteHandle } from './route-handle'
-import { TopNav } from './TopNav'
+import { SideNav } from './SideNav'
 
 /**
- * Estrutura comum a todas as páginas.
- * Ao trocar de página, o foco vai para o conteúdo principal, para o leitor de tela não ficar no menu.
+ * Estrutura comum a todas as páginas: barra lateral a partir de 768 px; no celular, cabeçalho
+ * com a marca e abas embaixo. Ao trocar de página, o foco vai para o conteúdo principal,
+ * para o leitor de tela não ficar no menu.
  */
 export function AppShell() {
   const { pathname, hash } = useLocation()
-  const hideBottomNav = useMatches().some((match) => isRouteHandle(match.handle) && match.handle.hideBottomNav)
+  const editor = useMatches().some((match) => isRouteHandle(match.handle) && match.handle.editor)
   const mainRef = useRef<HTMLElement>(null)
   const previousLocation = useRef(pathname + hash)
 
@@ -32,24 +34,27 @@ export function AppShell() {
   }, [pathname, hash])
 
   return (
-    <div
-      className={cx(
-        'flex min-h-dvh flex-col pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]',
-        !hideBottomNav && 'pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom))] md:pb-0',
-      )}
-    >
+    <div className="min-h-dvh pr-[env(safe-area-inset-right)] md:flex">
       <a
         href="#conteudo"
         className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-fg"
       >
         Pular para o conteúdo
       </a>
-      <TopNav />
-      <main id="conteudo" ref={mainRef} tabIndex={-1} className="flex-1 focus:outline-none">
-        <Outlet />
-      </main>
-      <Footer />
-      {!hideBottomNav && <BottomNav />}
+      <SideNav compact={editor} />
+      <div
+        className={cx(
+          'flex min-h-dvh min-w-0 flex-1 flex-col pl-[env(safe-area-inset-left)] md:pl-0',
+          !editor && 'pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom))] md:pb-0',
+        )}
+      >
+        <MobileHeader />
+        <main id="conteudo" ref={mainRef} tabIndex={-1} className="flex-1 focus:outline-none">
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
+      {!editor && <BottomNav />}
       <ScrollRestoration />
     </div>
   )

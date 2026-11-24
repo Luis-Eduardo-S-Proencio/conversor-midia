@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { IMAGE_TOOLS, VIDEO_TOOLS } from './tool-catalog'
+import { IMAGE_TOOLS, TOOL_GROUPS, VIDEO_TOOLS, toolsFor } from './tool-catalog'
 
 describe('catálogo de ferramentas', () => {
   it('GIF fica na aba Vídeos, com rota própria', () => {
@@ -24,6 +24,26 @@ describe('catálogo de ferramentas', () => {
 
   it('todas as ferramentas de imagem da primeira versão estão disponíveis', () => {
     expect(IMAGE_TOOLS.filter((tool) => !tool.to)).toEqual([])
+  })
+
+  it('os grupos do início mostram cada ferramenta exatamente uma vez', () => {
+    const grouped = TOOL_GROUPS.flatMap((group) => group.tools.map((tool) => tool.id)).sort()
+    const all = [...IMAGE_TOOLS, ...VIDEO_TOOLS].map((tool) => tool.id).sort()
+    expect(grouped).toEqual(all)
+    expect(TOOL_GROUPS.map((group) => group.title)).toEqual(['Editar', 'Converter', 'Deixar menor'])
+  })
+
+  it('cada ferramenta diz o tipo de arquivo que abre, e o tipo leva às ferramentas certas', () => {
+    expect(IMAGE_TOOLS.every((tool) => tool.media === 'image' && tool.to.startsWith('/imagens/'))).toBe(true)
+    expect(VIDEO_TOOLS.every((tool) => tool.media === 'video' && tool.to.startsWith('/videos/'))).toBe(true)
+    expect(toolsFor('image')).toBe(IMAGE_TOOLS)
+    expect(toolsFor('video')).toBe(VIDEO_TOOLS)
+  })
+
+  it('o nome curto do celular cabe em duas linhas da grade', () => {
+    for (const tool of [...IMAGE_TOOLS, ...VIDEO_TOOLS]) {
+      expect(tool.shortTitle.split(' ').every((word) => word.length <= 13), tool.shortTitle).toBe(true)
+    }
   })
 
   it('todas as ferramentas de vídeo planejadas estão disponíveis', () => {

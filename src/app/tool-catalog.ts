@@ -1,59 +1,181 @@
-import { ArrowLeftRight, Crop, ImagePlay, Minimize2, Music, RotateCw, Scaling, Scissors } from 'lucide-react'
+import { ArrowLeftRight, Crop, ImagePlay, Minimize2, Monitor, Music, RotateCw, Scaling, Scissors } from 'lucide-react'
 import type { NavListItem } from '../components/ui/NavList'
+import type { ToolTone } from '../components/ui/ToolIcon'
+import type { MediaKind } from '../core/media-kind'
 
-/**
- * Catálogo das ferramentas exibidas na navegação.
- * Sem `to`, a ferramenta aparece como "Em breve"; ao implementar, basta preencher o caminho.
- */
+/** Uma ferramenta do catálogo: destino, cor do ícone e o tipo de arquivo que ela abre. */
 export interface ToolEntry extends NavListItem {
-  popular?: boolean
+  to: string
+  tone: ToolTone
+  media: MediaKind
+  /** Nome curto para a grade de ícones do celular (cabe em duas linhas). */
+  shortTitle: string
 }
 
 export const IMAGE_TOOLS: readonly ToolEntry[] = [
   {
     id: 'image-convert',
     title: 'Converter imagem',
+    shortTitle: 'Converter imagem',
     description: 'Para JPG, PNG, WEBP, PDF e mais',
     icon: ArrowLeftRight,
+    tone: 'convert',
+    media: 'image',
     to: '/imagens/converter',
-    popular: true,
   },
   {
     id: 'image-compress',
     title: 'Comprimir imagem',
-    description: 'Arquivo menor, qualidade sob controle',
+    shortTitle: 'Comprimir imagem',
+    description: 'Arquivo menor, mesma cara',
     icon: Minimize2,
+    tone: 'compress',
+    media: 'image',
     to: '/imagens/comprimir',
-    popular: true,
   },
   {
     id: 'image-resize',
     title: 'Redimensionar imagem',
+    shortTitle: 'Tamanho da imagem',
     description: 'Por porcentagem ou em pixels',
     icon: Scaling,
+    tone: 'size',
+    media: 'image',
     to: '/imagens/redimensionar',
-    popular: true,
   },
   {
     id: 'image-crop',
     title: 'Recortar imagem',
+    shortTitle: 'Recortar imagem',
     description: 'Mantenha só a área que importa',
     icon: Crop,
+    tone: 'crop',
+    media: 'image',
     to: '/imagens/recortar',
-    popular: true,
   },
-  { id: 'image-rotate-flip', title: 'Girar e espelhar', description: 'Corrija a orientação da foto', icon: RotateCw, to: '/imagens/girar' },
+  {
+    id: 'image-rotate-flip',
+    title: 'Girar e espelhar',
+    shortTitle: 'Girar e espelhar',
+    description: 'Corrija a orientação da foto',
+    icon: RotateCw,
+    tone: 'rotate',
+    media: 'image',
+    to: '/imagens/girar',
+  },
 ]
 
-// As disponíveis primeiro; as que estão por vir, depois.
 export const VIDEO_TOOLS: readonly ToolEntry[] = [
-  { id: 'video-edit', title: 'Editar vídeo', description: 'Divida, exclua partes e veja na hora como fica', icon: Scissors, to: '/videos/editar' },
-  { id: 'video-crop', title: 'Recortar vídeo', description: 'Mantenha só a parte do quadro que importa', icon: Crop, to: '/videos/recortar' },
-  { id: 'video-compress', title: 'Comprimir vídeo', description: 'Reduza o tamanho para enviar ou guardar', icon: Minimize2, to: '/videos/comprimir' },
-  { id: 'video-audio', title: 'Extrair áudio', description: 'Salve só o som do vídeo, em M4A ou MP3', icon: Music, to: '/videos/extrair-audio' },
-  { id: 'video-resize', title: 'Mudar resolução', description: 'Diminua para 1080p, 720p, 480p ou 360p', icon: Scaling, to: '/videos/resolucao' },
-  { id: 'video-convert', title: 'Converter vídeo', description: 'Entre MP4, MOV e WEBM', icon: ArrowLeftRight, to: '/videos/converter' },
-  { id: 'video-gif', title: 'Criar GIF', description: 'Transforme um trecho do vídeo em GIF animado', icon: ImagePlay, to: '/videos/gif' },
+  {
+    id: 'video-edit',
+    title: 'Editar vídeo',
+    shortTitle: 'Editar vídeo',
+    description: 'Divida e exclua partes, vendo na hora',
+    icon: Scissors,
+    tone: 'edit',
+    media: 'video',
+    to: '/videos/editar',
+  },
+  {
+    id: 'video-crop',
+    title: 'Recortar vídeo',
+    shortTitle: 'Recortar vídeo',
+    description: 'Só a parte do quadro que importa',
+    icon: Crop,
+    tone: 'crop',
+    media: 'video',
+    to: '/videos/recortar',
+  },
+  {
+    id: 'video-compress',
+    title: 'Comprimir vídeo',
+    shortTitle: 'Comprimir vídeo',
+    description: 'Menor para enviar ou guardar',
+    icon: Minimize2,
+    tone: 'compress',
+    media: 'video',
+    to: '/videos/comprimir',
+  },
+  {
+    id: 'video-audio',
+    title: 'Extrair áudio',
+    shortTitle: 'Extrair áudio',
+    description: 'Só o som, em M4A, WEBM ou MP3',
+    icon: Music,
+    tone: 'audio',
+    media: 'video',
+    to: '/videos/extrair-audio',
+  },
+  {
+    id: 'video-resize',
+    title: 'Mudar resolução',
+    shortTitle: 'Resolução do vídeo',
+    description: 'Diminua para 1080p, 720p, 480p ou 360p',
+    icon: Monitor,
+    tone: 'size',
+    media: 'video',
+    to: '/videos/resolucao',
+  },
+  {
+    id: 'video-convert',
+    title: 'Converter vídeo',
+    shortTitle: 'Converter vídeo',
+    description: 'Entre MP4, MOV e WEBM',
+    icon: ArrowLeftRight,
+    tone: 'convert',
+    media: 'video',
+    to: '/videos/converter',
+  },
+  {
+    id: 'video-gif',
+    title: 'Criar GIF',
+    shortTitle: 'Criar GIF',
+    description: 'Um trecho de até 15 segundos',
+    icon: ImagePlay,
+    tone: 'gif',
+    media: 'video',
+    to: '/videos/gif',
+  },
 ]
 
-export const POPULAR_TOOLS: readonly ToolEntry[] = IMAGE_TOOLS.filter((tool) => tool.popular)
+/** Ferramentas que abrem este tipo de arquivo. */
+export function toolsFor(media: MediaKind): readonly ToolEntry[] {
+  return media === 'image' ? IMAGE_TOOLS : VIDEO_TOOLS
+}
+
+export interface ToolGroup {
+  id: string
+  title: string
+  description: string
+  tools: readonly ToolEntry[]
+}
+
+function pick(...ids: string[]): ToolEntry[] {
+  return ids.map((id) => {
+    const tool = [...IMAGE_TOOLS, ...VIDEO_TOOLS].find((entry) => entry.id === id)
+    if (!tool) throw new Error(`Ferramenta inexistente no catálogo: ${id}`)
+    return tool
+  })
+}
+
+/** As ferramentas agrupadas pelo que a pessoa quer fazer (página inicial). */
+export const TOOL_GROUPS: readonly ToolGroup[] = [
+  {
+    id: 'editar',
+    title: 'Editar',
+    description: 'Cortar, recortar e girar',
+    tools: pick('video-edit', 'image-crop', 'video-crop', 'image-rotate-flip', 'video-gif'),
+  },
+  {
+    id: 'converter',
+    title: 'Converter',
+    description: 'Trocar o formato do arquivo',
+    tools: pick('image-convert', 'video-convert', 'video-audio'),
+  },
+  {
+    id: 'deixar-menor',
+    title: 'Deixar menor',
+    description: 'Ocupar menos espaço',
+    tools: pick('image-compress', 'video-compress', 'image-resize', 'video-resize'),
+  },
+]

@@ -147,3 +147,10 @@
     }
   }
 }
+
+/* Área de abrir arquivos: superfície com um leve brilho da marca no alto. */
+@utility bg-drop {
+  background:
+    radial-gradient(90% 80% at 50% 0%, color-mix(in srgb, var(--color-brand-start) 12%, transparent), transparent 70%),
+    var(--color-surface);
+}

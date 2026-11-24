@@ -14,7 +14,7 @@ function renderShell(initialPath = '/') {
         children: [
           { index: true, element: <h1>Página inicial</h1> },
           { path: 'imagens', element: <h1>Imagens</h1> },
-          { path: 'ferramenta', handle: { hideBottomNav: true } satisfies RouteHandle, element: <h1>Ferramenta</h1> },
+          { path: 'ferramenta', handle: { editor: true } satisfies RouteHandle, element: <h1>Ferramenta</h1> },
         ],
       },
     ],
@@ -46,7 +46,14 @@ describe('AppShell no celular', () => {
 })
 
 describe('AppShell no desktop', () => {
-  it('mostra o menu superior em vez da barra inferior', async () => {
+  /** Largura da barra lateral, que envolve o menu principal. */
+  function sideWidth(nav: Element): number {
+    const bar = nav.parentElement
+    if (!bar) throw new Error('menu fora da barra lateral')
+    return bar.getBoundingClientRect().width
+  }
+
+  it('mostra o menu na barra lateral, à esquerda, em vez da barra inferior', async () => {
     await page.viewport(1280, 800)
     const { screenPromise } = renderShell('/')
     const screen = await screenPromise
@@ -54,6 +61,29 @@ describe('AppShell no desktop', () => {
 
     expect(navs.elements()).toHaveLength(1)
     await expect.element(navs.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    const nav = navs.element()
+    expect(nav.getBoundingClientRect().left).toBeLessThan(10)
+    expect(sideWidth(nav)).toBe(240)
+  })
+
+  it('nas telas de editor a barra lateral fica estreita, com os mesmos destinos', async () => {
+    await page.viewport(1280, 800)
+    const { screenPromise } = renderShell('/ferramenta')
+    const screen = await screenPromise
+    const nav = screen.getByRole('navigation', { name: 'Principal' })
+
+    await expect.element(nav.getByRole('link', { name: 'Imagens' })).toBeVisible()
+    expect(sideWidth(nav.element())).toBe(80)
+  })
+
+  it('no tablet a barra lateral é estreita em todas as telas', async () => {
+    await page.viewport(800, 1024)
+    const { screenPromise } = renderShell('/')
+    const screen = await screenPromise
+    const nav = screen.getByRole('navigation', { name: 'Principal' })
+
+    await expect.element(nav.getByRole('link', { name: 'Início' })).toBeVisible()
+    expect(sideWidth(nav.element())).toBe(80)
   })
 })
 

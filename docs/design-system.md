@@ -71,7 +71,7 @@ Lucide, sempre pelo componente `Icon` ([`src/components/ui/Icon.tsx`](../src/com
 - **Bordas:** sempre 1 px (o upload usa 2 px tracejado).
 - **Sombras:** `shadow-overlay` (camadas flutuantes), `shadow-media` (foto e vídeo no palco do editor) e `shadow-accent` (botão principal, bem suave). A elevação normal vem do tom da superfície e da borda.
 - **Movimento:** transições de cor em 150 ms (padrão); botões encolhem um pouco ao toque (`active:scale`); `animate-enter` (220 ms) para um bloco que aparece; `--duration-base` 180 ms para entrada e expansão; `--duration-slow` 240 ms para painéis. Anime só `opacity` e `transform`. Com `prefers-reduced-motion`, as animações são desligadas em `base.css`.
-- **Breakpoints:** padrão do Tailwind. `< md` (768): barra inferior e uma coluna; `md`: menu superior; `lg` (1024): ferramentas em duas colunas.
+- **Breakpoints:** padrão do Tailwind. `< md` (768): cabeçalho com a marca, abas embaixo e uma coluna; `md`: barra lateral estreita (ícone com rótulo curto); `lg` (1024): barra lateral larga (nome ao lado do ícone e o aviso de privacidade) e ferramentas em duas colunas. Nas telas de editor (`handle: { editor: true }`) a barra lateral fica sempre estreita e, no celular, as abas dão lugar à barra da ferramenta.
 - **Camadas (z-index):** cabeçalho 10 · barra inferior e de ação 20 · menu 30 · folha 40 · avisos e link de pular 50.
 - **Alvos de toque:** 44 px com toque (`pointer-coarse:`), 40 px com mouse. A barra inferior usa 56 px.
 
@@ -87,8 +87,9 @@ Lucide, sempre pelo componente `Icon` ([`src/components/ui/Icon.tsx`](../src/com
 | `Slider` | `components/ui/Slider.tsx` | valor contínuo com leitura formatada (qualidade) |
 | `ProgressBar` | `components/ui/ProgressBar.tsx` | progresso determinado (`value`) ou indeterminado |
 | `Alert` | `components/ui/Alert.tsx` | mensagens; `error` usa `role="alert"`, os demais `status`; `live={false}` para textos fixos |
-| `NavList`, `NavCard` | `components/ui/` | listas de destinos e categorias; item sem `to` aparece como "Em breve" |
-| `Dropzone` | `components/tool/Dropzone.tsx` | estado vazio da ferramenta: botão real + arrastar e soltar como atalho |
+| `NavList`, `NavCard` | `components/ui/` | listas de destinos e categorias; item com `tone` ganha o ícone colorido da ferramenta; item sem `to` aparece como "Em breve" |
+| `ToolIcon` | `components/ui/ToolIcon.tsx` | ícone de ferramenta num ladrilho do tom do tipo (`tone`: `edit`, `crop`, `rotate`, `gif`, `convert`, `audio`, `compress`, `size`); decorativo |
+| `Dropzone` | `components/tool/Dropzone.tsx` | estado vazio da ferramenta: botão real + arrastar e soltar como atalho; `size="lg"` para a entrada principal do início |
 | `FilePickerButton` | `components/tool/FilePickerButton.tsx` | botão que abre o seletor do sistema (ex.: "Adicionar" com a lista já aberta) |
 | `usePageFileDrop` | `components/tool/usePageFileDrop.ts` | aceita arquivos soltos em qualquer ponto da página e impede o navegador de abri-los |
 | `FilePreview` | `components/tool/FilePreview.tsx` | prévia grande; `backdrop` mostra o fundo que o resultado terá (JPG); `orientation` mostra o giro escolhido, sem reprocessar; quem cria a Object URL a revoga |
@@ -98,14 +99,16 @@ Lucide, sempre pelo componente `Icon` ([`src/components/ui/Icon.tsx`](../src/com
 | `CompareView`, `ResultImage`, `ResultVideo`, `ResultAudio`, `ResultGif` | `components/tool/` | depois de processar: "Mostrar: Como ficou / Original", um de cada vez; o resultado de imagem, de vídeo, de som (player de som com o nome do arquivo) ou GIF animado (com o botão "Pausar animação"; com "reduzir movimento" no sistema, já começa parado), com aviso para baixar quando o navegador não mostra ou não toca o formato (TIFF, PDF) |
 | `CropArea`, `CropOptions` | `components/tool/` | área de recorte sobre imagem ou vídeo (a mídia vai como filho) e os campos, proporções e tamanho final; `finalSize` quando o resultado difere da área (vídeo: lados pares) |
 | `DownloadActions` | `components/tool/DownloadActions.tsx` | baixar um arquivo ou o pacote (`bundle`, ex.: ZIP) e, em toque, "Salvar na galeria"; lê os arquivos só no clique (`getFiles`) |
-| `AppShell`, `TopNav`, `BottomNav`, `Footer` | `components/layout/` | estrutura comum (já montada pelo roteador) |
+| `AppShell`, `SideNav`, `MobileHeader`, `BottomNav`, `Footer` | `components/layout/` | estrutura comum (já montada pelo roteador): barra lateral a partir de 768 px (é o cabeçalho do site); no celular, cabeçalho com a marca e abas embaixo |
 | `Container`, `PageHeader`, `ActionBar` | `components/layout/` | largura e margens, título da página, ação principal da ferramenta |
 
 Componentes de `ui/` e `tool/` não processam arquivos: recebem dados por props. O processamento fica no núcleo e nos Workers (ver `CLAUDE.md`).
 
 ## Padrões de tela
 
-**Navegação.** Menu superior a partir de 768 px. No celular, barra inferior com Início, Imagens, Vídeos e Sobre. O link ativo recebe `aria-current="page"`. Ao trocar de página, o foco vai para o conteúdo, e o link "Pular para o conteúdo" aparece no primeiro Tab.
+**Navegação.** Barra lateral a partir de 768 px (estreita até 1024 px e nos editores; larga nas demais telas). No celular, cabeçalho com a marca e abas embaixo com Início, Imagens, Vídeos e Sobre. O link ativo recebe `aria-current="page"`. Ao trocar de página, o foco vai para o conteúdo, e o link "Pular para o conteúdo" aparece no primeiro Tab.
+
+**Início.** À esquerda (no celular, em cima) o título com o fim em `text-brand` e a frase de privacidade com "Como funciona"; à direita, "Abrir foto ou vídeo" (`QuickOpen`, em `pages/`): reconhece o arquivo pelos primeiros bytes (`core/media-kind.ts`), pergunta "O que fazer com praia.jpg?" (o foco vai para a pergunta) e mostra as ferramentas daquele tipo. A ferramenta escolhida abre com o arquivo (`features/shared/file-handoff.ts`, só na memória da aba); com um arquivo aberto, os links de "Todas as ferramentas" do mesmo tipo também o levam. Embaixo, "Todas as ferramentas" em três grupos (Editar, Converter, Deixar menor): no celular, grade de ícones com o nome curto; a partir de 768 px, linhas com nome e descrição.
 
 **Página.** `Container` + `PageHeader` (h1 único) + conteúdo. Defina o título da aba com `<title>Nome · Media Tools</title>` dentro da página.
 

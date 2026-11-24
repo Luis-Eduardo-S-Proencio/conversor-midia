@@ -1,15 +1,15 @@
 import { ArrowLeft, CircleCheck, Download, Eye, Headphones, RefreshCw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { Link } from 'react-router'
+import { switcherTools } from '../../../app/tool-catalog'
 import { ActionBar } from '../../../components/layout/ActionBar'
 import { CompareView } from '../../../components/tool/CompareView'
 import { ResultAudio, ResultGif, ResultVideo } from '../../../components/tool/ResultMedia'
-import { Container } from '../../../components/layout/Container'
-import { PageHeader } from '../../../components/layout/PageHeader'
 import { saveBlob } from '../../../components/tool/download'
 import { Dropzone } from '../../../components/tool/Dropzone'
 import { FileListItem, type FileItemState, type MessageTone } from '../../../components/tool/FileListItem'
 import { FilePickerButton } from '../../../components/tool/FilePickerButton'
+import { ToolSwitcher } from '../../../components/tool/ToolSwitcher'
 import { ResultSummary } from '../../../components/tool/ResultSummary'
 import { usePageFileDrop } from '../../../components/tool/usePageFileDrop'
 import { Alert } from '../../../components/ui/Alert'
@@ -18,9 +18,12 @@ import { Icon } from '../../../components/ui/Icon'
 import { formatBytes } from '../../../core/format'
 import { ACCEPTED_VIDEO_TYPES } from '../../../core/video/formats'
 import { supportsVideoWorker } from '../../../workers/video-client'
+import { handOffFiles } from '../../shared/file-handoff'
 import { VideoActions } from './VideoActions'
 import { outputTexts, purposeOf, type VideoTool, type VideoToolLabels, type VideoToolState } from './useVideoTool'
 import { describeVideo } from './video-meta'
+
+const VIDEO_SWITCHER = switcherTools('video')
 
 function BackToVideos() {
   return (
@@ -140,83 +143,106 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
   return (
     <>
       <title>{`${title} · Media Tools`}</title>
-      <Container className="grid gap-6 py-8 md:gap-8 md:py-12">
-        <PageHeader breadcrumb={<BackToVideos />} title={title} description={description} />
+      {/* Editor: título no alto; ferramentas, palco com o vídeo e painel de opções lado a lado a partir de 1024 px. */}
+      <div className="mx-auto grid w-full max-w-editor gap-4 px-4 pt-4 pb-6 sm:px-6 lg:grid-cols-[6.5rem_minmax(0,1fr)_21rem] lg:gap-x-5 lg:pt-5">
+        <header className="grid gap-1 border-b border-border pb-4 lg:col-span-3">
+          <div className="text-sm">
+            <BackToVideos />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-balance">{title}</h1>
+          <p className="max-w-3xl text-sm text-fg-muted">{description}</p>
+        </header>
+
+        <ToolSwitcher
+          label="Ferramentas de vídeo"
+          tools={VIDEO_SWITCHER}
+          onSwitch={() => {
+            const source = tool.getSourceFile()
+            handOffFiles('video', source ? [source] : [])
+          }}
+          className="lg:sticky lg:top-5 lg:self-start"
+        />
 
         {!supported ? (
-          <Alert variant="error" title="Navegador sem suporte" live={false}>
-            Este navegador não tem os recursos necessários para processar vídeos. Use uma versão recente do Chrome, Edge,
-            Firefox ou Safari.
-          </Alert>
+          <div className="lg:col-span-2">
+            <Alert variant="error" title="Navegador sem suporte" live={false}>
+              Este navegador não tem os recursos necessários para processar vídeos. Use uma versão recente do Chrome, Edge,
+              Firefox ou Safari.
+            </Alert>
+          </div>
         ) : state.phase === 'empty' ? (
-          <Dropzone
-            buttonRef={pickerButton}
-            accept={ACCEPTED_VIDEO_TYPES}
-            onFiles={tool.selectFiles}
-            multiple={false}
-            buttonLabel="Selecionar vídeo"
-            dragLabel="Arraste um vídeo para cá"
-            hint="MP4, MOV ou WEBM · até 1 GB"
-          />
+          <div className="grid place-items-center rounded-xl bg-stage p-3 sm:p-6 lg:col-span-2 lg:min-h-112">
+            <Dropzone
+              buttonRef={pickerButton}
+              accept={ACCEPTED_VIDEO_TYPES}
+              onFiles={tool.selectFiles}
+              multiple={false}
+              buttonLabel="Selecionar vídeo"
+              dragLabel="Arraste um vídeo para cá"
+              hint="MP4, MOV ou WEBM · até 1 GB"
+              className="w-full max-w-xl"
+            />
+          </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-            <section aria-labelledby={fileHeadingId} className="grid min-w-0 gap-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 id={fileHeadingId} className="text-lg font-semibold tracking-tight">
-                  Vídeo
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  <FilePickerButton accept={ACCEPTED_VIDEO_TYPES} icon={RefreshCw} multiple={false} onFiles={tool.selectFiles} disabled={busy}>
-                    Trocar vídeo
-                  </FilePickerButton>
-                  <Button variant="ghost" onClick={handleReset} disabled={busy}>
-                    Limpar
-                  </Button>
+          <>
+            <div className="min-w-0 rounded-xl bg-stage p-3 sm:p-4">
+              <section aria-labelledby={fileHeadingId} className="grid min-w-0 gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 id={fileHeadingId} className="text-lg font-bold tracking-tight">
+                    Vídeo
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    <FilePickerButton accept={ACCEPTED_VIDEO_TYPES} icon={RefreshCw} multiple={false} onFiles={tool.selectFiles} disabled={busy}>
+                      Trocar vídeo
+                    </FilePickerButton>
+                    <Button variant="ghost" onClick={handleReset} disabled={busy}>
+                      Limpar
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              {state.notice && (
-                <Alert variant="warning" title="Um vídeo por vez" live={false}>
-                  {state.notice}
-                </Alert>
-              )}
+                {state.notice && (
+                  <Alert variant="warning" title="Um vídeo por vez" live={false}>
+                    {state.notice}
+                  </Alert>
+                )}
 
-              {opened &&
-                (state.phase === 'done' && state.result ? (
-                  <CompareView
-                    resultKey={state.result.url}
-                    containerRef={compareRef}
-                    result={<ResultMedia key={state.result.url} src={state.result.url} name={state.result.name} />}
-                    original={preview}
-                  />
-                ) : (
-                  preview
-                ))}
+                {opened &&
+                  (state.phase === 'done' && state.result ? (
+                    <CompareView
+                      resultKey={state.result.url}
+                      containerRef={compareRef}
+                      result={<ResultMedia key={state.result.url} src={state.result.url} name={state.result.name} />}
+                      original={preview}
+                    />
+                  ) : (
+                    preview
+                  ))}
 
-              {state.file && (
-                <ul className="grid gap-px overflow-hidden rounded-lg border border-border bg-border">
-                  <FileListItem
-                    name={state.file.name}
-                    meta={describeVideo(state.file.size, state.info)}
-                    showThumbnail={false}
-                    {...describeItem(state)}
-                    actions={
-                      state.phase === 'done' &&
-                      state.result && <IconButton icon={Download} label={`Baixar ${state.result.name}`} onClick={handleDownload} />
-                    }
-                  />
-                </ul>
-              )}
-            </section>
-
+                {state.file && (
+                  <ul className="grid gap-px overflow-hidden rounded-lg border border-border bg-border">
+                    <FileListItem
+                      name={state.file.name}
+                      meta={describeVideo(state.file.size, state.info)}
+                      showThumbnail={false}
+                      {...describeItem(state)}
+                      actions={
+                        state.phase === 'done' &&
+                        state.result && <IconButton icon={Download} label={`Baixar ${state.result.name}`} onClick={handleDownload} />
+                      }
+                    />
+                  </ul>
+                )}
+              </section>
+            </div>
             <section
               aria-labelledby={state.phase === 'done' ? undefined : optionsHeadingId}
               aria-label={state.phase === 'done' ? 'Resultado' : undefined}
-              className="grid gap-5 rounded-lg border border-border bg-surface p-4 md:p-5 lg:sticky lg:top-20"
+              className="grid content-start gap-5 rounded-xl border border-border bg-surface p-4 md:p-5 lg:sticky lg:top-5 lg:self-start"
             >
               {state.phase === 'done' && state.file && state.result ? (
                 <div className="grid gap-4">
-                  <h2 ref={resultHeading} tabIndex={-1} className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+                  <h2 ref={resultHeading} tabIndex={-1} className="flex items-center gap-2 text-lg font-bold tracking-tight">
                     <Icon icon={CircleCheck} className="text-success" />
                     {`${texts.noun} ${labels.done}`}
                   </h2>
@@ -232,7 +258,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
                 </div>
               ) : (
                 <>
-                  <h2 id={optionsHeadingId} className="text-lg font-semibold tracking-tight">
+                  <h2 id={optionsHeadingId} className="text-lg font-bold tracking-tight">
                     Opções
                   </h2>
                   {opened ? options : <p className="text-sm text-fg-muted">{waiting}</p>}
@@ -246,15 +272,15 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
                 </Button>
               )}
             </section>
-          </div>
+          </>
         )}
 
         {supported && state.phase !== 'empty' && <ActionBar className="md:hidden">{actions('lg')}</ActionBar>}
+      </div>
 
-        <p role="status" className="sr-only">
-          {tool.announcement}
-        </p>
-      </Container>
+      <p role="status" className="sr-only">
+        {tool.announcement}
+      </p>
     </>
   )
 }

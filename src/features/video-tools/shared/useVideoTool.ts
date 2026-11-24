@@ -255,6 +255,9 @@ export function useVideoTool(labels: VideoToolLabels, { checkSizeControl = false
 
   const getResultFile = useCallback(() => result.current, [])
 
+  /** O vídeo aberto (o original), para levar a outra ferramenta. */
+  const getSourceFile = useCallback(() => file.current, [])
+
   /**
    * Tarefa auxiliar com o vídeo escolhido (ex.: miniaturas para a barra do editor), sem mudar a fase da
    * ferramenta. Usa a mesma fila do Worker: quem chama a cancela pelo `signal` ao trocar de vídeo ou sair.
@@ -266,7 +269,20 @@ export function useVideoTool(labels: VideoToolLabels, { checkSizeControl = false
     return worker.run(makeJob(chosen), { signal })
   }, [])
 
-  return { state, announcement, setAnnouncement, completedRuns, selectFiles, run, runAside, cancel, reset, invalidateResult, getResultFile }
+  return {
+    state,
+    announcement,
+    setAnnouncement,
+    completedRuns,
+    selectFiles,
+    run,
+    runAside,
+    cancel,
+    reset,
+    invalidateResult,
+    getResultFile,
+    getSourceFile,
+  }
 }
 
 export type VideoTool = ReturnType<typeof useVideoTool>

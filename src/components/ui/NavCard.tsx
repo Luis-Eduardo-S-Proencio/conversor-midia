@@ -29,7 +29,7 @@ export function NavCard({ to, icon, title, description, meta, badge }: NavCardPr
           {badge}
         </span>
         <span className="text-sm text-fg-muted">{description}</span>
-        {meta && <span className="mt-1 font-mono text-xs text-fg-subtle">{meta}</span>}
+        {meta && <span className="mt-1 text-xs text-fg-subtle tabular-nums">{meta}</span>}
       </span>
       <Icon icon={ChevronRight} className="text-fg-subtle transition-transform group-hover:translate-x-0.5" />
     </Link>

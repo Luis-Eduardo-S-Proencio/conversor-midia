@@ -31,7 +31,7 @@ export function TrimTimeline({ duration, kept, time, legend = 'Em azul, o que fi
         ))}
         <span className="absolute inset-y-0 w-0.5 -translate-x-1/2 bg-fg forced-colors:bg-[CanvasText]" style={{ left: percent(time, duration) }} />
       </div>
-      <div className="flex justify-between gap-3 font-mono text-xs tabular-nums text-fg-subtle">
+      <div className="flex justify-between gap-3 text-xs tabular-nums text-fg-subtle">
         <span>0:00</span>
         <span className="font-sans">{legend}</span>
         <span>{formatDuration(duration)}</span>

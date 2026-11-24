@@ -51,7 +51,6 @@ export function ConvertOptions({ settings, onChange, webpSupported, hasTranspare
           onChange={(target) => onChange({ target })}
           disabled={disabled}
           columns={4}
-          mono
         />
         {webpSupported === false && (
           <p className="text-xs text-fg-subtle">Este navegador não consegue gerar WEBP. Escolha JPG ou PNG.</p>

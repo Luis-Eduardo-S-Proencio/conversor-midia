@@ -99,7 +99,7 @@ export function CropOptions({
 
   return (
     <div className="grid gap-5">
-      <SegmentedControl label="Proporção" options={aspectOptions} value={aspect} onChange={onAspectChange} disabled={disabled} mono />
+      <SegmentedControl label="Proporção" options={aspectOptions} value={aspect} onChange={onAspectChange} disabled={disabled} />
 
       <div className="grid gap-2">
         <div className="grid grid-cols-2 gap-x-2 gap-y-3">
@@ -140,7 +140,7 @@ export function CropOptions({
       <div className="grid gap-2">
         <dl className="flex items-baseline justify-between gap-3 text-sm">
           <dt className="text-fg-muted">Tamanho final</dt>
-          <dd className="font-mono tabular-nums text-fg">{formatDimensions(finalSize.width, finalSize.height)}</dd>
+          <dd className="tabular-nums text-fg">{formatDimensions(finalSize.width, finalSize.height)}</dd>
         </dl>
         {!isFullCrop(crop, size) && (
           <Button variant="ghost" block icon={Maximize} onClick={handleReset} disabled={disabled}>

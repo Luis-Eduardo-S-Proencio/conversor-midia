@@ -101,11 +101,11 @@ export function EditOptions({ edit, duration, selected, plan, saveBlocker, onRan
       <dl className="grid gap-2 text-sm">
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-fg-muted">Vídeo final</dt>
-          <dd className="font-mono tabular-nums text-fg">{formatTime(editedDuration(edit.pieces))}</dd>
+          <dd className="tabular-nums text-fg">{formatTime(editedDuration(edit.pieces))}</dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-fg-muted">Pedaços</dt>
-          <dd className="font-mono tabular-nums text-fg">{edit.pieces.length}</dd>
+          <dd className="tabular-nums text-fg">{edit.pieces.length}</dd>
         </div>
       </dl>
 

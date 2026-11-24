@@ -62,7 +62,7 @@ export function ConvertOptions({
   return (
     <div className="grid gap-6">
       <div className="grid gap-2">
-        <SegmentedControl label="Formato final" options={targets} value={plan.target} onChange={onTargetChange} disabled={disabled} mono />
+        <SegmentedControl label="Formato final" options={targets} value={plan.target} onChange={onTargetChange} disabled={disabled} />
         {modes.length === 0 && <p className="text-xs text-fg-muted">{describePlan(plan)}</p>}
       </div>
 

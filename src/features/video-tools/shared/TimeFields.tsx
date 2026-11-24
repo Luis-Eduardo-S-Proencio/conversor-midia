@@ -43,7 +43,7 @@ export function TimeFields({ values, onChange, labelSuffix, invalid, errorId, hi
                 autoComplete="off"
                 spellCheck={false}
                 disabled={disabled}
-                className="font-mono"
+                className="tabular-nums"
                 aria-invalid={wrong || undefined}
                 aria-describedby={wrong ? `${errorId} ${hintId}` : hintId}
               />

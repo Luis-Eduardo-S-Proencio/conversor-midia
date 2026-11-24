@@ -4,32 +4,38 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium, type Page } from '@playwright/test'
-import { BRAND_COLORS, LOGO_FRAME_PATH, LOGO_PIECE_PATH } from '../src/components/brand/logo-geometry.ts'
+import { BRAND_COLORS, LOGO_BLADE_PATHS, LOGO_TILE_RADIUS } from '../src/components/brand/logo-geometry.ts'
 import { pngToIco } from './ico.ts'
 
 const PUBLIC_DIR = new URL('../public/', import.meta.url)
 
-function symbol(transform: string): string {
-  return (
-    `<g transform="${transform}">` +
-    `<path fill="${BRAND_COLORS.frame}" d="${LOGO_FRAME_PATH}"/>` +
-    `<path fill="${BRAND_COLORS.piece}" d="${LOGO_PIECE_PATH}"/>` +
-    `</g>`
-  )
+const GRADIENT =
+  `<defs><linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">` +
+  `<stop offset="0" stop-color="${BRAND_COLORS.start}"/><stop offset="1" stop-color="${BRAND_COLORS.end}"/>` +
+  `</linearGradient></defs>`
+
+/** Lâminas brancas do obturador, na grade de 48, posicionadas por `transform`. */
+function blades(transform: string): string {
+  return `<g transform="${transform}" fill="#ffffff">${LOGO_BLADE_PATHS.map((d) => `<path d="${d}"/>`).join('')}</g>`
 }
 
-/** Ladrilho arredondado: favicon e ícone "any". Funciona em abas claras e escuras. */
+/** Ladrilho arredondado com o degradê: favicon e ícone "any", como o símbolo do site. */
 const TILE_SVG =
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">` +
-  `<rect width="32" height="32" rx="7" fill="${BRAND_COLORS.background}"/>` +
-  symbol('translate(5 5) scale(0.6875)') +
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">` +
+  GRADIENT +
+  `<rect width="48" height="48" rx="${LOGO_TILE_RADIUS}" fill="url(#brand)"/>` +
+  blades('') +
   `</svg>`
 
-/** Fundo cheio com o símbolo dentro da zona segura (círculo de 80%): mascarável e Apple. */
+/**
+ * Degradê cheio e o obturador dentro da zona segura (círculo de 80%): mascarável e Apple,
+ * que recortam os cantos por conta própria. O obturador (diâmetro 33 na grade de 48) ocupa 56% do lado.
+ */
 const FULL_BLEED_SVG =
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">` +
-  `<rect width="512" height="512" fill="${BRAND_COLORS.background}"/>` +
-  symbol('translate(112 112) scale(9)') +
+  GRADIENT +
+  `<rect width="512" height="512" fill="url(#brand)"/>` +
+  blades('translate(256 256) scale(8.7) translate(-24 -24)') +
   `</svg>`
 
 const PNG_TARGETS = [

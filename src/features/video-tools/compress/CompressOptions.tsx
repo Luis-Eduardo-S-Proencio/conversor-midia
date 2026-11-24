@@ -31,11 +31,11 @@ export function CompressOptions({ level, onLevelChange, plan, originalBytes, has
       <dl className="grid gap-2 border-t border-border pt-4 text-sm">
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-fg-muted">Resolução final</dt>
-          <dd className="font-mono tabular-nums text-fg">{formatDimensions(size.width, size.height)}</dd>
+          <dd className="tabular-nums text-fg">{formatDimensions(size.width, size.height)}</dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-fg-muted">Tamanho estimado</dt>
-          <dd className="whitespace-nowrap font-mono tabular-nums text-fg">{`${formatBytes(estimate.bytes)} · ${change.value}`}</dd>
+          <dd className="whitespace-nowrap tabular-nums text-fg">{`${formatBytes(estimate.bytes)} · ${change.value}`}</dd>
         </div>
       </dl>
 

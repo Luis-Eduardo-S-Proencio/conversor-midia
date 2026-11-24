@@ -4,7 +4,7 @@ Guia de uso da identidade visual e dos componentes. **Os valores (cores, tamanho
 
 ## Princípios
 
-- **Profissional e discreto.** Interface escura, azul só onde há ação, seleção ou foco. Nada de gradientes, brilhos, glassmorphism ou sombras pesadas.
+- **Estúdio escuro, cor com propósito.** Fundo quase preto e neutro, para a foto e o vídeo serem o destaque. O degradê violeta → rosa da marca aparece só na logo, no botão principal, no controle deslizante, no progresso e em títulos grandes; cada tipo de ferramenta tem uma cor própria no ícone. Nada de brilhos, glassmorphism ou sombras pesadas.
 - **Um caminho óbvio por tela.** Um botão principal por vista; opções extras aparecem só quando fazem sentido.
 - **Hierarquia antes de cor.** Tamanho, peso e espaço organizam a tela; cor é o último recurso.
 - **Estado nunca só por cor.** Sucesso, aviso e erro sempre têm ícone e texto.
@@ -12,46 +12,51 @@ Guia de uso da identidade visual e dos componentes. **Os valores (cores, tamanho
 
 ## Marca
 
-**Nome:** Media Tools. **Símbolo "Recorte":** um quadro de mídia com o canto cortado a 45°, com a peça cortada se afastando na diagonal (mídia, arquivo e transformação).
+**Nome:** Media Tools. **Símbolo "Obturador"** (identidade aprovada em 24/11/2026): as três lâminas de uma câmera fotográfica (a foto) num ladrilho com o degradê da marca; o vão do meio forma o "play" (o vídeo).
 
-- Componentes: `Logo` (símbolo + nome) e `LogoMark` (só o símbolo), em [`src/components/brand/Logo.tsx`](../src/components/brand/Logo.tsx). A geometria fica em `logo-geometry.ts`.
-- Na assinatura, "Media" vai em peso 600 e "Tools" em 500, na cor secundária.
-- Tamanho mínimo do símbolo: 16 px. Abaixo de 24 px, use o ladrilho escuro (favicon) em fundos claros.
-- Não distorça, não gire, não troque as cores e não acrescente efeitos. Em uma cor só, use o símbolo inteiro em `fg` (fundo escuro) ou `bg` (fundo claro).
-- Favicon e ícones do PWA são **gerados** a partir da mesma geometria: `npm run icons` grava em `public/`. Um teste garante que as cores dos ícones são as dos tokens.
+- Componentes: `Logo` (símbolo + nome) e `LogoMark` (só o símbolo), em [`src/components/brand/Logo.tsx`](../src/components/brand/Logo.tsx). A geometria fica em `logo-geometry.ts`: as lâminas já saem afastadas umas das outras, sem máscara, então o desenho é igual no site, no SVG e no PNG.
+- Na assinatura, "Media" vai em peso 700 e "Tools" em 500, na cor secundária.
+- O símbolo é sempre o ladrilho inteiro (degradê e lâminas brancas), com cantos de 26% do lado, como um ícone de app. Tamanho mínimo: 16 px.
+- Não distorça, não gire, não troque as cores do degradê e não acrescente efeitos. No alto contraste do Windows, as lâminas usam a cor de texto do sistema.
+- Favicon e ícones do PWA são **gerados** a partir da mesma geometria: `npm run icons` grava em `public/` (o ícone mascarável e o da Apple usam o degradê cheio, com o obturador dentro da zona segura). Um teste garante que as cores dos ícones são as dos tokens.
 
 ## Cores
 
 | Token | Uso |
 |---|---|
 | `bg` | fundo da página |
-| `surface` | painéis, cartões, barra inferior |
-| `surface-raised` | hover, menus, botão secundário |
+| `surface` | painéis, cartões, barras |
+| `surface-raised` | hover, menus, botão secundário, opção não marcada |
+| `surface-overlay` | hover sobre `surface-raised` |
+| `stage` | fundo atrás da foto e do vídeo nos editores |
 | `border` | divisórias e contornos decorativos |
 | `border-strong` | borda de campos e controles (3:1) |
 | `fg` | texto principal |
 | `fg-muted` | texto secundário |
 | `fg-subtle` | legendas, dicas, placeholders |
-| `accent` | **azul principal**: item selecionado, indicador da navegação ativa, logotipo |
-| `accent-emphasis` / `-hover` / `-active` | fundo do botão principal e seus estados |
+| `brand-start`, `brand-end` | **degradê da marca** (violeta → rosa): logo, ícone de abrir arquivo, progresso, controle deslizante e títulos grandes (`bg-brand`, `text-brand`) |
+| `accent` | **violeta**: item selecionado, indicador da navegação ativa |
+| `accent-emphasis` / `-hover` / `-active` (cada um com `-end`) | degradê do botão principal e seus estados |
 | `on-accent` | texto sobre o botão principal |
-| `accent-soft` | **azul suave**: anel de foco, links, barra de progresso, informação |
+| `accent-soft` | violeta claro: anel de foco, links, valores em destaque |
 | `accent-subtle` | fundo de item selecionado e de mensagem informativa |
+| `tool-edit`, `tool-crop`, `tool-rotate`, `tool-gif`, `tool-convert`, `tool-audio`, `tool-compress`, `tool-size` | ícone de cada tipo de ferramenta, a mesma cor na imagem e no vídeo |
 | `success`, `warning`, `danger` (+ `-subtle`) | texto/ícone de estado e fundo da mensagem |
 | `checker-a`, `checker-b` | fundo quadriculado da pré-visualização |
 
 Regras:
-- **Azul só para:** ação principal (um botão por tela), seleção, navegação ativa, foco, links e progresso. Nunca em fundos de seção, textos longos, ícones decorativos ou gradientes.
-- O botão principal usa `accent-emphasis`, um tom levemente mais escuro que o azul da marca: com texto branco, `accent` dá 4,49:1 e reprova o AA.
-- `border` não delimita campos (1,36:1 sobre `surface`); para controles, use `border-strong`.
+- **Violeta e degradê só para:** ação principal (um botão por tela), seleção, navegação ativa, foco, links, progresso e a marca. Nunca em fundos de seção ou textos longos.
+- O botão principal vai de `accent-emphasis` (violeta) a `accent-emphasis-end` (rosa): tons escuros o bastante para o texto branco passar no AA nas duas pontas. Hover e pressionado escurecem as duas pontas.
+- Cor de ferramenta só no ícone, sobre um fundo do mesmo tom bem fraco; nunca em texto.
+- `border` não delimita campos; para controles, use `border-strong`.
 - O contraste de todos os pares em uso é verificado por [`tokens.test.ts`](../src/styles/tokens.test.ts): texto ≥ 4,5:1 e elementos de interface ≥ 3:1 (WCAG 2.2 AA). Um par novo de cores entra nesse teste.
 
 ## Tipografia
 
-- **Inter** para toda a interface; **JetBrains Mono** só para dados técnicos (extensões, dimensões, tamanhos, porcentagens). Fontes hospedadas no próprio site (`@fontsource-variable`), sem Google Fonts.
-- Pesos: `font-normal` (400), `font-medium` (500), `font-semibold` (600). Outros pesos não existem.
-- Escala: `text-xs` 12/16 · `text-sm` 14/20 · `text-base` 16/24 · `text-lg` 18/28 · `text-xl` 20/28 · `text-2xl` 24/32 · `text-3xl` 30/36 · `text-4xl` 36/40. **No máximo quatro tamanhos por tela.**
-- Títulos: `font-semibold tracking-tight text-balance`. Página: `text-2xl md:text-3xl`; seção: `text-xl`; início: `text-3xl md:text-4xl`.
+- **Inter** para toda a interface, inclusive números, que usam `tabular-nums` (dimensões, tamanhos, tempos, porcentagens) para não "dançar". Fonte hospedada no próprio site (`@fontsource-variable/inter`), sem Google Fonts.
+- Pesos: `font-normal` (400), `font-medium` (500), `font-semibold` (600), `font-bold` (700) e `font-extrabold` (800, só no título do início).
+- Escala: `text-xs` 12/16 · `text-sm` 14/20 · `text-base` 16/24 · `text-lg` 18/28 · `text-xl` 20/28 · `text-2xl` 24/32 · `text-3xl` 30/36 · `text-4xl` 36/40 · `text-5xl` 48. **No máximo quatro tamanhos por tela.**
+- Títulos: `font-bold tracking-tight text-balance`. Página: `text-2xl md:text-3xl`; seção: `text-xl`; início: `font-extrabold`, com o fim da frase em `text-brand`.
 - Campos de texto com 16 px (abaixo disso o Safari do iPhone dá zoom).
 - Números no padrão brasileiro, sempre por [`src/core/format.ts`](../src/core/format.ts): `8,6 MB`, `3024 × 4032`, `−78%`.
 
@@ -62,10 +67,10 @@ Lucide, sempre pelo componente `Icon` ([`src/components/ui/Icon.tsx`](../src/com
 ## Espaço, forma e movimento
 
 - **Espaçamento:** múltiplos de 4 px (escala do Tailwind). Margens laterais 16/24/32 px (`Container`). Largura máxima do conteúdo: `max-w-page` (72rem).
-- **Raios:** `rounded-sm` 6 (itens internos), `rounded-md` 8 (botões, campos), `rounded-lg` 12 (painéis, upload), `rounded-xl` 16 (folhas e diálogos), `rounded-full` (selos).
+- **Raios:** generosos, como nos apps de celular: `rounded-sm` 8 (itens internos), `rounded-md` 12 (botões, campos, opções), `rounded-lg` 16 (painéis, upload, mensagens), `rounded-xl` 20 (folhas e diálogos), `rounded-2xl` 28, `rounded-full` (selos).
 - **Bordas:** sempre 1 px (o upload usa 2 px tracejado).
-- **Sombras:** só `shadow-overlay`, para camadas flutuantes. A elevação normal vem de superfície e borda.
-- **Movimento:** transições de cor em 120 ms (padrão); `--duration-base` 180 ms para entrada e expansão; `--duration-slow` 240 ms para painéis. Anime só `opacity` e `transform`. Com `prefers-reduced-motion`, as animações são desligadas em `base.css`.
+- **Sombras:** `shadow-overlay` (camadas flutuantes), `shadow-media` (foto e vídeo no palco do editor) e `shadow-accent` (botão principal, bem suave). A elevação normal vem do tom da superfície e da borda.
+- **Movimento:** transições de cor em 150 ms (padrão); botões encolhem um pouco ao toque (`active:scale`); `animate-enter` (220 ms) para um bloco que aparece; `--duration-base` 180 ms para entrada e expansão; `--duration-slow` 240 ms para painéis. Anime só `opacity` e `transform`. Com `prefers-reduced-motion`, as animações são desligadas em `base.css`.
 - **Breakpoints:** padrão do Tailwind. `< md` (768): barra inferior e uma coluna; `md`: menu superior; `lg` (1024): ferramentas em duas colunas.
 - **Camadas (z-index):** cabeçalho 10 · barra inferior e de ação 20 · menu 30 · folha 40 · avisos e link de pular 50.
 - **Alvos de toque:** 44 px com toque (`pointer-coarse:`), 40 px com mouse. A barra inferior usa 56 px.
@@ -109,8 +114,8 @@ Componentes de `ui/` e `tool/` não processam arquivos: recebem dados por props.
 - **Uma imagem por vez** (ex.: Recortar, em que cada foto tem um enquadramento próprio): `useImageBatch(labels, { singleImage: true })` e `ImageToolPage` com `singleImage`. A imagem nova substitui a atual, o botão da lista vira "Trocar imagem" e, se chegarem várias, só a primeira abre, com aviso. `renderPreview` troca a prévia comum pela da ferramenta (ex.: a área de recorte).
 - **Área de recorte** (`components/tool/CropArea.tsx`, com `react-image-crop`, comum a imagem e vídeo): recebe a mídia como filho (`<img>` ou `<video>`). A seleção escurece o resto e tem borda fixa, sem animação. Os cantos têm 14 px com mouse e 20 px com toque, com área de toque de 24 e 44 px. Cores pelos tokens, em `components/tool/crop-area.css`, inclusive no alto contraste. Teclado: Tab chega à área e aos cantos, e as setas movem e ajustam (Shift, 10 px). Os campos de margem e tamanho (`CropOptions`, com `subject` "image" ou "video" para os textos) são a alternativa a arrastar (WCAG 2.5.7).
 - **Base comum das ferramentas de vídeo:** `features/video-tools/shared/`. Um vídeo por vez: `useVideoTool` valida pelo conteúdo, abre no Worker de vídeo, processa com progresso real e cancelamento e entrega o resultado; `VideoToolPage` monta a tela (seleção, prévia, painel, ações, anúncios e foco) no mesmo desenho das de imagem. Durante o processamento, a barra de progresso com porcentagem fica junto do botão "Cancelar" (painel e `ActionBar`). Comuns também: `SourcePlayer` (o vídeo escolhido, com os controles do navegador), `TrimPreview` (player com "Marcar início aqui", "Marcar fim aqui", "Ver como fica" e a linha do tempo do trecho, no Cortar trecho e no Criar GIF), `TimeFields` e `Note` (observação curta com ícone, no painel de opções). Ferramenta que entrega só o som (`output: 'audio'` nos textos, como o Extrair áudio) mostra "Áudio extraído", "Ouvir como ficou" (ícone de fones), "Baixar áudio" e o player de som em "Como ficou"; no lugar do antes e depois de tamanho (o som não se compara ao vídeo de onde saiu), os detalhes trazem o tamanho, o formato e se o som foi copiado ou refeito. Opção que não faz sentido para o vídeo aberto fica desligada no `SegmentedControl`, com o motivo em texto logo abaixo (ex.: no Mudar resolução, as resoluções iguais ou maiores que a do vídeo, porque aumentar não melhora a qualidade; no Converter vídeo, os formatos que o navegador não consegue gerar). O que acontece com cada faixa aparece como pares de termo e valor ("Vídeo: Copiado, sem perder qualidade", "Som: Refeito em AAC, a 128 kbit/s"), antes de processar e no resultado. Ferramenta que entrega GIF (`output: 'gif'`) mostra "GIF criado" e "Baixar GIF", sem o antes e depois de tamanho. Exemplos: `edit/`, `crop/`, `compress/`, `audio/`, `resize/`, `convert/` e `gif/`.
-- **Editor de vídeo** (Editar vídeo): o player mostra o vídeo como está ficando e não tem os controles do navegador (eles deixariam ir às partes excluídas); abaixo, uma linha de botões (Tocar só com ícone; "Dividir" e "Excluir" com texto; Desfazer, Refazer e zoom só com ícone, à direita) e a barra do vídeo: miniaturas de 56 px de altura, pedaços encostados separados por um fio da cor do fundo, uma linha clara fixa no meio (o ponto atual) e a régua de tempo embaixo. O pedaço selecionado ganha moldura azul em cima e embaixo e alças azuis de 24 px nas pontas (área de toque maior, invisível). Embaixo da barra, o tempo atual e o total e uma frase curta de como usar. No painel: "Vídeo final", "Pedaços", como será salvo e o "Ajuste fino" recolhido (campos de tempo do pedaço selecionado com "Aplicar").
-- **Player de vídeo com marcar início e fim** (Criar GIF): o `<video controls>` do navegador (teclado incluído), uma linha do tempo só visual (em azul o que vira GIF, com o ponto atual) e, abaixo, "Marcar início aqui", "Marcar fim aqui" e "Ver como fica", com a frase "Agora em 0:03,20 · os botões marcam o trecho do GIF". Os campos de tempo ("1:05,30") são a alternativa ao player. Sob a área de recorte, os controles do navegador ficariam inalcançáveis: "Reproduzir/Pausar" e o slider "Momento do vídeo" ficam abaixo dela. Se o navegador não conseguir mostrar o vídeo, a página diz isso e os campos continuam valendo.
+- **Editor de vídeo** (Editar vídeo): o player mostra o vídeo como está ficando e não tem os controles do navegador (eles deixariam ir às partes excluídas); abaixo, uma linha de botões (Tocar só com ícone; "Dividir" e "Excluir" com texto; Desfazer, Refazer e zoom só com ícone, à direita) e a barra do vídeo: miniaturas de 56 px de altura, pedaços encostados separados por um fio da cor do fundo, uma linha clara fixa no meio (o ponto atual) e a régua de tempo embaixo. O pedaço selecionado ganha moldura violeta em cima e embaixo e alças violeta de 24 px nas pontas (área de toque maior, invisível). Embaixo da barra, o tempo atual e o total e uma frase curta de como usar. No painel: "Vídeo final", "Pedaços", como será salvo e o "Ajuste fino" recolhido (campos de tempo do pedaço selecionado com "Aplicar").
+- **Player de vídeo com marcar início e fim** (Criar GIF): o `<video controls>` do navegador (teclado incluído), uma linha do tempo só visual (em violeta o que vira GIF, com o ponto atual) e, abaixo, "Marcar início aqui", "Marcar fim aqui" e "Ver como fica", com a frase "Agora em 0:03,20 · os botões marcam o trecho do GIF". Os campos de tempo ("1:05,30") são a alternativa ao player. Sob a área de recorte, os controles do navegador ficariam inalcançáveis: "Reproduzir/Pausar" e o slider "Momento do vídeo" ficam abaixo dela. Se o navegador não conseguir mostrar o vídeo, a página diz isso e os campos continuam valendo.
 - **Campos com erro** (ex.: Largura e Altura do Redimensionar): a mensagem fica abaixo dos campos, ligada a eles por `aria-describedby`, com `aria-invalid` só nos que têm problema. Valor errado aparece já ao digitar e é anunciado (`role="alert"`). Campo obrigatório vazio só vira erro quando a pessoa tenta processar, e então o foco vai até ele. O botão principal não fica desativado por erro de campo: ao clicar, a pessoa descobre o que falta.
 - Arquivo único mostra prévia grande; vários, lista de `FileListItem`. Observação por arquivo (ex.: "mantida a original") aparece no tom informativo, sem cor de erro. Opções e resultado ficam num painel à direita a partir de 1024 px; a ação principal aparece no painel (desktop) e na `ActionBar` (celular). Ao terminar, o foco vai para o resultado; ao esvaziar a lista, para "Selecionar imagens". Uma região `role="status"` anuncia só início e fim (não cada arquivo), incluindo quantos foram recusados.
 - **Ver como ficou:** depois de processar, a prévia do arquivo único dá lugar a "Mostrar: Como ficou / Original" (`CompareView`), começando no resultado, que é o próprio arquivo gerado (não uma simulação). O painel do resultado tem "Ver como ficou", que leva até a comparação (no celular ela fica acima) e volta para o resultado. Num lote, cada imagem pronta tem o botão de olho "Ver como ficou", que abre a comparação acima da lista, com "Fechar a comparação". Mudar as opções descarta o resultado e a comparação some.

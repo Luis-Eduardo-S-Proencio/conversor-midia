@@ -48,7 +48,7 @@ export function AudioOptions({ choices, choice, onFormatChange, canDecodeAudio, 
   return (
     <div className="grid gap-6">
       <div className="grid gap-2">
-        <SegmentedControl label="Formato do áudio" options={options} value={choice.format} onChange={onFormatChange} disabled={disabled} mono />
+        <SegmentedControl label="Formato do áudio" options={options} value={choice.format} onChange={onFormatChange} disabled={disabled} />
         <p className="text-xs text-fg-muted">{describeAudioChoice(choice)}</p>
       </div>
       {unavailableNotes(choices, canDecodeAudio).map((note) => (

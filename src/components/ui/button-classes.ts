@@ -12,12 +12,15 @@ export interface ButtonStyleOptions {
 }
 
 const BASE =
-  'inline-flex items-center justify-center gap-2 rounded-md border font-medium whitespace-nowrap select-none ' +
-  'transition-colors disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-60'
+  'inline-flex items-center justify-center gap-2 rounded-md border font-semibold whitespace-nowrap select-none ' +
+  'transition-[color,background-color,border-color,scale] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-60'
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'border-transparent bg-accent-emphasis text-on-accent hover:bg-accent-hover active:bg-accent-active',
-  secondary: 'border-border bg-surface-raised text-fg hover:border-border-strong',
+  // Degradê violeta → rosa; cada estado escurece as duas pontas (o texto branco mantém o contraste).
+  primary:
+    'border-transparent bg-linear-135 from-accent-emphasis to-accent-emphasis-end text-on-accent shadow-accent ' +
+    'hover:from-accent-hover hover:to-accent-hover-end active:from-accent-active active:to-accent-active-end',
+  secondary: 'border-border bg-surface-raised text-fg hover:border-border-strong hover:bg-surface-overlay',
   ghost: 'border-transparent bg-transparent text-fg-muted hover:bg-surface-raised hover:text-fg',
   danger: 'border-transparent bg-transparent text-danger hover:bg-danger-subtle',
 }
@@ -25,12 +28,12 @@ const VARIANTS: Record<ButtonVariant, string> = {
 // Alvos de 44 px com toque; 40 px com mouse.
 const SIZES: Record<ButtonSize, string> = {
   md: 'h-10 px-4 text-sm pointer-coarse:h-11',
-  lg: 'h-12 px-5 text-base',
+  lg: 'h-12 rounded-lg px-5 text-base',
 }
 
 const ICON_ONLY_SIZES: Record<ButtonSize, string> = {
   md: 'size-10 pointer-coarse:size-11',
-  lg: 'size-12',
+  lg: 'size-12 rounded-lg',
 }
 
 /** Classes de botão, também usadas para links com aparência de botão. */

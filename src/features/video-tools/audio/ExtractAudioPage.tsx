@@ -61,11 +61,11 @@ export function ExtractAudioPage() {
           <dl className="grid gap-2 text-sm">
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-fg-muted">Tamanho</dt>
-              <dd className="font-mono tabular-nums text-fg">{formatBytes(state.result.size)}</dd>
+              <dd className="tabular-nums text-fg">{formatBytes(state.result.size)}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-fg-muted">Formato</dt>
-              <dd className="font-mono text-fg">{AUDIO_FORMATS[choice.format].label}</dd>
+              <dd className="text-fg tabular-nums">{AUDIO_FORMATS[choice.format].label}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-fg-muted">Som</dt>

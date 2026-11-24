@@ -59,7 +59,7 @@ export function ConvertPage() {
           <dl className="grid gap-2 text-sm">
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-fg-muted">Formato</dt>
-              <dd className="font-mono text-fg">{VIDEO_FORMATS[plan.target].label}</dd>
+              <dd className="text-fg tabular-nums">{VIDEO_FORMATS[plan.target].label}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-fg-muted">Vídeo</dt>

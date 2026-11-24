@@ -35,7 +35,7 @@ export function Alert({ variant, title, children, action, live = true, className
   return (
     <div
       role={live ? style.role : undefined}
-      className={cx('grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3 rounded-md border px-3.5 py-3', style.container, className)}
+      className={cx('grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3 rounded-lg border px-4 py-3.5', style.container, className)}
     >
       <Icon icon={style.icon} className={cx('mt-px', style.iconColor)} />
       <div className="grid gap-0.5 text-sm">

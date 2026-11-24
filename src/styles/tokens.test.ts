@@ -34,6 +34,13 @@ const pairs: Array<[foreground: string, background: string, minimum: number, use
   ['on-accent', 'accent-emphasis', TEXT, 'texto do botão principal'],
   ['on-accent', 'accent-hover', TEXT, 'texto do botão principal em hover'],
   ['on-accent', 'accent-active', TEXT, 'texto do botão principal pressionado'],
+  ['on-accent', 'accent-emphasis-end', TEXT, 'texto do botão principal (ponta rosa do degradê)'],
+  ['on-accent', 'accent-hover-end', TEXT, 'texto do botão principal em hover (ponta rosa)'],
+  ['on-accent', 'accent-active-end', TEXT, 'texto do botão principal pressionado (ponta rosa)'],
+  ['fg', 'surface-overlay', TEXT, 'texto em opção marcada e menus'],
+  ['fg-muted', 'surface-overlay', TEXT, 'texto secundário em menus'],
+  ['brand-start', 'bg', TEXT, 'título em degradê (início do degradê)'],
+  ['brand-end', 'bg', TEXT, 'título em degradê (fim do degradê)'],
   ['success', 'surface', TEXT, 'texto de sucesso'],
   ['success', 'success-subtle', TEXT, 'texto de sucesso em mensagem'],
   ['warning', 'surface', TEXT, 'texto de aviso'],
@@ -48,8 +55,18 @@ const pairs: Array<[foreground: string, background: string, minimum: number, use
   ['accent', 'bg', NON_TEXT, 'indicador de navegação ativa'],
   ['accent', 'surface', NON_TEXT, 'indicador de seleção em painel'],
   ['accent', 'accent-subtle', NON_TEXT, 'borda do item selecionado'],
-  ['accent-soft', 'border', NON_TEXT, 'barra de progresso sobre a trilha'],
+  ['brand-start', 'border', NON_TEXT, 'barra de progresso e slider sobre a trilha (início)'],
+  ['brand-end', 'border', NON_TEXT, 'barra de progresso e slider sobre a trilha (fim)'],
+  ['accent-emphasis-end', 'surface', NON_TEXT, 'limite do botão principal (ponta rosa)'],
   ['accent-soft', 'surface-raised', NON_TEXT, 'anel de foco no fundo mais claro'],
+  ['tool-size', 'surface-raised', NON_TEXT, 'ícone da ferramenta (size)'],
+  ['tool-compress', 'surface-raised', NON_TEXT, 'ícone da ferramenta (compress)'],
+  ['tool-audio', 'surface-raised', NON_TEXT, 'ícone da ferramenta (audio)'],
+  ['tool-convert', 'surface-raised', NON_TEXT, 'ícone da ferramenta (convert)'],
+  ['tool-gif', 'surface-raised', NON_TEXT, 'ícone da ferramenta (gif)'],
+  ['tool-rotate', 'surface-raised', NON_TEXT, 'ícone da ferramenta (rotate)'],
+  ['tool-crop', 'surface-raised', NON_TEXT, 'ícone da ferramenta (crop)'],
+  ['tool-edit', 'surface-raised', NON_TEXT, 'ícone da ferramenta (edit)'],
 ]
 
 describe('contraste dos tokens de cor', () => {
@@ -57,9 +74,10 @@ describe('contraste dos tokens de cor', () => {
     expect(contrastRatio(color(foreground), color(background))).toBeGreaterThanOrEqual(minimum)
   })
 
-  it('mantém o azul da marca exatamente como definido na identidade', () => {
-    expect(color('accent')).toBe('#3478c9')
-    expect(color('accent-soft')).toBe('#82b7f5')
-    expect(color('bg')).toBe('#11151c')
+  it('mantém as cores da marca exatamente como definidas na identidade', () => {
+    expect(color('brand-start')).toBe('#8b5cf6')
+    expect(color('brand-end')).toBe('#ec4899')
+    expect(color('accent')).toBe('#a78bfa')
+    expect(color('bg')).toBe('#0b0b0f')
   })
 })

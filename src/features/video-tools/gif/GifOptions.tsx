@@ -80,7 +80,7 @@ export function GifOptions({ plan, onFieldChange, onSizeChange, onFpsChange, foc
 
       {plan.size ? (
         <div className="grid gap-2">
-          <SegmentedControl label="Tamanho" options={sizes} value={String(plan.size)} onChange={selectSize} disabled={disabled} mono />
+          <SegmentedControl label="Tamanho" options={sizes} value={String(plan.size)} onChange={selectSize} disabled={disabled} />
           <p className="text-xs text-fg-muted">
             Medida do lado maior. Tamanhos maiores que o vídeo ficam desligados: aumentar só deixaria o GIF mais pesado.
           </p>
@@ -97,15 +97,15 @@ export function GifOptions({ plan, onFieldChange, onSizeChange, onFpsChange, foc
       <dl className="grid gap-2 border-t border-border pt-4 text-sm">
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-fg-muted">Duração</dt>
-          <dd className="font-mono tabular-nums text-fg">{range ? formatTime(range.end - range.start) : '—'}</dd>
+          <dd className="tabular-nums text-fg">{range ? formatTime(range.end - range.start) : '—'}</dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-fg-muted">Medidas</dt>
-          <dd className="font-mono tabular-nums text-fg">{formatDimensions(dimensions.width, dimensions.height)}</dd>
+          <dd className="tabular-nums text-fg">{formatDimensions(dimensions.width, dimensions.height)}</dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-fg-muted">Quadros</dt>
-          <dd className="font-mono tabular-nums text-fg">{plan.frames ?? '—'}</dd>
+          <dd className="tabular-nums text-fg">{plan.frames ?? '—'}</dd>
         </div>
       </dl>
 

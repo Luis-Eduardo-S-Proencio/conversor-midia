@@ -1,23 +1,30 @@
 import { cx } from '../ui/cx'
-import { LOGO_FRAME_PATH, LOGO_PIECE_PATH, LOGO_VIEWBOX } from './logo-geometry'
+import { LOGO_BLADE_PATHS, LOGO_VIEWBOX } from './logo-geometry'
 
 interface LogoMarkProps {
   className?: string
 }
 
-/** Símbolo "Recorte". Decorativo: o nome vem do texto ao lado ou do link que o envolve. */
+/**
+ * Símbolo "Obturador" num ladrilho com o degradê da marca, como um ícone de app.
+ * O degradê é CSS (sem id de SVG), então vários símbolos na mesma página não conflitam.
+ * Decorativo: o nome vem do texto ao lado ou do link que o envolve.
+ */
 export function LogoMark({ className }: LogoMarkProps) {
   return (
-    <svg viewBox={LOGO_VIEWBOX} aria-hidden="true" focusable="false" className={cx('shrink-0', className)}>
-      <path d={LOGO_FRAME_PATH} className="fill-accent" />
-      <path d={LOGO_PIECE_PATH} className="fill-accent-soft" />
-    </svg>
+    <span aria-hidden="true" className={cx('inline-block shrink-0 rounded-[26%] bg-brand', className)}>
+      <svg viewBox={LOGO_VIEWBOX} focusable="false" className="block size-full">
+        {LOGO_BLADE_PATHS.map((path) => (
+          <path key={path} d={path} className="fill-fg forced-colors:fill-[CanvasText]" />
+        ))}
+      </svg>
+    </span>
   )
 }
 
 const SIZES = {
-  sm: { mark: 'size-5', text: 'text-sm' },
-  md: { mark: 'size-7', text: 'text-lg' },
+  sm: { mark: 'size-6', text: 'text-sm' },
+  md: { mark: 'size-8', text: 'text-lg' },
 } as const
 
 interface LogoProps {
@@ -28,7 +35,7 @@ interface LogoProps {
 /** Assinatura completa: símbolo + "Media Tools", com "Tools" em peso e cor secundários. */
 export function Logo({ size = 'md', className }: LogoProps) {
   return (
-    <span className={cx('inline-flex items-center gap-2.5 font-semibold tracking-tight text-fg', SIZES[size].text, className)}>
+    <span className={cx('inline-flex items-center gap-2.5 font-bold tracking-tight text-fg', SIZES[size].text, className)}>
       <LogoMark className={SIZES[size].mark} />
       <span>
         Media <span className="font-medium text-fg-muted">Tools</span>

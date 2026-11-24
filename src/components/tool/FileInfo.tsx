@@ -13,7 +13,7 @@ export function FileInfo({ name, className, ...meta }: FileInfoProps) {
       <p className="truncate text-sm font-medium text-fg" title={name}>
         {name}
       </p>
-      <p className="truncate font-mono text-xs text-fg-muted tabular-nums">{formatFileMeta(meta)}</p>
+      <p className="truncate text-xs text-fg-muted tabular-nums">{formatFileMeta(meta)}</p>
     </div>
   )
 }

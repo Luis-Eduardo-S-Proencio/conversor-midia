@@ -29,7 +29,7 @@ export function ResizeOptions({ choices, plan, onResolutionChange, current, hasA
   return (
     <div className="grid gap-6">
       <div className="grid gap-2">
-        <SegmentedControl label="Resolução" options={options} value={String(plan.resolution)} onChange={select} disabled={disabled} mono />
+        <SegmentedControl label="Resolução" options={options} value={String(plan.resolution)} onChange={select} disabled={disabled} />
         <p className="text-xs text-fg-muted">{ONLY_DOWNSCALE}</p>
         <p className="text-xs text-fg-muted">A resolução vale para o lado menor: em pé, 720p fica com 720 de largura.</p>
       </div>
@@ -37,11 +37,11 @@ export function ResizeOptions({ choices, plan, onResolutionChange, current, hasA
       <dl className="grid gap-2 border-t border-border pt-4 text-sm">
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-fg-muted">Atual</dt>
-          <dd className="font-mono tabular-nums text-fg">{formatDimensions(current.width, current.height)}</dd>
+          <dd className="tabular-nums text-fg">{formatDimensions(current.width, current.height)}</dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
           <dt className="text-fg-muted">Resolução final</dt>
-          <dd className="font-mono tabular-nums text-fg">{formatDimensions(plan.size.width, plan.size.height)}</dd>
+          <dd className="tabular-nums text-fg">{formatDimensions(plan.size.width, plan.size.height)}</dd>
         </div>
       </dl>
 

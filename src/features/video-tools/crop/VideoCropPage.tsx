@@ -88,7 +88,7 @@ export function VideoCropPage() {
         final && (
           <dl className="flex items-baseline justify-between gap-3 text-sm">
             <dt className="text-fg-muted">Tamanho</dt>
-            <dd className="font-mono tabular-nums text-fg">{formatDimensions(final.width, final.height)}</dd>
+            <dd className="tabular-nums text-fg">{formatDimensions(final.width, final.height)}</dd>
           </dl>
         )
       }

@@ -67,16 +67,16 @@ export function GifPage() {
           <dl className="grid gap-2 text-sm">
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-fg-muted">Tamanho</dt>
-              <dd className="font-mono tabular-nums text-fg">{formatBytes(state.result.size)}</dd>
+              <dd className="tabular-nums text-fg">{formatBytes(state.result.size)}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-fg-muted">Medidas</dt>
-              <dd className="font-mono tabular-nums text-fg">{formatDimensions(plan.dimensions.width, plan.dimensions.height)}</dd>
+              <dd className="tabular-nums text-fg">{formatDimensions(plan.dimensions.width, plan.dimensions.height)}</dd>
             </div>
             {plan.range && (
               <div className="flex items-baseline justify-between gap-3">
                 <dt className="text-fg-muted">Duração</dt>
-                <dd className="font-mono tabular-nums text-fg">{formatTime(plan.range.end - plan.range.start)}</dd>
+                <dd className="tabular-nums text-fg">{formatTime(plan.range.end - plan.range.start)}</dd>
               </div>
             )}
           </dl>

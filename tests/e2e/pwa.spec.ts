@@ -31,8 +31,8 @@ test.describe('PWA e ícones', () => {
       name: 'Media Tools',
       lang: 'pt-BR',
       display: 'standalone',
-      theme_color: '#11151c',
-      background_color: '#11151c',
+      theme_color: '#0b0b0f',
+      background_color: '#0b0b0f',
     })
     expect(manifest.icons.some((icon) => icon.purpose === 'maskable')).toBe(true)
 
@@ -45,7 +45,7 @@ test.describe('PWA e ícones', () => {
   test('favicon, ícone da Apple e cor do tema estão publicados', async ({ page, request }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'não depende da largura')
     await page.goto('/')
-    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#11151c')
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', '#0b0b0f')
     await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR')
 
     expect(await pngSize(request, '/apple-touch-icon.png')).toEqual({ width: 180, height: 180 })

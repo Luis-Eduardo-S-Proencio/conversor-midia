@@ -13,8 +13,6 @@ interface SegmentedControlProps<T extends string> {
   value: T
   onChange: (value: T) => void
   disabled?: boolean
-  /** Rótulos técnicos (JPG, PNG) em fonte monoespaçada. */
-  mono?: boolean
   /** Muitas opções: quebra em linhas de quatro, ocupando a largura toda. Sem isso, uma linha só. */
   columns?: 4
   className?: string
@@ -32,7 +30,6 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   disabled = false,
-  mono = false,
   columns,
   className,
 }: SegmentedControlProps<T>) {
@@ -77,7 +74,7 @@ export function SegmentedControl<T extends string>({
         aria-labelledby={labelId}
         aria-disabled={disabled || undefined}
         className={cx(
-          'grid w-full gap-1 rounded-lg border border-border-strong bg-bg p-1',
+          'grid w-full gap-1.5',
           columns === 4 ? 'grid-cols-4' : 'auto-cols-fr grid-flow-col sm:w-auto sm:justify-self-start',
         )}
       >
@@ -97,15 +94,14 @@ export function SegmentedControl<T extends string>({
               onClick={() => select(index)}
               onKeyDown={(event) => handleKeyDown(event, index)}
               className={cx(
-                'h-8 rounded-sm border text-sm font-medium transition-colors pointer-coarse:h-11',
+                'h-9 rounded-md border text-sm font-semibold tabular-nums transition-colors pointer-coarse:h-11',
                 // Em colunas, as opções encolhem para caber em telas de 320 px.
                 columns ? 'min-w-0 px-1' : 'min-w-16 px-3',
                 'disabled:cursor-not-allowed disabled:opacity-50',
-                mono && 'font-mono',
                 // No alto contraste do Windows fundo e borda somem; o sublinhado mantém a seleção visível.
                 checked
                   ? 'border-accent bg-accent-subtle text-fg forced-colors:underline forced-colors:underline-offset-4'
-                  : 'border-transparent text-fg-muted hover:text-fg',
+                  : 'border-border bg-surface-raised text-fg-muted hover:border-border-strong hover:text-fg',
               )}
             >
               {option.label}

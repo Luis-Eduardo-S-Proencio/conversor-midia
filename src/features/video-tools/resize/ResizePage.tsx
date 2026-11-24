@@ -63,7 +63,7 @@ export function ResizePage() {
         plan && (
           <dl className="flex items-baseline justify-between gap-3 text-sm">
             <dt className="text-fg-muted">Resolução final</dt>
-            <dd className="font-mono tabular-nums text-fg">{formatDimensions(plan.size.width, plan.size.height)}</dd>
+            <dd className="tabular-nums text-fg">{formatDimensions(plan.size.width, plan.size.height)}</dd>
           </dl>
         )
       }

@@ -44,7 +44,7 @@ export function Slider({
       trailing={
         // Só visual: o leitor de tela já ouve o valor pelo aria-valuetext do slider.
         // (Um <output> seria região de status e anunciaria cada mudança duas vezes.)
-        <span aria-hidden="true" className="font-mono text-sm tabular-nums text-fg-muted">
+        <span aria-hidden="true" className="text-sm font-semibold tabular-nums text-accent-soft">
           {valueText}
         </span>
       }

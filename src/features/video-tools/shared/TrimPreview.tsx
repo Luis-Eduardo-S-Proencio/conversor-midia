@@ -113,7 +113,7 @@ export function TrimPreview({ src, name, duration, kept, target, onMark, timelin
           </div>
           <p className="text-xs text-fg-muted">
             {'Agora em '}
-            <span className="font-mono tabular-nums">{formatTime(time)}</span>
+            <span className="tabular-nums">{formatTime(time)}</span>
             {` · os botões marcam ${target}.`}
           </p>
         </div>

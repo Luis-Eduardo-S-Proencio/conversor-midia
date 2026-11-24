@@ -67,7 +67,7 @@ export function EditPage() {
         edit && (
           <dl className="flex items-baseline justify-between gap-3 text-sm">
             <dt className="text-fg-muted">Vídeo final</dt>
-            <dd className="font-mono tabular-nums text-fg">{formatTime(editedDuration(edit.pieces))}</dd>
+            <dd className="tabular-nums text-fg">{formatTime(editedDuration(edit.pieces))}</dd>
           </dl>
         )
       }

@@ -218,7 +218,7 @@ export function VideoEditor(props: VideoEditorProps) {
         disabled={disabled}
         hintId={hintId}
       />
-      <div className="flex justify-between gap-3 font-mono text-xs tabular-nums">
+      <div className="flex justify-between gap-3 text-xs tabular-nums">
         <span className="text-fg">{formatTime(shown)}</span>
         <span className="text-fg-muted">{formatTime(total)}</span>
       </div>

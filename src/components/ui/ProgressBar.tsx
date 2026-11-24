@@ -22,7 +22,7 @@ export function ProgressBar({ label, value, hideLabel = false, className }: Prog
           <span id={labelId} className="text-fg-muted">
             {label}
           </span>
-          {determinate && <span className="font-mono text-xs tabular-nums text-fg-muted">{percent}%</span>}
+          {determinate && <span className="text-xs tabular-nums text-fg-muted">{percent}%</span>}
         </div>
       )}
       <div
@@ -37,7 +37,7 @@ export function ProgressBar({ label, value, hideLabel = false, className }: Prog
         {/* Desloca a barra (transform) em vez de mudar a largura: não força recálculo de layout. */}
         <div
           className={cx(
-            'h-full rounded-full bg-accent-soft',
+            'h-full rounded-full bg-brand',
             determinate ? 'w-full transition-transform duration-(--duration-base)' : 'w-1/3 animate-indeterminate',
           )}
           style={determinate ? { transform: `translateX(${clamped - 100}%)` } : undefined}

@@ -86,7 +86,7 @@ export function FileListItem({
         <p className="truncate text-sm font-medium text-fg" title={name}>
           {name}
         </p>
-        {meta && <p className="truncate font-mono text-xs text-fg-muted tabular-nums">{meta}</p>}
+        {meta && <p className="truncate text-xs text-fg-muted tabular-nums">{meta}</p>}
         {/* Em telas estreitas o estado fica sob o nome, para não espremê-lo. A visibilidade fica num
             invólucro: no próprio Badge, `hidden` disputaria com o `inline-flex` dele. */}
         {statusLabel && (

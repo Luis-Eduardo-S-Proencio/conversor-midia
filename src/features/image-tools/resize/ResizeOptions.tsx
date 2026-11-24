@@ -103,7 +103,7 @@ function FinalSize({ from, to }: { from: Dimensions; to: Dimensions }) {
     <div className="grid gap-1">
       <dl className="flex items-baseline justify-between gap-3 text-sm">
         <dt className="text-fg-muted">Tamanho final</dt>
-        <dd className="font-mono tabular-nums text-fg">{formatDimensions(to.width, to.height)}</dd>
+        <dd className="tabular-nums text-fg">{formatDimensions(to.width, to.height)}</dd>
       </dl>
       {unchanged && <p className="text-xs text-fg-subtle">Já cabe no tamanho pedido: a imagem fica como está.</p>}
     </div>

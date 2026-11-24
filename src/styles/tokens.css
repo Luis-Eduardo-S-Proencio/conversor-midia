@@ -8,45 +8,68 @@
 @theme {
   --color-*: initial;
 
-  /* Neutros */
-  --color-bg: #11151c;
-  --color-surface: #1b222d;
-  --color-surface-raised: #232b38;
-  --color-border: #303846;
-  --color-border-strong: #6b7687;
-  --color-fg: #f4f6fa;
-  --color-fg-muted: #aab5c5;
-  --color-fg-subtle: #8c97a8;
+  /* Neutros: quase preto, sem puxar para nenhuma cor, para a foto e o vídeo serem o destaque */
+  --color-bg: #0b0b0f;
+  --color-surface: #131318;
+  --color-surface-raised: #1b1b22;
+  --color-surface-overlay: #24242d;
+  --color-stage: #07070a;
+  --color-border: #26262e;
+  --color-border-strong: #6b6b78;
+  --color-fg: #f5f5f7;
+  --color-fg-muted: #a3a3af;
+  --color-fg-subtle: #8a8a96;
 
-  /* Azul: principal para ação, seleção e marca; suave para foco, links e progresso */
-  --color-accent: #3478c9;
-  --color-accent-emphasis: #2f6db6;
-  --color-accent-hover: #3274c2;
-  --color-accent-active: #2d68ae;
-  --color-accent-soft: #82b7f5;
-  --color-accent-subtle: #1e2c40;
+  /* Marca: o degradê violeta → rosa da logo (também no título e no ícone de abrir arquivo) */
+  --color-brand-start: #8b5cf6;
+  --color-brand-end: #ec4899;
+
+  /*
+   * Violeta para ação e seleção. O botão principal é um degradê do violeta ao rosa,
+   * escuro o bastante para o texto branco (o "-end" é a ponta rosa de cada estado).
+   */
+  --color-accent: #a78bfa;
+  --color-accent-emphasis: #7c3aed;
+  --color-accent-emphasis-end: #db2777;
+  --color-accent-hover: #6d28d9;
+  --color-accent-hover-end: #be185d;
+  --color-accent-active: #5b21b6;
+  --color-accent-active-end: #9d174d;
+  --color-accent-soft: #c4b5fd;
+  --color-accent-subtle: #2a2440;
   --color-on-accent: #ffffff;
 
+  /* Uma cor por tipo de ferramenta, a mesma na imagem e no vídeo */
+  --color-tool-edit: #a78bfa;
+  --color-tool-crop: #f472b6;
+  --color-tool-rotate: #fb923c;
+  --color-tool-gif: #facc15;
+  --color-tool-convert: #60a5fa;
+  --color-tool-audio: #f87171;
+  --color-tool-compress: #34d399;
+  --color-tool-size: #22d3ee;
+
   /* Estados */
-  --color-success: #5cba92;
-  --color-success-subtle: #233439;
-  --color-warning: #ddad5c;
-  --color-warning-subtle: #323333;
-  --color-danger: #eb8183;
-  --color-danger-subtle: #342d37;
+  --color-success: #34d399;
+  --color-success-subtle: #182e2a;
+  --color-warning: #fbbf24;
+  --color-warning-subtle: #2e2814;
+  --color-danger: #f87171;
+  --color-danger-subtle: #31181c;
 
   /* Fundo quadriculado da pré-visualização (mostra transparência) */
-  --color-checker-a: #1a2029;
-  --color-checker-b: #222936;
+  --color-checker-a: #121217;
+  --color-checker-b: #1a1a21;
 
   --font-*: initial;
   --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "JetBrains Mono Variable", ui-monospace, "Cascadia Mono", Consolas, monospace;
 
   --font-weight-*: initial;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
 
   /* Escala tipográfica: no máximo quatro tamanhos por tela */
   --text-*: initial;
@@ -66,19 +89,25 @@
   --text-3xl--line-height: 2.25rem;
   --text-4xl: 2.25rem;
   --text-4xl--line-height: 2.5rem;
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 1.05;
 
+  /* Cantos generosos, como nos apps de celular */
   --radius-*: initial;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
 
-  /* Sombra só para camadas flutuantes; a elevação normal vem de superfície e borda */
+  /* Sombra só onde algo flutua; a elevação normal vem do tom da superfície */
   --shadow-*: initial;
-  --shadow-overlay: 0 12px 32px rgb(0 0 0 / 0.45);
+  --shadow-overlay: 0 16px 40px rgb(0 0 0 / 0.5);
+  --shadow-media: 0 18px 40px rgb(0 0 0 / 0.55);
+  --shadow-accent: 0 6px 18px rgb(124 58 237 / 0.28);
 
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --default-transition-duration: 120ms;
+  --default-transition-duration: 150ms;
   --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 
   --container-page: 72rem;
@@ -90,6 +119,15 @@
     }
     to {
       transform: translateX(300%);
+    }
+  }
+
+  /* Entrada discreta de um bloco novo (resultado pronto, aviso, painel) */
+  --animate-enter: enter 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
     }
   }
 }

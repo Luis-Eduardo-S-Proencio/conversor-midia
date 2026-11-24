@@ -257,7 +257,7 @@ export function EditTimeline({
             {ticks.map((tick) => (
               <span
                 key={tick}
-                className="absolute -translate-x-1/2 font-mono text-[11px] tabular-nums text-fg-subtle"
+                className="absolute -translate-x-1/2 text-[11px] tabular-nums text-fg-subtle"
                 style={{ left: pad + tick * pixelsPerSecond }}
               >
                 {tickLabel(tick)}

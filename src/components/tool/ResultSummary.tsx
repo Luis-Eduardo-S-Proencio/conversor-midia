@@ -22,7 +22,7 @@ export function ResultSummary({ beforeBytes, afterBytes, className }: ResultSumm
       {items.map((item) => (
         <div key={item.label} className="grid gap-0.5">
           <dt className="text-xs text-fg-subtle">{item.label}</dt>
-          <dd className={cx('font-mono text-base font-medium tabular-nums', item.tone)}>{item.value}</dd>
+          <dd className={cx('text-base font-medium tabular-nums', item.tone)}>{item.value}</dd>
         </div>
       ))}
     </dl>

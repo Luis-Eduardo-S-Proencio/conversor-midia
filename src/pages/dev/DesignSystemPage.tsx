@@ -22,15 +22,28 @@ const COLOR_TOKENS = [
   'bg',
   'surface',
   'surface-raised',
+  'surface-overlay',
+  'stage',
   'border',
   'border-strong',
   'fg',
   'fg-muted',
   'fg-subtle',
+  'brand-start',
+  'brand-end',
   'accent',
   'accent-emphasis',
+  'accent-emphasis-end',
   'accent-soft',
   'accent-subtle',
+  'tool-edit',
+  'tool-crop',
+  'tool-rotate',
+  'tool-gif',
+  'tool-convert',
+  'tool-audio',
+  'tool-compress',
+  'tool-size',
   'success',
   'warning',
   'danger',
@@ -96,7 +109,7 @@ export function DesignSystemPage() {
             {COLOR_TOKENS.map((token) => (
               <li key={token} className="overflow-hidden rounded-lg border border-border bg-surface">
                 <div className="h-14 border-b border-border" style={{ background: `var(--color-${token})` }} />
-                <p className="px-3 py-2 font-mono text-xs text-fg-muted">{token}</p>
+                <p className="px-3 py-2 text-xs text-fg-muted tabular-nums">{token}</p>
               </li>
             ))}
           </ul>
@@ -104,13 +117,13 @@ export function DesignSystemPage() {
 
         <Section title="Tipografia">
           <Panel>
-            <p className="text-4xl font-semibold tracking-tight">Imagens e vídeos no navegador</p>
-            <p className="text-3xl font-semibold tracking-tight">Converter imagem</p>
-            <p className="text-xl font-semibold tracking-tight">Ferramentas populares</p>
+            <p className="text-4xl font-extrabold tracking-tight">Imagens e vídeos <span className="text-brand">no navegador</span></p>
+            <p className="text-3xl font-bold tracking-tight">Converter imagem</p>
+            <p className="text-xl font-bold tracking-tight">Ferramentas populares</p>
             <p className="text-base">Escolha o formato de saída. A qualidade só aparece para JPG e WEBP.</p>
             <p className="text-sm text-fg-muted">Arraste imagens para cá ou selecione no seu dispositivo.</p>
             <p className="text-xs text-fg-subtle">Os arquivos não saem do seu dispositivo.</p>
-            <p className="font-mono text-sm text-fg-muted">WEBP · 3024 × 4032 · 8,6 MB</p>
+            <p className="text-sm text-fg-muted tabular-nums">WEBP · 3024 × 4032 · 8,6 MB</p>
           </Panel>
         </Section>
 
@@ -152,7 +165,7 @@ export function DesignSystemPage() {
 
         <Section title="Opções da ferramenta">
           <Panel>
-            <SegmentedControl label="Converter para" options={FORMAT_OPTIONS} value={format} onChange={setFormat} mono />
+            <SegmentedControl label="Converter para" options={FORMAT_OPTIONS} value={format} onChange={setFormat} />
             <Slider
               label="Qualidade"
               value={quality}

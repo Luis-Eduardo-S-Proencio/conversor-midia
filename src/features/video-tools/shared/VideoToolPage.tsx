@@ -220,7 +220,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
                     <Icon icon={CircleCheck} className="text-success" />
                     {`${texts.noun} ${labels.done}`}
                   </h2>
-                  <p className="truncate font-mono text-xs text-fg-muted" title={state.result.name}>
+                  <p className="truncate text-xs text-fg-muted tabular-nums" title={state.result.name}>
                     {state.result.name}
                   </p>
                   {/* Som e GIF não se comparam ao vídeo de onde saíram: a ferramenta mostra o tamanho nos detalhes. */}

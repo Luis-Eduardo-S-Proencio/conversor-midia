@@ -4,7 +4,7 @@ import { Button, IconButton } from '../../../components/ui/Button'
 import { cx } from '../../../components/ui/cx'
 import { MAX_REMOVED_PARTS, type RemovalPart } from '../../../core/video/remove'
 import type { TrimField } from '../../../core/video/trim'
-import { TimeFields } from './TimeFields'
+import { TimeFields } from '../shared/TimeFields'
 
 interface RemovalPartsProps {
   parts: readonly RemovalPart[]

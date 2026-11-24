@@ -2,6 +2,7 @@ import type { CropRect } from '../core/image/crop'
 import type { AudioFormat } from '../core/video/audio'
 import type { TrackAction, VideoMode } from '../core/video/convert'
 import type { VideoFormat } from '../core/video/formats'
+import type { GifFrameRate } from '../core/video/gif'
 import type { VideoErrorCode } from '../core/video/messages'
 import type { TrimMode, TrimRange } from '../core/video/trim'
 
@@ -81,7 +82,21 @@ export interface ConvertJob {
   audioBitrate: number
 }
 
-export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob | CompressJob | ExtractAudioJob | ConvertJob
+/**
+ * GIF animado de um trecho (em segundos, de no máximo `MAX_GIF_SECONDS`), nas medidas pedidas (nunca maiores
+ * que as do vídeo, como ele aparece) e com `fps` quadros por segundo. Sem som: o GIF não tem.
+ */
+export interface GifJob {
+  kind: 'gif'
+  file: Blob
+  start: number
+  end: number
+  width: number
+  height: number
+  fps: GifFrameRate
+}
+
+export type VideoJob = InspectJob | TrimJob | JoinJob | CropJob | CompressJob | ExtractAudioJob | ConvertJob | GifJob
 
 /** Tarefas que geram um arquivo (todas menos abrir). */
 export type ProcessingJob = Exclude<VideoJob, InspectJob>
@@ -102,6 +117,8 @@ export interface VideoInfo {
   audioBitrate: number | null
   /** O navegador decodifica o vídeo e codifica o resultado: sem isso, só dá para copiar (corte rápido). */
   canTranscodeVideo: boolean
+  /** O navegador decodifica o vídeo (ler os quadros basta para criar GIF). */
+  canDecodeVideo: boolean
   /**
    * O navegador decodifica o som e o codifica no formato de som do arquivo (AAC no MP4 e no MOV, Opus
    * no WEBM); sempre verdadeiro sem som. Recodificam o som: remover partes e o corte exato de WEBM.
@@ -175,7 +192,14 @@ export interface ConvertOutput {
   audio: TrackAction | null
 }
 
-export type VideoJobOutput = InspectOutput | TrimOutput | JoinOutput | CropOutput | CompressOutput | ExtractAudioOutput | ConvertOutput
+export interface GifOutput {
+  kind: 'gif'
+  blob: Blob
+  /** Quadros gravados. */
+  frames: number
+}
+
+export type VideoJobOutput = InspectOutput | TrimOutput | JoinOutput | CropOutput | CompressOutput | ExtractAudioOutput | ConvertOutput | GifOutput
 
 export type VideoOutputFor<J extends VideoJob> = Extract<VideoJobOutput, { kind: J['kind'] }>
 

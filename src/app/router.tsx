@@ -126,6 +126,14 @@ export const router = createBrowserRouter([
           return { Component: ConvertPage }
         },
       },
+      {
+        path: 'videos/gif',
+        handle: { hideBottomNav: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { GifPage } = await import('../features/video-tools/gif/GifPage')
+          return { Component: GifPage }
+        },
+      },
       ...devRoutes,
       { path: '*', element: <NotFoundPage /> },
     ],

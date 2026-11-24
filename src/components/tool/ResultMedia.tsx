@@ -1,6 +1,9 @@
-import { Music } from 'lucide-react'
-import { useState } from 'react'
+import { Music, Pause, Play } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Button } from '../ui/Button'
 import { Icon } from '../ui/Icon'
+import { cx } from '../ui/cx'
+import { useMediaQuery } from '../ui/useMediaQuery'
 import { FilePreview } from './FilePreview'
 
 function Unviewable({ children }: { children: string }) {
@@ -46,6 +49,52 @@ export function ResultAudio({ src, name }: ResultMediaProps) {
         </p>
       </div>
       <audio src={src} controls preload="metadata" aria-label={`Como ficou: ${name}`} onError={() => setFailed(true)} className="w-full" />
+    </div>
+  )
+}
+
+/**
+ * O GIF gerado, animado, com um botão para pausar: o que se move sozinho por mais de 5 s precisa poder
+ * parar (WCAG 2.2.2). Com "reduzir movimento" ligado no sistema, já começa parado. Parado, mostra o
+ * primeiro quadro, que é o que o navegador desenha de uma imagem animada num canvas.
+ * Use com `key={src}` para recomeçar a cada resultado.
+ */
+export function ResultGif({ src, name }: ResultMediaProps) {
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+  const [choice, setChoice] = useState<boolean>()
+  const [failed, setFailed] = useState(false)
+  const [size, setSize] = useState<{ width: number; height: number }>()
+  const image = useRef<HTMLImageElement>(null)
+  const still = useRef<HTMLCanvasElement>(null)
+  const playing = choice ?? !reducedMotion
+
+  useEffect(() => {
+    const canvas = still.current
+    const source = image.current
+    if (playing || !canvas || !source || !size) return
+    canvas.getContext('2d')?.drawImage(source, 0, 0)
+  }, [playing, size])
+
+  if (failed) return <Unviewable>Este navegador não consegue mostrar este GIF. Baixe para ver como ficou.</Unviewable>
+  const fitted = 'max-h-[50dvh] w-auto max-w-full object-contain'
+  return (
+    <div className="grid gap-3">
+      <div className="grid min-h-48 place-items-center overflow-hidden rounded-lg border border-border bg-bg p-3">
+        <img
+          ref={image}
+          src={src}
+          alt={`Como ficou: ${name}`}
+          onLoad={(event) => setSize({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })}
+          onError={() => setFailed(true)}
+          className={cx(fitted, !playing && 'hidden')}
+        />
+        {!playing && size && (
+          <canvas ref={still} width={size.width} height={size.height} role="img" aria-label={`Como ficou (parado): ${name}`} className={fitted} />
+        )}
+      </div>
+      <Button variant="ghost" icon={playing ? Pause : Play} onClick={() => setChoice(!playing)} className="justify-self-start">
+        {playing ? 'Pausar animação' : 'Reproduzir animação'}
+      </Button>
     </div>
   )
 }

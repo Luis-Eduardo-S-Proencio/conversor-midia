@@ -1,11 +1,12 @@
 /**
- * Worker de vídeo: abre, corta, recorta, comprime e converte vídeos e extrai o som, com o Mediabunny (WebCodecs),
+ * Worker de vídeo: abre, corta, recorta, comprime e converte vídeos, extrai o som e cria GIFs, com o Mediabunny (WebCodecs),
  * fora da thread principal. O arquivo é lido aos pedaços e o resultado é montado na memória do Worker;
  * nada sai do aparelho. Cada pedido recebe exatamente uma resposta, de sucesso ou com um código de erro estável.
  */
 import {
   BlobSource,
   BufferTarget,
+  CanvasSink,
   CanvasSource,
   Conversion,
   EncodedPacketSink,
@@ -35,11 +36,14 @@ import {
   type VideoSample,
 } from 'mediabunny'
 import { isCropWithin, type CropRect } from '../core/image/crop'
+import { GIF_END, GIF_MAX_COLORS, GifFrameEncoder, gifHeader } from '../core/image/encode/gif'
+import { ColorHistogram, buildPalette } from '../core/image/encode/quantize'
 import type { Dimensions } from '../core/image/resize'
 import { AUDIO_FORMATS, REENCODED_AUDIO_BITRATE, copyableAudioFormat, reencodedAudioBitrate, type AudioFormat } from '../core/video/audio'
 import { VIDEO_MODES, convertActions } from '../core/video/convert'
 import { MIN_VIDEO_CROP_SIDE, encodableCrop, encodableSize } from '../core/video/crop'
 import { VIDEO_FORMATS, type VideoFormat } from '../core/video/formats'
+import { GIF_FRAME_RATES, MAX_GIF_SECONDS, gifDelays, gifFrameTimes, gifPaletteTimes } from '../core/video/gif'
 import { cappedVideoBitrate } from '../core/video/sizing'
 import type { VideoErrorCode } from '../core/video/messages'
 import { joinSegments, keptPieces, segmentAt, type JoinSegment } from '../core/video/remove'
@@ -53,6 +57,8 @@ import type {
   CropOutput,
   ExtractAudioJob,
   ExtractAudioOutput,
+  GifJob,
+  GifOutput,
   InspectJob,
   InspectOutput,
   JoinJob,
@@ -428,6 +434,7 @@ async function inspect(job: InspectJob): Promise<InspectOutput> {
         hasAudio: audio !== null,
         audioBitrate: audio ? await audioBitrate(audio) : null,
         canTranscodeVideo,
+        canDecodeVideo,
         canTranscodeAudio,
         audioCodec: audio ? await audio.getCodec() : null,
         canDecodeAudio,
@@ -688,6 +695,82 @@ async function convertFormat(job: ConvertJob, onProgress: ProgressReporter): Pro
   }
 }
 
+/** Parte do progresso que fica para olhar os quadros de amostra da paleta (o resto é gravar os quadros). */
+const GIF_PALETTE_PROGRESS = 0.1
+
+/** Pixels (RGBA) do quadro que o Mediabunny desenhou no canvas, já nas medidas do GIF e em pé. */
+function framePixels(canvas: OffscreenCanvas | HTMLCanvasElement): Uint8ClampedArray {
+  const context = canvas.getContext('2d') as OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D | null
+  if (!context) throw new JobError('unexpected')
+  return context.getImageData(0, 0, canvas.width, canvas.height).data
+}
+
+async function createGif(job: GifJob, onProgress: ProgressReporter): Promise<GifOutput> {
+  // O protocolo é tipado, mas o pedido vem de outra thread: valores fora do esperado são recusados.
+  const valid =
+    GIF_FRAME_RATES.includes(job.fps) &&
+    [job.width, job.height].every((side) => Number.isInteger(side) && side >= 1) &&
+    Number.isFinite(job.start) &&
+    job.start >= 0 &&
+    job.end > job.start &&
+    job.end - job.start <= MAX_GIF_SECONDS + TIME_TOLERANCE
+  if (!valid) throw new JobError('unexpected')
+  const opened = await openVideo(job.file)
+  try {
+    const { input, video } = opened
+    const full = await reading(displaySize(video))
+    const duration = await reading(input.computeDuration(selectedTracks(opened)))
+    // Nunca maior que o vídeo (arredondar a proporção pode dar 1 px a mais).
+    if (job.width > full.width + 1 || job.height > full.height + 1 || job.start >= duration) throw new JobError('unexpected')
+    if (!(await reading(video.canDecode()))) throw new JobError('decode-unsupported')
+    const times = gifFrameTimes(job.start, Math.min(job.end, duration), job.fps)
+    const delays = gifDelays(times.length, job.fps)
+    const report = throttled(onProgress)
+    // Cada quadro sai num canvas novo, nas medidas do GIF e já em pé (rotação aplicada).
+    const sink = new CanvasSink(video, { width: job.width, height: job.height, fit: 'fill' })
+
+    // 1ª passada: a paleta da animação inteira, a partir de quadros espalhados pelo trecho.
+    const histogram = new ColorHistogram()
+    const samples = gifPaletteTimes(times)
+    let sampled = 0
+    for await (const wrapped of sink.canvasesAtTimestamps(samples)) {
+      if (wrapped) histogram.add(framePixels(wrapped.canvas))
+      sampled += 1
+      report((GIF_PALETTE_PROGRESS * sampled) / samples.length)
+    }
+    const palette = buildPalette(histogram, GIF_MAX_COLORS)
+
+    // 2ª passada: cada quadro, um por vez, só com o que mudou; os bytes vão direto para o Blob.
+    const encoder = new GifFrameEncoder(job.width, job.height, palette)
+    const parts: Blob[] = [new Blob([gifHeader(job.width, job.height, palette.colors)])]
+    let previous: Uint8ClampedArray | null = null
+    let waiting = 0 // tempo dos momentos antes do primeiro quadro do vídeo, somado ao primeiro gravado
+    let index = 0
+    let frames = 0
+    for await (const wrapped of sink.canvasesAtTimestamps(times)) {
+      const delay = (delays[index] ?? 0) + waiting
+      index += 1
+      const rgba: Uint8ClampedArray | null = wrapped ? framePixels(wrapped.canvas) : previous
+      if (!rgba) {
+        waiting = delay
+        continue
+      }
+      parts.push(new Blob([encoder.frame(rgba, delay)]))
+      previous = rgba
+      waiting = 0
+      frames += 1
+      report(GIF_PALETTE_PROGRESS + ((1 - GIF_PALETTE_PROGRESS) * index) / times.length)
+    }
+    if (frames === 0) throw new JobError('unexpected')
+    parts.push(new Blob([GIF_END]))
+    return { kind: 'gif', blob: new Blob(parts, { type: 'image/gif' }), frames }
+  } catch (error) {
+    throw toJobError(error, 'unexpected')
+  } finally {
+    opened.input.dispose()
+  }
+}
+
 function run(job: VideoJob, onProgress: ProgressReporter): Promise<VideoJobOutput> {
   switch (job.kind) {
     case 'inspect':
@@ -704,6 +787,8 @@ function run(job: VideoJob, onProgress: ProgressReporter): Promise<VideoJobOutpu
       return extractAudio(job, onProgress)
     case 'convert':
       return convertFormat(job, onProgress)
+    case 'gif':
+      return createGif(job, onProgress)
   }
 }
 

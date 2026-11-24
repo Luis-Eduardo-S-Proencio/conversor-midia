@@ -8,7 +8,7 @@ import { formatTime } from '../../../core/video/time'
 import type { TrimAction, TrimField, TrimFocusRequest, TrimMode } from '../../../core/video/trim'
 import { Note } from '../shared/Note'
 import { RemovalParts } from './RemovalParts'
-import { TimeFields } from './TimeFields'
+import { TimeFields } from '../shared/TimeFields'
 import type { TrimEditor, VisibleTrimError } from './useTrimTool'
 
 const ACTION_OPTIONS: ReadonlyArray<{ value: TrimAction; label: string }> = [

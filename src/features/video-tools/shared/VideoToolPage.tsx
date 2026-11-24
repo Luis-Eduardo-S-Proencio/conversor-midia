@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import { ActionBar } from '../../../components/layout/ActionBar'
 import { CompareView } from '../../../components/tool/CompareView'
-import { ResultAudio, ResultVideo } from '../../../components/tool/ResultMedia'
+import { ResultAudio, ResultGif, ResultVideo } from '../../../components/tool/ResultMedia'
 import { Container } from '../../../components/layout/Container'
 import { PageHeader } from '../../../components/layout/PageHeader'
 import { saveBlob } from '../../../components/tool/download'
@@ -85,7 +85,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
   const focusPickerWhenEmpty = useRef(false)
   const supported = supportsVideoWorker()
   const texts = outputTexts(labels)
-  const ResultMedia = labels.output === 'audio' ? ResultAudio : ResultVideo
+  const ResultMedia = labels.output === 'audio' ? ResultAudio : labels.output === 'gif' ? ResultGif : ResultVideo
   const busy = state.phase === 'processing'
   const opened = state.phase === 'ready' || state.phase === 'processing' || state.phase === 'done' || state.phase === 'failed'
 
@@ -223,8 +223,8 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
                   <p className="truncate font-mono text-xs text-fg-muted" title={state.result.name}>
                     {state.result.name}
                   </p>
-                  {/* O som extraído não se compara ao vídeo de onde saiu: a ferramenta mostra o tamanho nos detalhes. */}
-                  {labels.output !== 'audio' && <ResultSummary beforeBytes={state.file.size} afterBytes={state.result.size} />}
+                  {/* Som e GIF não se comparam ao vídeo de onde saíram: a ferramenta mostra o tamanho nos detalhes. */}
+                  {(labels.output ?? 'video') === 'video' && <ResultSummary beforeBytes={state.file.size} afterBytes={state.result.size} />}
                   {resultDetails}
                   <Button icon={labels.output === 'audio' ? Headphones : Eye} onClick={showResult}>
                     {texts.view}

@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { IMAGE_TOOLS, VIDEO_TOOLS } from './tool-catalog'
 
 describe('catálogo de ferramentas', () => {
-  it('GIF fica na aba Vídeos, ainda em breve (sem rota)', () => {
+  it('GIF fica na aba Vídeos, com rota própria', () => {
     const gif = VIDEO_TOOLS.find((tool) => tool.id === 'video-gif')
     expect(gif?.title).toBe('Criar GIF')
-    expect(gif?.to).toBeUndefined()
+    expect(gif?.to).toBe('/videos/gif')
   })
 
   it('Redimensionar imagem está disponível, com rota própria', () => {
@@ -26,7 +26,7 @@ describe('catálogo de ferramentas', () => {
     expect(IMAGE_TOOLS.filter((tool) => !tool.to)).toEqual([])
   })
 
-  it('as ferramentas de vídeo prontas vêm primeiro na lista; só o GIF continua em breve', () => {
+  it('todas as ferramentas de vídeo planejadas estão disponíveis', () => {
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-trim')?.to).toBe('/videos/cortar')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-crop')?.to).toBe('/videos/recortar')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-compress')?.to).toBe('/videos/comprimir')
@@ -34,6 +34,6 @@ describe('catálogo de ferramentas', () => {
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-resize')?.to).toBe('/videos/resolucao')
     expect(VIDEO_TOOLS.find((tool) => tool.id === 'video-convert')?.to).toBe('/videos/converter')
     expect(VIDEO_TOOLS.slice(0, 6).map((tool) => tool.id)).toEqual(['video-trim', 'video-crop', 'video-compress', 'video-audio', 'video-resize', 'video-convert'])
-    expect(VIDEO_TOOLS.filter((tool) => !tool.to).map((tool) => tool.id)).toEqual(['video-gif'])
+    expect(VIDEO_TOOLS.filter((tool) => !tool.to)).toEqual([])
   })
 })

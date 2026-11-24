@@ -104,6 +104,12 @@ Marque ✔ ou ✘ e anote o que estranhar.
 43. Com o mesmo vídeo, escolha "Rápido": termina quase na hora. O `.mp4` toca no iPhone. Anote se ele toca num computador com Windows ou num Android (pode não tocar: é o aviso da opção).
 44. No Android, abra o vídeo curto da câmera (MP4): MOV já vem marcado e diz "Só troca o formato do arquivo". Converta: termina quase na hora. Depois escolha WEBM, converta e anote o tempo com o vídeo longo. O `.webm` toca no aparelho, em pé e com som.
 
+**Criar GIF** (`/videos/gif`; itens novos, no fim para não mudar a numeração acima)
+
+45. Abra o vídeo curto da câmera, gravado em pé: o trecho já vem marcado. Use "Marcar início aqui" e "Marcar fim aqui" no player para escolher uns 3 segundos, deixe 480 px e Normal e crie o GIF. Anote o tempo e o tamanho. O GIF aparece animado e em pé em "Como ficou"; "Pausar animação" para e "Reproduzir animação" volta.
+46. Baixe o `.gif`, abra na galeria ou no app de arquivos e envie pelo WhatsApp: ele anima e repete sem parar.
+47. Com o vídeo longo, marque mais de 15 segundos: aparece o aviso de que o GIF pode ter no máximo 15 segundos, e tocar em "Criar GIF" leva ao campo do fim.
+
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.
@@ -120,6 +126,7 @@ Confirme se acontecem; não precisam ser tratados como erro.
 - O limite é de 1 GB por vídeo. Num celular com pouca memória, vídeos bem menores que isso podem falhar com a mensagem de memória. **Anote o tamanho e a duração se acontecer.**
 - Extrair áudio: o M4A copiado é instantâneo; o MP3 é refeito e leva mais tempo (no computador, cerca de 10 s para cada 3 minutos de som). O som de vídeos WEBM sai em WEBM, que iPhones mais antigos podem não tocar: para eles, existem M4A e MP3.
 - Converter vídeo: entre MP4 e MOV, um vídeo H.264 só é copiado (instantâneo). Para WEBM, ou de WEBM para MP4 e MOV, o vídeo é refeito e demora em vídeos longos. Um vídeo pequeno e já bem comprimido pode sair um pouco maior ao ser refeito. No Firefox, MP4 e MOV ficam indisponíveis quando o som precisa ser refeito (o Firefox não gera AAC).
+- Criar GIF: o GIF não tem som e usa no máximo 256 cores (degradês podem aparecer em faixas). Com fundo parado ele fica leve; com a câmera em movimento, pesa vários MB (no computador, cerca de 2 MB para 5 s em 480 px).
 
 ## 5. Resultado
 
@@ -135,5 +142,6 @@ Vídeo: duração ___ · tamanho ___ · formato (HEVC/H.264) ___ · ___ s no cor
 Extrair áudio (vídeo longo): ___ s em M4A · ___ s em MP3
 Mudar resolução (vídeo longo, 480p): ___ s · ___ MB → ___ MB
 Converter vídeo (vídeo longo): ___ s em Compatível (iPhone) · ___ s para WEBM · ___ MB → ___ MB
+Criar GIF (3 s, 480 px, Normal): ___ s · ___ MB
 Prints ou gravação de tela dos problemas
 ```

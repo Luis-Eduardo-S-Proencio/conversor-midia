@@ -14,9 +14,10 @@ import soAudioUrl from '../../tests/fixtures/videos/so-audio.mp4?url'
 import somPcmUrl from '../../tests/fixtures/videos/som-pcm.mov?url'
 import textoUrl from '../../tests/fixtures/videos/texto.mp4?url'
 import { audioPackets, measureTone, readAudio } from '../test/audio-reader'
-import { fixtureBlob, readVideo, videoPackets } from '../test/video-reader'
+import { decodeGif } from '../test/format-readers'
+import { classify, fixtureBlob, readVideo, videoPackets } from '../test/video-reader'
 import { VideoJobError, createVideoWorkerClient, isAbortError } from './video-client'
-import type { ConvertJob, ExtractAudioJob } from './video-protocol'
+import type { ConvertJob, ExtractAudioJob, GifJob } from './video-protocol'
 
 // Worker real, no Chromium: confere formato, codec, duração, medidas, cores dos quadros e faixas do resultado.
 // Vídeos de teste (tests/fixtures/videos): "segundos" troca de cor a cada segundo (vermelho, verde, azul,
@@ -538,6 +539,79 @@ describe('Worker de vídeo: extrair áudio', () => {
     // Pedido malformado: o protocolo é tipado, mas o Worker não confia no que recebe.
     const malformed = { kind: 'extract-audio', file, format: 'wav' } as unknown as ExtractAudioJob
     await expect(client.run(malformed)).rejects.toEqual(new VideoJobError('unexpected'))
+  })
+})
+
+describe('Worker de vídeo: criar GIF', () => {
+  const gifJob = (file: Blob, overrides: Partial<GifJob> = {}): GifJob => ({ kind: 'gif', file, start: 0.5, end: 2.5, width: 320, height: 240, fps: 10, ...overrides })
+  /** Cor do pixel (x, y) na tela depois do quadro `index`. */
+  const colorAt = (gif: ReturnType<typeof decodeGif>, index: number, x: number, y: number) => {
+    const at = (y * gif.width + x) * 4
+    return classify(Array.from(gif.frames[index]?.rgba.subarray(at, at + 4) ?? []))
+  }
+
+  it('trecho de 2 s a 10 quadros por segundo: 20 quadros, cada um com a cor do momento certo, repetindo sem fim', SLOW, async () => {
+    const progress: number[] = []
+    const result = await client.run(gifJob(await fixtureBlob(segundosMp4Url)), { onProgress: (value) => progress.push(value) })
+    expect(result.blob.type).toBe('image/gif')
+    expect(result.frames).toBe(20)
+    const gif = decodeGif(new Uint8Array(await result.blob.arrayBuffer()))
+    expect(gif).toMatchObject({ width: 320, height: 240, loops: 0 })
+    expect(gif.frames).toHaveLength(20)
+    expect(gif.frames.every((frame) => frame.delay === 10)).toBe(true)
+    // "segundos.mp4": vermelho de 0 a 1 s, verde de 1 a 2 s, azul de 2 a 3 s; o quadro n é tirado em 0,5 + n/10 s.
+    expect(colorAt(gif, 0, 160, 120)).toBe('red') // 0,5 s
+    expect(colorAt(gif, 4, 160, 120)).toBe('red') // 0,9 s
+    expect(colorAt(gif, 6, 160, 120)).toBe('green') // 1,1 s
+    expect(colorAt(gif, 14, 160, 120)).toBe('green') // 1,9 s
+    expect(colorAt(gif, 16, 160, 120)).toBe('blue') // 2,1 s
+    expect(colorAt(gif, 19, 160, 120)).toBe('blue') // 2,4 s
+    // Dentro de cada segundo nada muda: esses quadros quase não ocupam espaço.
+    expect(gif.frames.filter((frame) => frame.width === 1 && frame.height === 1).length).toBeGreaterThanOrEqual(15)
+    expect(progress.length).toBeGreaterThan(0)
+    expect(progress.every((value, index) => value >= 0 && value <= 1 && value >= (progress[index - 1] ?? 0))).toBe(true)
+  })
+
+  it('o próprio navegador abre o GIF, com todos os quadros', SLOW, async () => {
+    const result = await client.run(gifJob(await fixtureBlob(segundosMp4Url), { start: 0, end: 1, fps: 15 }))
+    const decoder = new ImageDecoder({ data: await result.blob.arrayBuffer(), type: 'image/gif' })
+    try {
+      await decoder.tracks.ready
+      expect(decoder.tracks.selectedTrack?.frameCount).toBe(15)
+      expect(decoder.tracks.selectedTrack?.repetitionCount).toBe(Infinity)
+      const { image } = await decoder.decode({ frameIndex: 7 })
+      expect([image.displayWidth, image.displayHeight]).toEqual([320, 240])
+      image.close()
+    } finally {
+      decoder.close()
+    }
+  })
+
+  it('menor que o vídeo, com os quadrantes no lugar', SLOW, async () => {
+    // "detalhado.mp4": 976 × 736; 320 pelo lado maior dá 320 × 241.
+    const result = await client.run(gifJob(await fixtureBlob(detalhadoUrl), { start: 0, end: 1, width: 320, height: 241 }))
+    const gif = decodeGif(new Uint8Array(await result.blob.arrayBuffer()))
+    expect([gif.width, gif.height]).toEqual([320, 241])
+    expect(colorAt(gif, 5, 80, 60)).toBe('red')
+    expect(colorAt(gif, 5, 240, 60)).toBe('green')
+    expect(colorAt(gif, 5, 80, 180)).toBe('blue')
+    expect(colorAt(gif, 5, 240, 180)).toBe('yellow')
+  })
+
+  it('vídeo gravado em pé: o GIF sai em pé', SLOW, async () => {
+    const result = await client.run(gifJob(await fixtureBlob(giradoUrl), { start: 0, end: 0.5, width: 240, height: 320 }))
+    const gif = decodeGif(new Uint8Array(await result.blob.arrayBuffer()))
+    expect([gif.width, gif.height]).toEqual([240, 320])
+    expect(colorAt(gif, 0, 120, 20)).toBe('red')
+    expect(colorAt(gif, 0, 120, 300)).toBe('blue')
+  })
+
+  it('trecho acima de 15 s, fluidez desconhecida ou medidas maiores que o vídeo são recusados', async () => {
+    const file = await fixtureBlob(longoUrl) // 30 s
+    for (const overrides of [{ start: 0, end: 20 }, { fps: 12 }, { width: 800, height: 450 }, { start: 3, end: 2 }]) {
+      const malformed = gifJob(file, overrides as Partial<GifJob>)
+      await expect(client.run(malformed)).rejects.toEqual(new VideoJobError('unexpected'))
+    }
   })
 })
 

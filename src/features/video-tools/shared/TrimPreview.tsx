@@ -15,6 +15,8 @@ interface TrimPreviewProps {
   /** O que os botões marcam, para a frase de ajuda: "o trecho", "a parte 2". */
   target: string
   onMark: (field: TrimField, time: number) => void
+  /** Legenda da linha do tempo (o padrão fala do vídeo que fica). */
+  timelineLegend?: string
   disabled?: boolean
 }
 
@@ -28,7 +30,7 @@ interface Playback {
  * Player do vídeo com os controles do navegador (teclado incluído), a linha do tempo do que fica e os
  * atalhos para marcar o início e o fim no ponto em que ele está. Os campos de tempo são a alternativa.
  */
-export function TrimPreview({ src, name, duration, kept, target, onMark, disabled = false }: TrimPreviewProps) {
+export function TrimPreview({ src, name, duration, kept, target, onMark, timelineLegend, disabled = false }: TrimPreviewProps) {
   const video = useRef<HTMLVideoElement>(null)
   const playback = useRef<Playback | null>(null)
   const frame = useRef(0)
@@ -91,7 +93,7 @@ export function TrimPreview({ src, name, duration, kept, target, onMark, disable
         onError={() => setUnplayable(true)}
         className="max-h-[50dvh] w-full rounded-lg border border-border bg-bg"
       />
-      <TrimTimeline duration={duration} kept={kept} time={time} />
+      <TrimTimeline duration={duration} kept={kept} time={time} legend={timelineLegend} />
       {unplayable ? (
         <p className="text-sm text-fg-muted">
           Este navegador não consegue mostrar este vídeo, mas você ainda pode cortá-lo digitando os tempos.

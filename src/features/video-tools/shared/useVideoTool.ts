@@ -14,18 +14,23 @@ export interface VideoToolLabels {
   done: string
   /** Anúncio ao cancelar: "Corte cancelado.", "Compressão cancelada.". */
   cancelled: string
-  /** O que a ferramenta entrega; o padrão é um vídeo. Com `audio`: "Áudio extraído", "Baixar áudio" e player de som. */
-  output?: 'video' | 'audio'
+  /**
+   * O que a ferramenta entrega; o padrão é um vídeo. Com `audio`: "Áudio extraído", "Baixar áudio" e player
+   * de som; com `gif`: "GIF criado", "Baixar GIF" e o GIF animado, com botão de pausar.
+   */
+  output?: 'video' | 'audio' | 'gif'
   /** Botão para recomeçar com outro vídeo; o padrão é "{action} outro vídeo". */
   again?: string
 }
 
-/** Textos que dependem do que a ferramenta entrega (vídeo ou som). */
-export function outputTexts({ output = 'video' }: VideoToolLabels) {
-  return output === 'audio'
-    ? { noun: 'Áudio', object: 'o áudio', download: 'Baixar áudio', view: 'Ouvir como ficou' }
-    : { noun: 'Vídeo', object: 'o vídeo', download: 'Baixar vídeo', view: 'Ver como ficou' }
-}
+const OUTPUT_TEXTS = {
+  video: { noun: 'Vídeo', object: 'o vídeo', download: 'Baixar vídeo', view: 'Ver como ficou' },
+  audio: { noun: 'Áudio', object: 'o áudio', download: 'Baixar áudio', view: 'Ouvir como ficou' },
+  gif: { noun: 'GIF', object: 'o GIF', download: 'Baixar GIF', view: 'Ver como ficou' },
+} as const
+
+/** Textos que dependem do que a ferramenta entrega (vídeo, som ou GIF). */
+export const outputTexts = ({ output = 'video' }: VideoToolLabels) => OUTPUT_TEXTS[output]
 
 export type VideoPhase = 'empty' | 'opening' | 'rejected' | 'ready' | 'processing' | 'done' | 'failed'
 

@@ -3,7 +3,7 @@ import { formatTime } from '../../../core/video/time'
 import { VideoToolPage } from '../shared/VideoToolPage'
 import { TRIM_LABELS } from './settings'
 import { TrimOptions } from './TrimOptions'
-import { TrimPreview } from './TrimPreview'
+import { TrimPreview } from '../shared/TrimPreview'
 import { useTrimTool } from './useTrimTool'
 
 export function TrimPage() {

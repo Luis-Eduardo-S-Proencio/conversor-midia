@@ -41,7 +41,7 @@ export function AboutPage() {
               Imagens: abre JPG, PNG e WEBP e gera JPG, PNG, WEBP, BMP, TIFF, ICO e PDF. Vídeos: abre MP4, MOV e WEBM para
               cortar trechos, tirar partes do meio, recortar o quadro, comprimir e diminuir a resolução, com o resultado no
               mesmo formato, ou para converter de um desses formatos para outro; o som do vídeo pode ser salvo sozinho em
-              M4A, MP3 ou WEBM. A ferramenta de criar GIF está a caminho.
+              M4A, MP3 ou WEBM, e um trecho de até 15 segundos pode virar GIF animado.
             </p>
           </TextSection>
           <TextSection id="creditos" title="Créditos e licenças">

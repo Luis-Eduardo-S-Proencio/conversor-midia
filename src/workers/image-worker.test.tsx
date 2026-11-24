@@ -347,7 +347,7 @@ describe('Recortar (Chromium real)', () => {
 
 describe('Formatos escritos pelo app (Chromium real)', () => {
   const bytesOf = async (blob: Blob) => new Uint8Array(await blob.arrayBuffer())
-  const convertQuadrants = async (target: 'bmp' | 'tiff' | 'ico' | 'pdf', background = '#ffffff') =>
+  const convertQuadrants = async (target: 'png' | 'bmp' | 'tiff' | 'ico' | 'pdf', background = '#ffffff') =>
     client.run({ kind: 'convert', file: await makeImage(64, 64, quadrants), target, quality: 0.92, background })
 
   it('PNG → BMP: o navegador lê; a transparência vira o fundo escolhido', async () => {
@@ -398,6 +398,50 @@ describe('Formatos escritos pelo app (Chromium real)', () => {
     const output = await inspect(new Blob([icon48?.data.slice() ?? new Uint8Array()]))
     expect(output.pixel(24, 4)[3]).toBe(0) // margem de cima
     expectColor(output.pixel(24, 24), [0, 0, 255])
+  })
+
+  /** Tipo de cor gravado no IHDR do PNG: 2 (RGB), 3 (paleta), 6 (RGBA). */
+  const pngColorType = async (blob: Blob) => (await bytesOf(blob))[25]
+
+  it('PNG próprio: poucas cores viram paleta, com cada pixel e a transparência exatos', async () => {
+    const result = await convertQuadrants('png')
+    expect(result.blob.type).toBe('image/png')
+    expect(await pngColorType(result.blob)).toBe(3)
+    const output = await inspect(result.blob)
+    expect(output.pixel(16, 16)).toEqual([255, 0, 0, 255])
+    expect(output.pixel(48, 16)).toEqual([0, 255, 0, 255])
+    expect(output.pixel(16, 48)).toEqual([0, 0, 255, 255])
+    expect(output.pixel(48, 48)).toEqual([0, 0, 0, 0])
+  })
+
+  it('PNG próprio: foto opaca sai em RGB, bem menor que o PNG do navegador, com os pixels exatos', async () => {
+    let seed = 3
+    const photo = new OffscreenCanvas(200, 150)
+    const context = photo.getContext('2d') as OffscreenCanvasRenderingContext2D
+    const data = context.createImageData(200, 150)
+    for (let index = 0; index < data.data.length; index += 4) {
+      seed = (seed * 16807) % 2147483647
+      const x = (index / 4) % 200
+      data.data.set([x, 255 - x, seed % 64, 255], index)
+    }
+    context.putImageData(data, 0, 0)
+    const browserPng = await photo.convertToBlob({ type: 'image/png' })
+    const result = await client.run({ kind: 'convert', file: browserPng, target: 'png', quality: 0.92, background: '#ffffff' })
+    expect(await pngColorType(result.blob)).toBe(2)
+    expect(result.blob.size).toBeLessThan(browserPng.size * 0.85)
+    const output = await inspect(result.blob)
+    for (const [x, y] of [
+      [0, 0],
+      [123, 45],
+      [199, 149],
+    ] as const) {
+      expect(output.pixel(x, y)).toEqual(Array.from(data.data.subarray((y * 200 + x) * 4, (y * 200 + x) * 4 + 4)))
+    }
+  })
+
+  it('PNG próprio dentro do ICO: sempre RGBA (o que o Windows garante ler)', async () => {
+    const entries = readIco(await bytesOf((await convertQuadrants('ico')).blob))
+    for (const entry of entries) expect(entry.data[25]).toBe(6)
   })
 
   it('PNG → PDF: página do tamanho da imagem, com o JPEG legível dentro e o fundo aplicado', async () => {

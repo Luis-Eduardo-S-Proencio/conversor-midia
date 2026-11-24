@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AUDIO_FORMATS, audioChoices, audioOutputName, copyableAudioFormat, defaultAudioFormat, type AudioCapabilities } from './audio'
+import { AUDIO_FORMATS, audioChoices, audioOutputName, copyableAudioFormat, defaultAudioFormat, reencodedAudioBitrate, type AudioCapabilities } from './audio'
 
 const capable = { canDecodeAudio: true, canEncodeAac: true, canEncodeMp3: true }
 const caps = (audioCodec: string | null, overrides: Partial<AudioCapabilities> = {}): AudioCapabilities => ({ audioCodec, ...capable, ...overrides })
@@ -94,5 +94,19 @@ describe('AUDIO_FORMATS', () => {
     expect(AUDIO_FORMATS.m4a).toMatchObject({ label: 'M4A', mimeType: 'audio/mp4', extension: 'm4a' })
     expect(AUDIO_FORMATS.webm).toMatchObject({ label: 'WEBM', mimeType: 'audio/webm', extension: 'webm' })
     expect(AUDIO_FORMATS.mp3).toMatchObject({ label: 'MP3', mimeType: 'audio/mpeg', extension: 'mp3' })
+  })
+})
+
+describe('reencodedAudioBitrate', () => {
+  it('a menor taxa aceita pelo AAC do Windows (96, 128, 160 ou 192) que alcança a do original: o arquivo não cresce à toa', () => {
+    expect(reencodedAudioBitrate(96_400)).toBe(96_000)
+    expect(reencodedAudioBitrate(128_000)).toBe(128_000)
+    expect(reencodedAudioBitrate(140_000)).toBe(160_000)
+  })
+
+  it('som sem compressão (PCM) sai a 192; som muito comprimido não cai abaixo de 96', () => {
+    expect(reencodedAudioBitrate(1_536_000)).toBe(192_000)
+    expect(reencodedAudioBitrate(32_000)).toBe(96_000)
+    expect(reencodedAudioBitrate(null)).toBe(192_000)
   })
 })

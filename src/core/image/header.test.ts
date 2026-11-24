@@ -74,6 +74,15 @@ describe('readImageHeader: JPEG', () => {
     expect(readImageHeader(bytes, 'jpeg', bytes.length)).toEqual(ok(800, 600))
   })
 
+  it('estima a qualidade pela tabela de quantização do brilho (DQT), quando ela vem antes do SOF', () => {
+    // Tabela toda em 8: soma 512, cerca de 14% da padrão (qualidade 50), o que dá qualidade 93.
+    const bytes = jpegBytes({ width: 800, height: 600, segments: [jpegSegment(0xdb, [0, ...new Array<number>(64).fill(8)])] })
+    expect(readImageHeader(bytes, 'jpeg', bytes.length)).toEqual({ status: 'ok', header: { ...ok(800, 600).header, jpegQuality: 93 } })
+    // DQT maior que o trecho lido: pede o resto.
+    const result = readImageHeader(bytes.subarray(0, 10), 'jpeg', bytes.length)
+    expect(result).toEqual({ status: 'need-more', bytes: expect.any(Number) })
+  })
+
   it('aplica a orientação EXIF: de 5 a 8 trocam largura e altura', () => {
     for (const [orientation, expected] of [
       [1, ok(4000, 3000)],

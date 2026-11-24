@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   convertOutputName,
   convertPlan,
-  convertedAudioBitrate,
   convertTargets,
   convertedVideoBitrate,
   defaultTarget,
@@ -175,20 +174,6 @@ describe('convertedVideoBitrate', () => {
   it('codec desconhecido conta como H.264; nunca abaixo do mínimo', () => {
     expect(convertedVideoBitrate({ ...tenSeconds, codec: 'prores', originalBytes: bytesFor(2_000_000) }, 'mp4')).toBe(2_000_000)
     expect(convertedVideoBitrate({ ...tenSeconds, codec: 'avc', originalBytes: bytesFor(0) }, 'mp4')).toBe(100_000)
-  })
-})
-
-describe('convertedAudioBitrate', () => {
-  it('a menor taxa aceita pelo AAC do Windows (96, 128, 160 ou 192) que alcança a do original: o arquivo não cresce à toa', () => {
-    expect(convertedAudioBitrate(96_400)).toBe(96_000)
-    expect(convertedAudioBitrate(128_000)).toBe(128_000)
-    expect(convertedAudioBitrate(140_000)).toBe(160_000)
-  })
-
-  it('som sem compressão (PCM) sai a 192; som muito comprimido não cai abaixo de 96', () => {
-    expect(convertedAudioBitrate(1_536_000)).toBe(192_000)
-    expect(convertedAudioBitrate(32_000)).toBe(96_000)
-    expect(convertedAudioBitrate(null)).toBe(192_000)
   })
 })
 

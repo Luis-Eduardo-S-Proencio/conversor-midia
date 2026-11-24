@@ -4,6 +4,7 @@ import comSomUrl from '../../tests/fixtures/videos/com-som.mov?url'
 import cortadoUrl from '../../tests/fixtures/videos/cortado.mp4?url'
 import detalhadoUrl from '../../tests/fixtures/videos/detalhado.mp4?url'
 import giradoUrl from '../../tests/fixtures/videos/girado.mp4?url'
+import jaComprimidoUrl from '../../tests/fixtures/videos/ja-comprimido.mp4?url'
 import longoUrl from '../../tests/fixtures/videos/longo.mp4?url'
 import quadrantesUrl from '../../tests/fixtures/videos/quadrantes.mov?url'
 import quadrantesWebmUrl from '../../tests/fixtures/videos/quadrantes.webm?url'
@@ -368,6 +369,38 @@ describe('Worker de vídeo: recortar', () => {
     expect(reported).toBe(true)
     const { info } = await client.run({ kind: 'inspect', file: await fixtureBlob(segundosMp4Url) })
     expect(info.format).toBe('mp4')
+  })
+})
+
+// Refeito sem taxa pedida (corte exato, remover partes, recortar): qualidade alta, mas nunca acima da do
+// original. "ja-comprimido.mp4" (640 × 360, 1 s, com textura) já está numa taxa baixa, como um vídeo do WhatsApp:
+// sem o limite, o navegador o refazia em qualidade constante alta e um pedaço saía maior que o vídeo inteiro.
+describe('Worker de vídeo: vídeo refeito não fica mais pesado que o original', () => {
+  it('cortar no meio de um grupo de quadros (refeito): o trecho sai menor que o vídeo inteiro', SLOW, async () => {
+    const file = await fixtureBlob(jaComprimidoUrl)
+    const result = await client.run({ kind: 'trim', file, start: 0.3, end: 1, mode: 'exact' })
+    expect(result.copied).toBe(false)
+    expect(result.blob.size).toBeLessThan(file.size)
+  })
+
+  it('remover partes: o que sobra sai menor que o vídeo inteiro', SLOW, async () => {
+    const file = await fixtureBlob(jaComprimidoUrl)
+    const result = await client.run({ kind: 'join', file, ranges: [{ start: 0, end: 0.4 }, { start: 0.6, end: 1 }] })
+    expect(result.blob.size).toBeLessThan(file.size)
+  })
+
+  it('recortar metade do quadro: sai bem menor que o original', SLOW, async () => {
+    const file = await fixtureBlob(jaComprimidoUrl)
+    const result = await client.run({ kind: 'crop', file, crop: { x: 0, y: 0, width: 320, height: 360 } })
+    expect(result.blob.size).toBeLessThan(file.size * 0.8)
+  })
+
+  it('remover partes: o som é refeito perto da taxa do original, não a 192 kbit/s', SLOW, async () => {
+    if (!(await canEncodeAac())) return
+    // Som de 96 kbit/s; ficam 3 s: cerca de 36 KB (a 192 kbit/s seriam 72 KB).
+    const result = await client.run({ kind: 'join', file: await fixtureBlob(segundosMp4Url), ranges: [{ start: 0, end: 1.5 }, { start: 2.5, end: 4 }] })
+    const bytes = (await audioPackets(result.blob)).reduce((total, packet) => total + packet.byteLength, 0)
+    expect(bytes).toBeLessThan(50_000)
   })
 })
 

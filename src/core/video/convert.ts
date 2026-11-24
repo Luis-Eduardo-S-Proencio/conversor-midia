@@ -2,10 +2,9 @@
  * Converter vídeo: para que formatos o vídeo pode ir, o que é copiado e o que é refeito, a taxa do vídeo
  * refeito e o nome do arquivo. Funções puras: sem React nem DOM.
  */
-import { REENCODED_AUDIO_BITRATE } from './audio'
 import type { VideoFormat } from './formats'
 import { videoOutputName } from './output-name'
-import { FORMAT_EFFICIENCY, HIGH_QUALITY_FACTOR, originalVideoBitrate, roundBitrate, videoBitrateFor, type OriginalVideo } from './sizing'
+import { cappedVideoBitrate, type OriginalVideo } from './sizing'
 
 const ALL_FORMATS: readonly VideoFormat[] = ['mp4', 'mov', 'webm']
 
@@ -102,40 +101,11 @@ export function targetChoices(source: ConvertSource): TargetChoice[] {
 export const defaultTarget = (choices: readonly TargetChoice[]): VideoFormat | undefined => choices.find((choice) => choice.available)?.target
 
 /**
- * Taxa de bits para a mesma qualidade, em relação ao H.264. HEVC e VP9 precisam de cerca de 60%; AV1, de
- * cerca de metade. Codec desconhecido conta como H.264.
- */
-const CODEC_EFFICIENCY: Partial<Record<string, number>> = { avc: 1, hevc: 0.6, vp9: 0.6, av1: 0.5 }
-
-/**
  * Taxa do vídeo refeito: qualidade alta nas mesmas medidas, mas nunca acima do que o original tem,
- * convertido para a eficiência do codec novo (o H.264 precisa de mais taxa que o HEVC do iPhone para a
- * mesma imagem; o VP9, de menos). Sem esse limite, um vídeo bem comprimido sairia maior à toa.
+ * convertido para a eficiência do codec novo. Sem esse limite, um vídeo bem comprimido sairia maior à toa.
  */
-export function convertedVideoBitrate(source: OriginalVideo & { codec: string }, target: VideoFormat): number {
-  const high = videoBitrateFor(source.original, HIGH_QUALITY_FACTOR, target)
-  const ceiling = (originalVideoBitrate(source) * FORMAT_EFFICIENCY[target]) / (CODEC_EFFICIENCY[source.codec] ?? 1)
-  return roundBitrate(Math.min(high, ceiling))
-}
-
-/**
- * Taxas do som refeito, em ordem. O codificador de AAC do Windows só aceita estas; abaixo de 96 kbit/s o som
- * perde qualidade de forma perceptível.
- */
-const AUDIO_BITRATE_STEPS = [96_000, 128_000, 160_000, REENCODED_AUDIO_BITRATE]
-
-/** Margem para a taxa medida do original (ex.: 96,4 kbit/s conta como 96). */
-const AUDIO_BITRATE_TOLERANCE = 0.95
-
-/**
- * Taxa do som refeito: a menor da lista que alcança a do original, até 192 kbit/s. Assim um som já comprimido
- * (ex.: AAC a 96 kbit/s) não dobra de tamanho, e um sem compressão (PCM de câmera) sai a 192. Sem a taxa do
- * original, 192.
- */
-export function convertedAudioBitrate(originalAudioBitrate: number | null): number {
-  if (originalAudioBitrate === null) return REENCODED_AUDIO_BITRATE
-  return AUDIO_BITRATE_STEPS.find((step) => step >= originalAudioBitrate * AUDIO_BITRATE_TOLERANCE) ?? REENCODED_AUDIO_BITRATE
-}
+export const convertedVideoBitrate = (source: OriginalVideo & { codec: string }, target: VideoFormat): number =>
+  cappedVideoBitrate(source, source.original, target)
 
 /** O mesmo nome, com a extensão nova: "praia.MOV" → "praia.mp4". Sempre exibido como texto, nunca como HTML. */
 export const convertOutputName = (inputName: string, target: VideoFormat) => videoOutputName(inputName, target, '')

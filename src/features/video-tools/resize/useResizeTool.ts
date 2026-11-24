@@ -38,7 +38,7 @@ export function useResizeTool() {
     if (!info || !file || !resolution) return undefined
     const size = resizedSize(info, resolution)
     const bitrate = resizedVideoBitrate(
-      { original: info, originalBytes: file.size, duration: info.duration, audioBitrate: info.audioBitrate },
+      { original: info, originalBytes: file.size, duration: info.duration, audioBitrate: info.audioBitrate, codec: info.codec },
       size,
       info.format,
     )

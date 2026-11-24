@@ -25,6 +25,8 @@ export interface InspectedImage {
   height: number
   hasAlpha: boolean
   animated: boolean
+  /** Qualidade estimada do JPG (1 a 100); ausente nos outros formatos ou sem tabela de quantização. */
+  jpegQuality?: number
 }
 
 export type Inspection = { ok: true; image: InspectedImage } | { ok: false; reason: RejectionReason }
@@ -57,12 +59,12 @@ export async function inspectImageFile(file: Blob, limits: ImageLimits = IMAGE_L
     if (result.status === 'invalid') return reject({ code: 'corrupt' })
 
     if (result.status === 'ok') {
-      const { width, height, hasAlpha, animated } = result.header
+      const { width, height, hasAlpha, animated, jpegQuality } = result.header
       const pixels = width * height
       if (pixels > limits.maxPixels) {
         return reject({ code: 'too-many-pixels', megapixels: pixels / 1_000_000, maxMegapixels: limits.maxPixels / 1_000_000 })
       }
-      return { ok: true, image: { format: detected.format, width, height, hasAlpha, animated } }
+      return { ok: true, image: { format: detected.format, width, height, hasAlpha, animated, ...(jpegQuality !== undefined && { jpegQuality }) } }
     }
 
     if (result.bytes > limits.maxHeaderBytes || length >= file.size) return reject({ code: 'corrupt' })

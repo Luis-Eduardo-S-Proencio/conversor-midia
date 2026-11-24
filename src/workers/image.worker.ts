@@ -7,6 +7,7 @@ import { encodeBmp } from '../core/image/encode/bmp'
 import { icoHeader, icoSizes } from '../core/image/encode/ico'
 import { pdfParts } from '../core/image/encode/pdf'
 import type { PixelSource } from '../core/image/encode/pixels'
+import { PNG_END, planPng, pngChunk, pngHeader, pngScanlines, type PngOptions } from '../core/image/encode/png'
 import { encodeTiff } from '../core/image/encode/tiff'
 import { OUTPUT_FORMAT_INFO, type OutputFormat } from '../core/image/formats'
 import type { ProcessingErrorCode } from '../core/image/messages'
@@ -194,19 +195,59 @@ function blobFromParts(parts: Iterable<Uint8Array<ArrayBuffer>>, type: string): 
   return new Blob(blobs, { type })
 }
 
+/**
+ * PNG próprio (`core/image/encode/png`), bem mais leve que o do navegador e sem perdas: tipo de cor pelo
+ * conteúdo e filtro por linha, comprimido pelo `CompressionStream` do navegador. Sem ele (navegador antigo),
+ * fica o PNG do próprio navegador.
+ */
+async function encodePng(surface: Surface, options: PngOptions = {}): Promise<Blob> {
+  if (typeof CompressionStream === 'undefined') return encode(surface.canvas, 'image/png')
+  try {
+    const source = pixelSource(surface)
+    const plan = planPng(source, options)
+    const deflate = new CompressionStream('deflate') // formato zlib, o que o PNG pede
+    const writer = deflate.writable.getWriter()
+    const blocks: Blob[] = []
+    const collecting = (async () => {
+      const reader = deflate.readable.getReader()
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) return
+        // Cada pedaço comprimido vira um bloco IDAT: a imagem nunca fica inteira na memória.
+        blocks.push(new Blob([pngChunk('IDAT', value)]))
+      }
+    })()
+    const writing = (async () => {
+      try {
+        for (const scanlines of pngScanlines(source, plan)) await writer.write(scanlines)
+        await writer.close()
+      } catch (error) {
+        await writer.abort(error) // encerra a compressão: a leitura acima também termina com erro
+        throw error
+      }
+    })()
+    await Promise.all([writing, collecting])
+    return new Blob([pngHeader(source.width, source.height, plan), ...blocks, PNG_END], { type: 'image/png' })
+  } catch (error) {
+    if (import.meta.env.DEV) console.error(error) // detalhe técnico só em desenvolvimento
+    throw new JobError('encode-failed')
+  }
+}
+
 /** ICO com os tamanhos padrão; imagens não quadradas ficam centralizadas, com margens transparentes. */
 async function encodeIco(source: OffscreenCanvas): Promise<Blob> {
   const images: Array<{ size: number; png: Blob }> = []
   for (const size of icoSizes(source.width, source.height)) {
-    const { canvas, context } = createSurface(size, size)
+    const surface = createSurface(size, size, true)
     try {
       const scale = Math.min(size / source.width, size / source.height)
       const width = Math.max(1, Math.round(source.width * scale))
       const height = Math.max(1, Math.round(source.height * scale))
-      drawResized(source, context, { x: Math.floor((size - width) / 2), y: Math.floor((size - height) / 2), width, height })
-      images.push({ size, png: await encode(canvas, 'image/png') })
+      drawResized(source, surface.context, { x: Math.floor((size - width) / 2), y: Math.floor((size - height) / 2), width, height })
+      // O Windows só garante o PNG de 32 bits (RGBA) dentro do ICO.
+      images.push({ size, png: await encodePng(surface, { forceRgba: true }) })
     } finally {
-      release(canvas)
+      release(surface.canvas)
     }
   }
   const header = icoHeader(images.map(({ size, png }) => ({ size, byteLength: png.size })))
@@ -224,6 +265,7 @@ async function encodeAs(job: ConvertJob, surface: Surface): Promise<Blob> {
   const { target } = job
   const format = OUTPUT_FORMAT_INFO[target]
   if (isPixelFormat(target)) return blobFromParts(PIXEL_ENCODERS[target](pixelSource(surface)), format.mimeType)
+  if (target === 'png') return encodePng(surface)
   if (target === 'ico') return encodeIco(surface.canvas)
   if (target === 'pdf') return encodePdf(surface.canvas, job.quality)
   return encode(surface.canvas, format.mimeType, format.lossy ? job.quality : undefined)
@@ -260,7 +302,8 @@ async function convert(job: ConvertJob): Promise<ConvertOutput> {
   let surface: Surface | undefined
   try {
     const { width, height } = outputDimensions(job, bitmap)
-    surface = createSurface(width, height, isPixelFormat(job.target))
+    // Os formatos que o app escreve leem os pixels de volta (PNG duas vezes): o navegador guarda o canvas na CPU.
+    surface = createSurface(width, height, isPixelFormat(job.target) || job.target === 'png')
     if (!format.supportsAlpha) {
       // Formato sem transparência: o fundo escolhido aparece onde a imagem era transparente.
       surface.context.fillStyle = job.background

@@ -23,6 +23,25 @@ export const AUDIO_FORMATS: Record<AudioFormat, AudioFormatInfo> = {
 export const REENCODED_AUDIO_BITRATE = 192_000
 
 /**
+ * Taxas do som refeito dentro do vídeo, em ordem. O codificador de AAC do Windows só aceita estas; abaixo de
+ * 96 kbit/s o som perde qualidade de forma perceptível.
+ */
+const AUDIO_BITRATE_STEPS = [96_000, 128_000, 160_000, REENCODED_AUDIO_BITRATE]
+
+/** Margem para a taxa medida do original (ex.: 96,4 kbit/s conta como 96). */
+const AUDIO_BITRATE_TOLERANCE = 0.95
+
+/**
+ * Taxa do som refeito dentro do vídeo (converter, remover partes): a menor da lista que alcança a do original,
+ * até 192 kbit/s. Assim um som já comprimido (ex.: AAC a 96 kbit/s) não dobra de tamanho, e um sem compressão
+ * (PCM de câmera) sai a 192. Sem a taxa do original, 192.
+ */
+export function reencodedAudioBitrate(originalAudioBitrate: number | null): number {
+  if (originalAudioBitrate === null) return REENCODED_AUDIO_BITRATE
+  return AUDIO_BITRATE_STEPS.find((step) => step >= originalAudioBitrate * AUDIO_BITRATE_TOLERANCE) ?? REENCODED_AUDIO_BITRATE
+}
+
+/**
  * Formato em que o som pode ser copiado sem refazer, ou `null`. AAC (o som dos celulares) vai para M4A;
  * Opus e Vorbis, para WEBM, que o Safari toca desde a versão 17.4 (o Ogg, só bem depois).
  * Outros sons (PCM, MP3 ou AC-3 dentro do vídeo) são raros em celular e saem refeitos.

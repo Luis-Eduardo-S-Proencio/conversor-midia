@@ -36,10 +36,11 @@ import {
 } from 'mediabunny'
 import { isCropWithin, type CropRect } from '../core/image/crop'
 import type { Dimensions } from '../core/image/resize'
-import { AUDIO_FORMATS, REENCODED_AUDIO_BITRATE, copyableAudioFormat, type AudioFormat } from '../core/video/audio'
+import { AUDIO_FORMATS, REENCODED_AUDIO_BITRATE, copyableAudioFormat, reencodedAudioBitrate, type AudioFormat } from '../core/video/audio'
 import { VIDEO_MODES, convertActions } from '../core/video/convert'
 import { MIN_VIDEO_CROP_SIDE, encodableCrop, encodableSize } from '../core/video/crop'
 import { VIDEO_FORMATS, type VideoFormat } from '../core/video/formats'
+import { cappedVideoBitrate } from '../core/video/sizing'
 import type { VideoErrorCode } from '../core/video/messages'
 import { joinSegments, keptPieces, segmentAt, type JoinSegment } from '../core/video/remove'
 import { TIME_TOLERANCE, type TrimRange } from '../core/video/trim'
@@ -121,6 +122,8 @@ interface OpenedVideo {
   video: InputVideoTrack
   audio: InputAudioTrack | null
   extraTracks: boolean
+  /** Tamanho do arquivo, em bytes: com a duração, dá a taxa do original. */
+  bytes: number
 }
 
 function formatOf(format: InputFormat): VideoFormat {
@@ -168,7 +171,7 @@ async function openVideo(file: Blob): Promise<OpenedVideo> {
     const audio = await input.getPrimaryAudioTrack({ filter: async (track) => (await track.getCodec()) !== null })
     // Áudio que não dá para ler nem copiar: melhor recusar do que entregar o vídeo mudo sem avisar.
     if (audioTracks.length > 0 && !audio) throw new JobError('codec-unsupported')
-    return { input, format, video, audio, extraTracks: videoTracks.length > 1 || audioTracks.length > 1 }
+    return { input, format, video, audio, extraTracks: videoTracks.length > 1 || audioTracks.length > 1, bytes: file.size }
   } catch (error) {
     input.dispose()
     throw toJobError(error, 'read-failed')
@@ -275,10 +278,27 @@ interface TranscodeRequest {
   area?: CropRect
   /** Novas medidas (pares) do quadro inteiro, ao comprimir. */
   size?: Dimensions
-  /** Taxa do vídeo em bits por segundo; sem ela, qualidade alta. */
+  /** Taxa do vídeo em bits por segundo; sem ela, qualidade alta, limitada à do original (`qualityBitrate`). */
   bitrate?: number
   /** Formato do arquivo gerado, ao converter; sem ele, o do original. */
   target?: VideoFormat
+}
+
+/**
+ * Taxa do vídeo refeito quando a ferramenta não pede uma (corte exato, remover partes, recortar): qualidade
+ * alta para o quadro final, mas nunca acima do que o original tem. Sem isso, o navegador refaria um vídeo
+ * já comprimido (ex.: do WhatsApp) com qualidade constante alta, e um trecho sairia maior que o vídeo inteiro.
+ */
+async function qualityBitrate(opened: OpenedVideo, target: Dimensions, format: VideoFormat): Promise<number> {
+  const { input, video, audio, bytes } = opened
+  const source = {
+    original: await displaySize(video),
+    originalBytes: bytes,
+    duration: await input.computeDuration(selectedTracks(opened)),
+    audioBitrate: audio ? await audioBitrate(audio) : null,
+    codec: (await video.getCodec()) ?? undefined,
+  }
+  return cappedVideoBitrate(source, target, format)
 }
 
 /**
@@ -292,7 +312,7 @@ async function transcodeOptions(opened: OpenedVideo, { area, size, bitrate, targ
   const crop = size ? undefined : (area ?? (even.width === full.width && even.height === full.height ? undefined : { x: 0, y: 0, ...even }))
   const target = size ?? crop ?? full
   if (!(await video.canDecode())) throw new JobError('decode-unsupported')
-  const quality = bitrate ? new Quality({ bitrate }) : QUALITY
+  const quality = new Quality({ bitrate: bitrate ?? (await qualityBitrate(opened, target, format)) })
   const codec = await getFirstEncodableVideoCodec(TRANSCODE_CODECS[format], { width: target.width, height: target.height, quality })
   if (!codec) throw new JobError('encode-unsupported')
   return {
@@ -503,8 +523,11 @@ async function join(job: JoinJob, onProgress: ProgressReporter): Promise<JoinOut
       ...(await reading(transcodeOptions(opened))),
       process: (sample) => joinVideoSample(segments, sample),
     }
+    // Som refeito perto da taxa do original, para o arquivo não crescer à toa.
+    const audioRate = opened.audio ? await reading(audioBitrate(opened.audio)) : null
     const audio: ConversionAudioOptions = {
       ...(opened.format !== 'webm' && { codec: 'aac' as const }),
+      quality: new Quality({ bitrate: reencodedAudioBitrate(audioRate) }),
       process: (sample) => joinAudioSample(segments, sample),
     }
     const blob = await convert(opened, { trim: { start: first.start, end: last.end }, video, audio }, onProgress)

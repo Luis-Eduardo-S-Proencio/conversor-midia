@@ -42,6 +42,12 @@ describe('rotateFile', () => {
     expect(output.note).toBe('Girada 90° para a direita') // aparece na lista, junto do arquivo
   })
 
+  it('JPG gravado com qualidade menor (ex.: do WhatsApp): regrava com a qualidade dele, para não ficar mais pesado', async () => {
+    const { client, jobs } = fakeClient()
+    await rotateFile({ file: file('zap.jpg'), image: { ...image('jpeg'), jpegQuality: 75 }, orientation: right, canEncodeWebp: true, client, signal })
+    expect(jobs[0]?.quality).toBe(0.75)
+  })
+
   it('PNG continua PNG, com a transparência', async () => {
     const { client, jobs } = fakeClient()
     const output = await rotateFile({ file: file('logo.png'), image: image('png', true), orientation: mirrored, canEncodeWebp: true, client, signal })

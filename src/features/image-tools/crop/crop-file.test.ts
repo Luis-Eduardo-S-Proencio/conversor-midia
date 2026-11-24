@@ -42,6 +42,12 @@ describe('cropFile', () => {
     expect(output.note).toBe('Recortada para 200 × 100') // aparece na lista, junto das medidas originais
   })
 
+  it('JPG gravado com qualidade menor: recorta com a qualidade dele, para não ficar mais pesado', async () => {
+    const { client, jobs } = fakeClient()
+    await cropFile({ file: file('zap.jpg'), image: { ...image('jpeg'), jpegQuality: 70 }, crop, canEncodeWebp: true, client, signal })
+    expect(jobs[0]?.quality).toBe(0.7)
+  })
+
   it('PNG continua PNG, com a transparência', async () => {
     const { client, jobs } = fakeClient()
     const output = await cropFile({ file: file('logo.png'), image: image('png', true), crop, canEncodeWebp: true, client, signal })

@@ -111,7 +111,8 @@ Confirme se acontecem; não precisam ser tratados como erro.
 - O Safari não gera WEBP. Por isso, no iPhone, a conversão para WEBP fica indisponível, a compressão de PNG sai em JPG e um WEBP redimensionado, girado ou recortado sai em JPG (ou em PNG, se tiver transparência).
 - Um PNG que declara canal de transparência não é comprimido no Safari, mesmo que todos os pixels sejam opacos. O app lê a declaração do arquivo e não confere pixel a pixel. **Avise se isso acontecer com prints de tela comuns** (item 11): dá para melhorar.
 - O limite é de 50 milhões de pixels. Fotos "50 MP" de alguns Android têm 8160 × 6144 (50,1 milhões) e são recusadas com explicação. **Anote se acontecer** (item 9): o limite pode ser revisto.
-- BMP e TIFF não têm compressão: uma foto de 12 MP vira um arquivo de uns 35 MB. É do formato.
+- BMP e TIFF saem sem compressão (o jeito mais compatível): uma foto de 12 MP vira um arquivo de uns 35 MB.
+- PNG de foto grande leva alguns segundos a mais que os outros formatos: o app comprime mais que o navegador (no computador, cerca de 4 s para uma foto de 12 MP, com um arquivo 38% menor). Logotipos e prints saem rápido e bem menores.
 - Converter, comprimir, redimensionar, girar, espelhar e recortar removem metadados, como localização e data. A exceção é quando a original é mantida. Os vídeos cortados e recortados também saem sem metadados.
 - Vídeo recortado ou cortado no modo Exato sai em H.264 (MP4 e MOV) ou VP9 (WEBM), recodificado em alta qualidade: pode ficar maior que o original.
 - O corte rápido guarda escondidos alguns segundos antes do início (até o quadro-chave anterior). A maioria dos players começa no ponto escolhido; alguns aplicativos e editores mostram esses segundos.

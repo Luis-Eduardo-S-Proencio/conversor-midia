@@ -1,9 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
+import { reencodedAudioBitrate } from '../../../core/video/audio'
 import {
   VIDEO_MODES,
   convertOutputName,
   convertPlan,
-  convertedAudioBitrate,
   convertedVideoBitrate,
   defaultTarget,
   defaultVideoMode,
@@ -62,7 +62,7 @@ export function useConvertTool() {
     const source = { original: info, originalBytes: file.size, duration: info.duration, audioBitrate: info.audioBitrate, codec: info.codec }
     return convertedVideoBitrate(source, target)
   }, [info, file, target])
-  const audioBitrate = convertedAudioBitrate(info?.audioBitrate ?? null)
+  const audioBitrate = reencodedAudioBitrate(info?.audioBitrate ?? null)
 
   const changeTarget = useCallback(
     (next: VideoFormat) => {

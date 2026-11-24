@@ -3,7 +3,7 @@
  */
 import type { Dimensions } from '../image/resize'
 import type { VideoFormat } from './formats'
-import { HIGH_QUALITY_FACTOR, fitShortSide, originalVideoBitrate, roundBitrate, videoBitrateFor, type OriginalVideo } from './sizing'
+import { cappedVideoBitrate, fitShortSide, type OriginalVideo } from './sizing'
 
 /** Resolução pelo lado menor do quadro ("720p" = 720 px no lado menor, em pé ou deitado). */
 export type Resolution = 1080 | 720 | 480 | 360
@@ -34,12 +34,8 @@ export const resizedSize = (size: Dimensions, resolution: Resolution): Dimension
  * Taxa do vídeo na resolução nova: qualidade alta, mas nunca acima da taxa do original proporcional à
  * área. Sem esse limite, um vídeo já bem comprimido (ex.: do WhatsApp) sairia maior que o original.
  */
-export function resizedVideoBitrate(source: OriginalVideo, target: Dimensions, format: VideoFormat): number {
-  const high = videoBitrateFor(target, HIGH_QUALITY_FACTOR, format)
-  const { original } = source
-  const areaRatio = (target.width * target.height) / (original.width * original.height)
-  return roundBitrate(Math.min(high, originalVideoBitrate(source) * areaRatio))
-}
+export const resizedVideoBitrate = (source: OriginalVideo & { codec?: string }, target: Dimensions, format: VideoFormat): number =>
+  cappedVideoBitrate(source, target, format)
 
 /** Sufixo do arquivo de saída: "praia.mp4" → "praia-720p.mp4". */
 export const resolutionSuffix = (resolution: Resolution) => `-${resolution}p`

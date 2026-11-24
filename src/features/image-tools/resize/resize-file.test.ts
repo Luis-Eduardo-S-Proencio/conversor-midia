@@ -41,6 +41,13 @@ describe('resizeFile', () => {
     expect(output.note).toBe('Novo tamanho: 2560 × 1440') // aparece na lista, ao lado das medidas originais
   })
 
+  it('JPG gravado com qualidade menor: redimensiona com a qualidade dele, para não ficar mais pesado', async () => {
+    const { client, jobs } = fakeClient()
+    const zap = { ...image('jpeg', 5120, 2880), jpegQuality: 75 }
+    await resizeFile({ file: file('zap.jpg'), image: zap, request: half, canEncodeWebp: true, client, signal })
+    expect(jobs[0]?.quality).toBe(0.75)
+  })
+
   it('PNG continua PNG (com a transparência) e o nome ganha as medidas', async () => {
     const { client, jobs } = fakeClient()
     const output = await resizeFile({

@@ -1,5 +1,6 @@
 import { preservedFormat } from '../../../core/image/formats'
 import type { InspectedImage } from '../../../core/image/inspect'
+import { reencodeQuality } from '../../../core/image/jpeg-quality'
 import { webpFallbackNote } from '../../../core/image/messages'
 import { describeOrientation, type Orientation } from '../../../core/image/orientation'
 import { outputFileName } from '../../../core/image/output-name'
@@ -23,7 +24,8 @@ interface RotateFileInput {
 export async function rotateFile({ file, image, orientation, canEncodeWebp, client, signal }: RotateFileInput): Promise<BatchOutput> {
   const target = preservedFormat(image.format, image.hasAlpha, canEncodeWebp)
   // O fundo só apareceria com transparência indo para JPG, o que preservedFormat evita.
-  const output = await client.run({ kind: 'convert', file, target, quality: ROTATE_QUALITY, background: '#ffffff', orientation }, signal)
+  const quality = reencodeQuality(ROTATE_QUALITY, image, target)
+  const output = await client.run({ kind: 'convert', file, target, quality, background: '#ffffff', orientation }, signal)
   const done = describeOrientation(orientation)
   return {
     blob: output.blob,

@@ -67,7 +67,7 @@ export function ConvertOptions({ settings, onChange, webpSupported, hasTranspare
           max={100}
           onChange={(quality) => onChange({ quality })}
           formatValue={(value) => `${value}%`}
-          hint="Valores menores geram arquivos menores, com mais perda de detalhes."
+          hint="Valores menores geram arquivos menores, com mais perda de detalhes. Fotos JPG nunca saem com qualidade maior que a original: ficariam só mais pesadas."
           disabled={disabled}
         />
       )}

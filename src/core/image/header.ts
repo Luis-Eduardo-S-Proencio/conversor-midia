@@ -1,5 +1,6 @@
 import { readAscii, readU16BE, readU16LE, readU24LE, readU32BE, readU32LE } from './bytes'
 import type { ImageFormat } from './formats'
+import { qualityFromDqt } from './jpeg-quality'
 
 export interface ImageHeader {
   /** Dimensões como a imagem aparece, já considerando a orientação EXIF. */
@@ -7,6 +8,8 @@ export interface ImageHeader {
   height: number
   hasAlpha: boolean
   animated: boolean
+  /** Qualidade estimada do JPG (1 a 100), pela tabela de quantização; ausente nos outros formatos. */
+  jpegQuality?: number
 }
 
 export type HeaderResult =
@@ -22,9 +25,9 @@ function needMore(required: number, fileSize: number): HeaderResult {
   return required > fileSize ? INVALID : { status: 'need-more', bytes: required }
 }
 
-function ok(width: number, height: number, hasAlpha: boolean, animated: boolean): HeaderResult {
+function ok(width: number, height: number, hasAlpha: boolean, animated: boolean, jpegQuality?: number): HeaderResult {
   if (width < 1 || height < 1) return INVALID
-  return { status: 'ok', header: { width, height, hasAlpha, animated } }
+  return { status: 'ok', header: { width, height, hasAlpha, animated, ...(jpegQuality !== undefined && { jpegQuality }) } }
 }
 
 /**
@@ -67,7 +70,7 @@ function readPng(bytes: Uint8Array, fileSize: number): HeaderResult {
   }
 }
 
-/* JPEG: segmentos até o SOF (dimensões); o APP1/EXIF antes dele traz a orientação. */
+/* JPEG: segmentos até o SOF (dimensões); antes dele, o APP1/EXIF traz a orientação e o DQT, a qualidade. */
 
 function isStartOfFrame(marker: number): boolean {
   return marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc
@@ -80,6 +83,7 @@ function isStandaloneMarker(marker: number): boolean {
 function readJpeg(bytes: Uint8Array, fileSize: number): HeaderResult {
   let offset = 2
   let orientation = 1
+  let quality: number | undefined
   for (;;) {
     // Bytes 0xFF repetidos antes de um marcador são preenchimento permitido.
     while (bytes[offset] === 0xff && bytes[offset + 1] === 0xff) offset += 1
@@ -102,11 +106,15 @@ function readJpeg(bytes: Uint8Array, fileSize: number): HeaderResult {
       const height = readU16BE(bytes, offset + 5)
       const width = readU16BE(bytes, offset + 7)
       // Orientações 5 a 8 giram 90°: a imagem aparece com largura e altura trocadas.
-      return orientation >= 5 ? ok(height, width, false, false) : ok(width, height, false, false)
+      return orientation >= 5 ? ok(height, width, false, false, quality) : ok(width, height, false, false, quality)
     }
     if (marker === 0xe1) {
       if (segmentEnd > bytes.length) return needMore(segmentEnd, fileSize)
       orientation = readExifOrientation(bytes.subarray(offset + 4, segmentEnd)) ?? orientation
+    }
+    if (marker === 0xdb) {
+      if (segmentEnd > bytes.length) return needMore(segmentEnd, fileSize)
+      quality = qualityFromDqt(bytes.subarray(offset + 4, segmentEnd)) ?? quality
     }
     offset = segmentEnd
   }

@@ -50,3 +50,24 @@ export interface OriginalVideo {
 /** Taxa média só do vídeo no original: o arquivo inteiro menos o som. */
 export const originalVideoBitrate = ({ originalBytes, duration, audioBitrate }: OriginalVideo) =>
   Math.max(0, (originalBytes * 8) / duration - (audioBitrate ?? 0))
+
+/**
+ * Taxa para a mesma qualidade, em relação ao H.264, pelo codec do original. HEVC e VP9 precisam de cerca
+ * de 60%; AV1, de cerca de metade. Codec desconhecido conta como H.264.
+ */
+const CODEC_EFFICIENCY: Partial<Record<string, number>> = { avc: 1, hevc: 0.6, vp9: 0.6, av1: 0.5 }
+
+/**
+ * Taxa do vídeo refeito: qualidade alta para as medidas finais, mas nunca acima do que o original tem,
+ * proporcional à área do quadro final e convertido pela eficiência de cada codec (o H.264 precisa de mais
+ * taxa que o HEVC do iPhone para a mesma imagem; o VP9, de menos). Sem esse limite, um vídeo já comprimido
+ * (ex.: do WhatsApp) sairia mais pesado que o original ao ser cortado, recortado ou convertido.
+ */
+export function cappedVideoBitrate(source: OriginalVideo & { codec?: string }, target: Dimensions, format: VideoFormat): number {
+  const high = videoBitrateFor(target, HIGH_QUALITY_FACTOR, format)
+  const { original } = source
+  const areaRatio = (target.width * target.height) / (original.width * original.height)
+  const efficiency = FORMAT_EFFICIENCY[format] / (CODEC_EFFICIENCY[source.codec ?? 'avc'] ?? 1)
+  const ceiling = originalVideoBitrate(source) * areaRatio * efficiency
+  return roundBitrate(Number.isFinite(ceiling) ? Math.min(high, ceiling) : high)
+}

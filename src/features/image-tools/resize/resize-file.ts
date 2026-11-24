@@ -1,6 +1,7 @@
 import { formatDimensions } from '../../../core/format'
 import { IMAGE_FORMATS, preservedFormat } from '../../../core/image/formats'
 import type { InspectedImage } from '../../../core/image/inspect'
+import { reencodeQuality } from '../../../core/image/jpeg-quality'
 import { webpFallbackNote } from '../../../core/image/messages'
 import { outputFileName } from '../../../core/image/output-name'
 import { resizedDimensions, type ResizeRequest } from '../../../core/image/resize'
@@ -34,7 +35,8 @@ export async function resizeFile({ file, image, request, canEncodeWebp, client, 
 
   const target = preservedFormat(image.format, image.hasAlpha, canEncodeWebp)
   // O fundo só apareceria com transparência indo para JPG, o que preservedFormat evita.
-  const output = await client.run({ kind: 'convert', file, target, quality: RESIZE_QUALITY, background: '#ffffff', resize: size }, signal)
+  const quality = reencodeQuality(RESIZE_QUALITY, image, target)
+  const output = await client.run({ kind: 'convert', file, target, quality, background: '#ffffff', resize: size }, signal)
   // As medidas novas aparecem na lista, ao lado das originais.
   const sizeNote = `Novo tamanho: ${formatDimensions(size.width, size.height)}`
   return {

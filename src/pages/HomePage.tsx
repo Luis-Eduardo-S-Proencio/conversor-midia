@@ -14,7 +14,7 @@ import { QuickOpen, type OpenedMedia } from './QuickOpen'
  */
 function ToolGroupCard({ group, onOpen }: { group: ToolGroup; onOpen: (tool: ToolEntry) => void }) {
   return (
-    <section aria-labelledby={`grupo-${group.id}`} className="grid content-start gap-3 rounded-xl border border-border bg-surface p-3 md:gap-1 md:p-2">
+    <section aria-labelledby={`grupo-${group.id}`} className="grid content-start gap-3 rounded-xl border border-border bg-surface-1 p-3 md:gap-1 md:p-2">
       <header className="grid gap-0.5 px-1 pt-1 md:px-3 md:pt-3 md:pb-2">
         <h3 id={`grupo-${group.id}`} className="font-bold tracking-tight text-fg">
           {group.title}
@@ -27,7 +27,7 @@ function ToolGroupCard({ group, onOpen }: { group: ToolGroup; onOpen: (tool: Too
             <Link
               to={tool.to}
               onClick={() => onOpen(tool)}
-              className="group flex h-full flex-col items-center gap-2 rounded-lg p-1.5 text-center transition-colors hover:bg-surface-raised md:flex-row md:gap-3 md:p-2.5 md:text-left"
+              className="group flex h-full flex-col items-center gap-2 rounded-lg p-1.5 text-center transition-colors hover:bg-surface-2 md:flex-row md:gap-3 md:p-2.5 md:text-left"
             >
               <ToolIcon icon={tool.icon} tone={tool.tone} size="lg" className="md:hidden" />
               <ToolIcon icon={tool.icon} tone={tool.tone} className="hidden md:grid" />

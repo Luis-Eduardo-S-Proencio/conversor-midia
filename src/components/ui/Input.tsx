@@ -17,7 +17,7 @@ export function Input({ unit, className, 'aria-describedby': describedBy, ...res
         {...rest}
         aria-describedby={descriptions}
         className={cx(
-          'h-10 w-full rounded-md border border-border-strong bg-bg px-3 text-base text-fg tabular-nums',
+          'h-10 w-full rounded-md border border-stroke bg-bg px-3 text-base text-fg tabular-nums',
           'placeholder:text-fg-subtle disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-danger pointer-coarse:h-11',
           unit && 'pr-10',
           className,

@@ -20,7 +20,7 @@ export function SideNav({ compact }: SideNavProps) {
   return (
     <header
       className={cx(
-        'sticky top-0 hidden h-dvh shrink-0 flex-col gap-6 border-r border-border bg-surface pt-5 pb-4 pl-[env(safe-area-inset-left)] md:flex',
+        'sticky top-0 hidden h-dvh shrink-0 flex-col gap-6 border-r border-border bg-surface-1 pt-5 pb-4 pl-[env(safe-area-inset-left)] md:flex',
         wide ? 'w-20 lg:w-60' : 'w-20',
       )}
     >
@@ -46,7 +46,7 @@ export function SideNav({ compact }: SideNavProps) {
                 end={item.end}
                 className={cx(
                   'group flex h-16 flex-col items-center justify-center gap-1 rounded-md text-xs font-medium text-fg-muted transition-colors',
-                  'hover:bg-surface-raised hover:text-fg aria-[current=page]:bg-surface-raised aria-[current=page]:text-fg',
+                  'hover:bg-surface-2 hover:text-fg aria-[current=page]:bg-surface-2 aria-[current=page]:text-fg',
                   'forced-colors:aria-[current=page]:underline forced-colors:aria-[current=page]:underline-offset-4',
                   wide && 'lg:h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-sm',
                 )}

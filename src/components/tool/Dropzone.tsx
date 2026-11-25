@@ -84,11 +84,11 @@ export function Dropzone({
       data-dragging={dragging || undefined}
       className={cx(
         'grid justify-items-center gap-3 rounded-xl border-2 border-dashed border-accent/40 bg-drop px-5 py-8 text-center transition-colors',
-        'data-dragging:border-accent data-dragging:bg-accent-subtle',
+        'data-dragging:border-accent data-dragging:bg-accent-soft',
         className,
       )}
     >
-      <span className="mb-1 grid size-14 place-items-center rounded-lg bg-brand text-on-accent shadow-accent">
+      <span className="mb-1 grid size-14 place-items-center rounded-lg bg-brand text-on-accent">
         <Icon icon={Upload} size="lg" />
       </span>
       <p className="hidden font-semibold text-fg pointer-fine:block">{dragLabel}</p>

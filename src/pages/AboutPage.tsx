@@ -12,10 +12,10 @@ import { VIDEO_FORMATS } from '../core/video/formats'
 import { MAX_GIF_SECONDS } from '../core/video/gif'
 import { VIDEO_LIMITS } from '../core/video/inspect'
 
-const LINK = 'text-accent-soft underline underline-offset-4 transition-colors hover:text-fg'
+const LINK = 'text-accent underline underline-offset-4 transition-colors hover:text-fg'
 
 /** Grupo de linhas separadas por um fio, como nas listas do app. */
-const PANEL = 'divide-y divide-border rounded-xl border border-border bg-surface'
+const PANEL = 'divide-y divide-border rounded-xl border border-border bg-surface-1'
 
 const labels = (formats: Record<string, { label: string }>) => Object.values(formats).map((format) => format.label)
 
@@ -57,7 +57,7 @@ function Section({ id, title, children }: { id: string; title: string; children:
 function IconRow({ icon, children }: { icon: LucideIcon; children: ReactNode }) {
   return (
     <li className="flex gap-4 p-4">
-      <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-md bg-surface-raised text-fg-muted">
+      <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-md bg-surface-2 text-fg-muted">
         <Icon icon={icon} />
       </span>
       <div className="grid min-w-0 flex-1 content-start gap-2 pt-2.5 text-sm">{children}</div>
@@ -72,7 +72,7 @@ function FormatList({ label, formats }: { label: string; formats: readonly strin
       <dd>
         <ul className="flex flex-wrap gap-1.5">
           {formats.map((format) => (
-            <li key={format} className="rounded-sm border border-border bg-surface-raised px-2 py-0.5 text-xs font-semibold text-fg">
+            <li key={format} className="rounded-sm border border-border bg-surface-2 px-2 py-0.5 text-xs font-semibold text-fg">
               {format}
             </li>
           ))}

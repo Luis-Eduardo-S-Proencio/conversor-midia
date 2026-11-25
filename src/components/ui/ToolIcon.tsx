@@ -1,39 +1,52 @@
-import type { LucideIcon } from 'lucide-react'
+import { Film, Image as ImageIcon, type LucideIcon } from 'lucide-react'
+import type { MediaKind } from '../../core/media-kind'
 import { cx } from './cx'
 import { Icon } from './Icon'
 
-/** Tipo de ferramenta: define a cor do ícone, a mesma na imagem e no vídeo. */
-export type ToolTone = 'edit' | 'crop' | 'rotate' | 'gif' | 'convert' | 'audio' | 'compress' | 'size'
+/** Categoria da ferramenta: define a cor do ícone. Só quatro, a mesma na imagem e no vídeo. */
+export type ToolTone = 'edit' | 'convert' | 'compress' | 'audio'
 
 // Classes completas (o Tailwind só gera as que aparecem escritas no código).
 const TONES: Record<ToolTone, string> = {
-  edit: 'bg-tool-edit/15 text-tool-edit',
-  crop: 'bg-tool-crop/15 text-tool-crop',
-  rotate: 'bg-tool-rotate/15 text-tool-rotate',
-  gif: 'bg-tool-gif/15 text-tool-gif',
-  convert: 'bg-tool-convert/15 text-tool-convert',
-  audio: 'bg-tool-audio/15 text-tool-audio',
-  compress: 'bg-tool-compress/15 text-tool-compress',
-  size: 'bg-tool-size/15 text-tool-size',
+  edit: 'bg-cat-edit/12 text-cat-edit',
+  convert: 'bg-cat-convert/12 text-cat-convert',
+  compress: 'bg-cat-compress/12 text-cat-compress',
+  audio: 'bg-cat-audio/12 text-cat-audio',
 }
 
 const SIZES = {
-  md: { box: 'size-10 rounded-md', icon: 'md' },
-  lg: { box: 'size-14 rounded-lg', icon: 'lg' },
+  md: { box: 'size-10 rounded-md', icon: 'md', badge: 'size-4.5 -right-1 -bottom-1' },
+  lg: { box: 'size-14 rounded-lg', icon: 'lg', badge: 'size-5.5 -right-1 -bottom-1' },
 } as const
+
+const MEDIA_ICONS: Record<MediaKind, LucideIcon> = { image: ImageIcon, video: Film }
 
 interface ToolIconProps {
   icon: LucideIcon
   tone: ToolTone
   size?: keyof typeof SIZES
+  /**
+   * Selo de imagem ou vídeo no canto: diferencia as duas versões da mesma ação
+   * (Recortar imagem × Recortar vídeo), que usam o mesmo ícone.
+   */
+  media?: MediaKind
   className?: string
 }
 
-/** Ícone de ferramenta num ladrilho do mesmo tom. Decorativo: o nome fica no texto ao lado. */
-export function ToolIcon({ icon, tone, size = 'md', className }: ToolIconProps) {
+/** Ícone de ferramenta num ladrilho da cor da categoria. Decorativo: o nome fica no texto ao lado. */
+export function ToolIcon({ icon, tone, size = 'md', media, className }: ToolIconProps) {
+  const dimensions = SIZES[size]
   return (
-    <span aria-hidden="true" className={cx('grid shrink-0 place-items-center', SIZES[size].box, TONES[tone], className)}>
-      <Icon icon={icon} size={SIZES[size].icon} />
+    <span aria-hidden="true" className={cx('relative grid shrink-0 place-items-center', dimensions.box, TONES[tone], className)}>
+      <Icon icon={icon} size={dimensions.icon} />
+      {media && (
+        <span
+          data-media={media}
+          className={cx('absolute grid place-items-center rounded-full border border-bg bg-surface-3 text-fg-muted', dimensions.badge)}
+        >
+          <Icon icon={MEDIA_ICONS[media]} size="sm" className="size-[62%]" />
+        </span>
+      )}
     </span>
   )
 }

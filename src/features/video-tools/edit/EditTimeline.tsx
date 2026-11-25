@@ -206,7 +206,7 @@ export function EditTimeline({
                   }
                   onSelect(piece.id)
                 }}
-                className={cx('absolute top-0 overflow-hidden border-x border-bg bg-surface-raised outline-offset-[-2px]', isSelected && 'z-10')}
+                className={cx('absolute top-0 overflow-hidden border-x border-bg bg-surface-2 outline-offset-[-2px]', isSelected && 'z-10')}
                 style={{ left, width: Math.max(2, pieceWidth), height: STRIP_HEIGHT }}
               >
                 {thumbnails &&

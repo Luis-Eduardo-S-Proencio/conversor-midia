@@ -1,14 +1,18 @@
 # Design System do Media Tools
 
-Guia de uso da identidade visual e dos componentes. **Os valores (cores, tamanhos, raios) ficam só em [`src/styles/tokens.css`](../src/styles/tokens.css)**; este documento explica quando e como usá-los. Para ver tudo funcionando, rode `npm run dev` e abra `/design-system` (vitrine interna, ausente do build de produção).
+Guia de uso da identidade visual e dos componentes. **Os valores (cores, tamanhos, raios, sombras, durações) ficam só em [`src/styles/tokens.css`](../src/styles/tokens.css)**; este documento explica quando e como usá-los. Para ver tudo funcionando, abra **`/_design`**: a vitrine fica publicada, fora da navegação e sem indexação, e mostra também a comparação dos dois acentos (rosa e violeta).
+
+> Redesenho "estúdio de bolso" (pedido em 25/11/2026), feito por fases: **1. fundação** (tokens, fontes, componentes base, `/_design`: pronta) · 2. navegação e layout · 3. telas · 4. ferramentas · 5. editores · 6. recursos P1 · 7. polimento. As seções "Padrões de tela" descrevem as telas como estão hoje e mudam nas fases 2 a 5.
 
 ## Princípios
 
-- **Estúdio escuro, cor com propósito.** Fundo quase preto e neutro, para a foto e o vídeo serem o destaque. O degradê violeta → rosa da marca aparece só na logo, no botão principal, no controle deslizante, no progresso e em títulos grandes; cada tipo de ferramenta tem uma cor própria no ícone. Nada de brilhos, glassmorphism ou sombras pesadas.
+- **Estúdio de bolso.** Sóbrio, tátil e preciso, como um app profissional de edição: a interface recua e a mídia do usuário é a estrela.
+- **Um acento só.** O degradê da marca fica no logo (no máximo também no botão de exportar). Seleção, foco, botão principal, progresso e links usam **um** acento (`accent`). Proibido: texto em degradê, brilho ou sombra colorida em botão, glassmorphism em tudo, blobs, partículas, emoji como ícone, borda tracejada como área de upload, animação em loop ou acima de 500 ms.
+- **Superfícies de grafite em camadas**, bordas hairline de 1 px e um realce sutil no topo de cada cartão (luz vindo de cima). Grão sutilíssimo só no fundo da página, nunca sobre a mídia.
+- **Números sempre tabulares** (tempo, tamanho, resolução, %): não "dançam" quando mudam.
 - **Um caminho óbvio por tela.** Um botão principal por vista; opções extras aparecem só quando fazem sentido.
-- **Hierarquia antes de cor.** Tamanho, peso e espaço organizam a tela; cor é o último recurso.
 - **Estado nunca só por cor.** Sucesso, aviso e erro sempre têm ícone e texto.
-- **Conteúdo real.** Textos curtos e diretos; erros dizem o que houve e como resolver.
+- **Conteúdo real.** Textos curtos e diretos, tratando por "você"; erros dizem o que houve e como resolver. Sem frase de marketing.
 
 ## Marca
 
@@ -22,43 +26,42 @@ Guia de uso da identidade visual e dos componentes. **Os valores (cores, tamanho
 
 ## Cores
 
-| Token | Uso |
-|---|---|
-| `bg` | fundo da página |
-| `surface` | painéis, cartões, barras |
-| `surface-raised` | hover, menus, botão secundário, opção não marcada |
-| `surface-overlay` | hover sobre `surface-raised` |
-| `stage` | fundo atrás da foto e do vídeo nos editores |
-| `border` | divisórias e contornos decorativos |
-| `border-strong` | borda de campos e controles (3:1) |
-| `fg` | texto principal |
-| `fg-muted` | texto secundário |
-| `fg-subtle` | legendas, dicas, placeholders |
-| `brand-start`, `brand-end` | **degradê da marca** (violeta → rosa): logo, ícone de abrir arquivo, progresso, controle deslizante e títulos grandes (`bg-brand`, `text-brand`) |
-| `accent` | **violeta**: item selecionado, indicador da navegação ativa |
-| `accent-emphasis` / `-hover` / `-active` (cada um com `-end`) | degradê do botão principal e seus estados |
-| `on-accent` | texto sobre o botão principal |
-| `accent-soft` | violeta claro: anel de foco, links, valores em destaque |
-| `accent-subtle` | fundo de item selecionado e de mensagem informativa |
-| `tool-edit`, `tool-crop`, `tool-rotate`, `tool-gif`, `tool-convert`, `tool-audio`, `tool-compress`, `tool-size` | ícone de cada tipo de ferramenta, a mesma cor na imagem e no vídeo |
-| `success`, `warning`, `danger` (+ `-subtle`) | texto/ícone de estado e fundo da mensagem |
-| `checker-a`, `checker-b` | fundo quadriculado da pré-visualização |
+Nomes do Tailwind e nomes curtos do guia de redesenho (as variáveis curtas, como `--surface-1` e `--text-2`, existem em `:root` para CSS escrito à mão).
+
+| Token (Tailwind) | Guia | Uso |
+|---|---|---|
+| `bg` | `--bg` | fundo da página (com o grão, em `html`) |
+| `surface-1`, `surface-2`, `surface-3` | iguais | camadas: cartões e barras (1), painéis e menus (2), botão secundário e itens elevados (3) |
+| `surface-hover` | igual | hover sobre `surface-3`; trilha do slider e do progresso |
+| `stage` | — | fundo dos editores (preto) |
+| `border`, `border-strong` | iguais | hairlines decorativas (branco 7% e 12%) |
+| `stroke` | — | contorno de campos e controles que precisa de 3:1 (WCAG 1.4.11): opaco, `#6B6B78` |
+| `fg`, `fg-muted`, `fg-subtle` | `--text-1/2/3` | texto principal, secundário e legenda |
+| `accent` | igual | o acento: texto, ícones, seleção, foco, links e preenchimento de slider e progresso |
+| `accent-solid` (+ `-hover`, `-active`) | `--accent-solid` | fundo do botão principal, com texto branco (`on-accent`) |
+| `accent-soft` | igual | fundo de item selecionado (acento a 12%) |
+| `brand-start`, `brand-end` | — | degradê da marca: **só o logo** (`bg-brand`) |
+| `success`, `warning`, `danger` (+ `-subtle`) | iguais | texto/ícone de estado e fundo da mensagem |
+| `cat-edit`, `cat-convert`, `cat-compress`, `cat-audio` | `--cat-editar`, `--cat-converter`, `--cat-comprimir`, `--cat-audio` | as **quatro** categorias de ferramenta, só no ícone |
+| `scrim` | — | fundo escurecido atrás de painéis e diálogos |
+| `checker-a`, `checker-b` | — | fundo quadriculado da pré-visualização (transparência) |
 
 Regras:
-- **Violeta e degradê só para:** ação principal (um botão por tela), seleção, navegação ativa, foco, links, progresso e a marca. Nunca em fundos de seção ou textos longos.
-- O botão principal vai de `accent-emphasis` (violeta) a `accent-emphasis-end` (rosa): tons escuros o bastante para o texto branco passar no AA nas duas pontas. Hover e pressionado escurecem as duas pontas.
-- Cor de ferramenta só no ícone, sobre um fundo do mesmo tom bem fraco; nunca em texto.
-- `border` não delimita campos; para controles, use `border-strong`.
-- O contraste de todos os pares em uso é verificado por [`tokens.test.ts`](../src/styles/tokens.test.ts): texto ≥ 4,5:1 e elementos de interface ≥ 3:1 (WCAG 2.2 AA). Um par novo de cores entra nesse teste.
+- **Acento padrão: rosa** (`#FF4F8B`, sólido `#D62466`), o rosa da ponta do logo. A variante **violeta** (`#9D8CFF`, sólido `#6D4AFF`) fica em `[data-accent="violet"]`, para comparar na vitrine; a escolhida vira o padrão.
+- `accent-soft` usa 12% (o guia sugeria 14%): com 14%, o texto rosa sobre ele, em cima da `surface-3`, ficava em 4,4:1, abaixo do mínimo de 4,5:1.
+- Categorias: **editar** (Editar vídeo, Recortar imagem e vídeo, Girar e espelhar, Criar GIF), **converter** (Converter imagem e vídeo), **comprimir** (Comprimir imagem e vídeo, Redimensionar, Mudar resolução) e **áudio** (Extrair áudio). Cor de categoria só no ícone, sobre o ladrilho do mesmo tom a 12%; nunca em texto. Imagem e vídeo da mesma ação usam o mesmo ícone, com o **selo** de imagem ou vídeo no canto (`ToolIcon media`).
+- `border` e `border-strong` não delimitam campos; para controles, use `stroke`.
+- `fg-subtle` não vai sobre `surface-hover` (4,44:1); nas demais superfícies passa.
+- O contraste de todos os pares em uso é verificado por [`tokens.test.ts`](../src/styles/tokens.test.ts), inclusive a variante violeta e o fundo translúcido do acento: texto ≥ 4,5:1 e elementos de interface ≥ 3:1 (WCAG 2.2 AA). Um par novo de cores entra nesse teste.
 
 ## Tipografia
 
-- **Inter** para toda a interface, inclusive números, que usam `tabular-nums` (dimensões, tamanhos, tempos, porcentagens) para não "dançar". Fonte hospedada no próprio site (`@fontsource-variable/inter`), sem Google Fonts.
-- Pesos: `font-normal` (400), `font-medium` (500), `font-semibold` (600), `font-bold` (700) e `font-extrabold` (800, só no título do início).
-- Escala: `text-xs` 12/16 · `text-sm` 14/20 · `text-base` 16/24 · `text-lg` 18/28 · `text-xl` 20/28 · `text-2xl` 24/32 · `text-3xl` 30/36 · `text-4xl` 36/40 · `text-5xl` 48. **No máximo quatro tamanhos por tela.**
-- Títulos: `font-bold tracking-tight text-balance`. Página: `text-2xl md:text-3xl`; seção: `text-xl`; início: `font-extrabold`, com o fim da frase em `text-brand`.
+- **Títulos em Bricolage Grotesque** (`font-display`; `h1` e `h2` já a usam por padrão, com `text-wrap: balance`), **texto em Inter** (`font-sans`). Fontes hospedadas no próprio site, **só o subconjunto latino** (o português cabe nele inteiro), em [`src/styles/fonts.css`](../src/styles/fonts.css), com `font-display: swap` e preload dos dois arquivos no build (`vite.config.ts`). Inter 48 KB e Bricolage 41 KB.
+- Escala por papel (use nas telas novas): `text-display` (30 a 44 px, Bricolage 700, −0,02em) · `text-title` (24 a 32 px, 650) · `text-section` (18 a 20 px, 600) · `text-body` (15 a 16 px) · `text-secondary` (14 px) · `text-caption` (13 px, 500). Os tamanhos fluidos usam `clamp()`. **Mínimo absoluto: 12 px** (`text-xs`).
+- A escala antiga (`text-xs` … `text-5xl`) continua para as telas que ainda não mudaram.
+- Números: `tabular-nums` sempre. No padrão brasileiro, por [`src/core/format.ts`](../src/core/format.ts) (`Intl.NumberFormat('pt-BR')`): `8,6 MB`, `3024 × 4032`, `−78%`.
+- Parágrafos com `text-wrap: pretty` e no máximo `max-w-text` (68ch).
 - Campos de texto com 16 px (abaixo disso o Safari do iPhone dá zoom).
-- Números no padrão brasileiro, sempre por [`src/core/format.ts`](../src/core/format.ts): `8,6 MB`, `3024 × 4032`, `−78%`.
 
 ## Ícones
 
@@ -66,29 +69,41 @@ Lucide, sempre pelo componente `Icon` ([`src/components/ui/Icon.tsx`](../src/com
 
 ## Espaço, forma e movimento
 
-- **Espaçamento:** múltiplos de 4 px (escala do Tailwind). Margens laterais 16/24/32 px (`Container`). Largura máxima do conteúdo: `max-w-page` (72rem).
-- **Raios:** generosos, como nos apps de celular: `rounded-sm` 8 (itens internos), `rounded-md` 12 (botões, campos, opções), `rounded-lg` 16 (painéis, upload, mensagens), `rounded-xl` 20 (folhas e diálogos), `rounded-2xl` 28, `rounded-full` (selos).
-- **Bordas:** sempre 1 px (o upload usa 2 px tracejado).
-- **Sombras:** `shadow-overlay` (camadas flutuantes), `shadow-media` (foto e vídeo no palco do editor) e `shadow-accent` (botão principal, bem suave). A elevação normal vem do tom da superfície e da borda.
-- **Movimento:** transições de cor em 150 ms (padrão); botões encolhem um pouco ao toque (`active:scale`); `animate-enter` (220 ms) para um bloco que aparece; `--duration-base` 180 ms para entrada e expansão; `--duration-slow` 240 ms para painéis. Anime só `opacity` e `transform`. Com `prefers-reduced-motion`, as animações são desligadas em `base.css`.
-- **Breakpoints:** padrão do Tailwind. `< md` (768): cabeçalho com a marca e o menu "Mais opções", abas embaixo e uma coluna; `md`: barra lateral estreita (ícone com rótulo curto); `lg` (1024): barra lateral larga (nome ao lado do ícone) e ferramentas em duas colunas. Nas telas de editor (`handle: { editor: true }`) a barra lateral fica sempre estreita e, no celular, as abas dão lugar à barra da ferramenta.
-- **Camadas (z-index):** cabeçalho 10 · barra inferior e de ação 20 · menu 30 · folha 40 · avisos e link de pular 50.
-- **Alvos de toque:** 44 px com toque (`pointer-coarse:`), 40 px com mouse. A barra inferior usa 56 px.
+- **Espaçamento:** base 4 (a escala do Tailwind: `p-4` = 16 px = `--s-4`). Margem lateral `--gutter`: 16 px (celular), 24 px (a partir de 768) e 40 px (a partir de 1024), no `Container`. Espaço entre seções `--section-gap`: 32 / 48 px. Conteúdo travado em 1200 px (`--container-page`), centralizado.
+- **Raios:** `rounded-sm` 8 (itens internos) · `rounded-md` 12 (botões, campos) · `rounded-lg` 16 (cartões) · `rounded-xl` 24 (painéis de baixo, diálogos, upload) · `rounded-full` (chips, pílulas).
+- **Bordas:** sempre 1 px, hairline.
+- **Sombras:** `shadow-1` (cartões, botões: realce no topo e sombra curta), `shadow-2` (o que flutua: menus, dicas, avisos), `shadow-sheet` (painel de baixo).
+- **Movimento:** `--dur-1` 120 ms (toque), `--dur-2` 200 ms (troca de estado), `--dur-3` 320 ms (painéis), `--dur-4` 480 ms (máximo). Curvas `ease-out`, `ease-in`, `ease-emph` (painéis subindo) e `ease-spring` (com parcimônia). Anime só `transform`/`translate`/`scale` e `opacity`; nada acima de 500 ms; nada em loop, exceto carregamento (`animate-spin`, `animate-shimmer`, `animate-indeterminate`). `pressable` faz o elemento afundar (`scale .97`) ao toque. Com `prefers-reduced-motion`, as animações são desligadas em `base.css`.
+- **Efeitos** (utilitários em `base.css`): `surface-card` (cartão em camadas), `viewfinder` (área de abrir arquivo com cantos de visor de câmera; com `data-dragover`, as cantoneiras se fecham no acento), `scroller-x` (carrossel sem barra, com encaixe e fade nas bordas), `glass-header` (cabeçalho com desfoque ao rolar), `skeleton` (bloco carregando), `bg-checker` (transparência).
+- **Breakpoints:** 360–767 celular · 768–1023 tablet (`md`) · 1024–1439 computador (`lg`) · 1440+ (`wide`) com o conteúdo travado. Medidas fixas em `:root`: `--header-h` 56, `--bottomnav-h` 64, `--rail-w` 72, `--sidebar-w` 248, `--panel-w` 320.
+- **Camadas (z-index):** cabeçalho 10 · barra inferior e de ação 20 · menu 30 · dica 40 · avisos e link de pular 50. Painéis e diálogos usam a camada superior do navegador (`<dialog>` modal).
+- **Alvos de toque:** pelo menos 44 × 44 px com toque, com 8 px entre eles.
 
 ## Componentes
 
 | Componente | Arquivo | Quando usar |
 |---|---|---|
-| `Button`, `IconButton` | `components/ui/Button.tsx` | ações; `variant`: `primary` (uma por tela), `secondary`, `ghost`, `danger`; `loading` mantém foco e ignora cliques |
+| `Button` | `components/ui/Button.tsx` | ações; `size` `sm` 36 · `md` 44 · `lg` 52 px, raio 12; `variant`: `primary` (acento sólido, uma por tela), `secondary` (`surface-3` com borda), `ghost`, `danger`. Desligado: opacidade .4, sem sombra e cursor de proibido. `loading`: spinner no lugar do ícone (sem ícone, por cima do texto), sem mudar a largura; mantém o foco e ignora cliques |
+| `IconButton` | `components/ui/Button.tsx` | botão só com ícone (40–44 px); `label` obrigatório (nome acessível) e dica visual com mouse; `shortcut` mostra o atalho na dica |
+| `Card` | `components/ui/Card.tsx` | superfície base (raio 16, padding 16/20, `shadow-1`); `interactive` sobe 2 px e clareia a borda com mouse; `as` muda o elemento |
+| `Chip` | `components/ui/Chip.tsx` | pílula de 36 px; `selected` (alternância, `aria-pressed`) fica com `accent-soft` e texto no acento; `CHIP_CLASSES` para links |
+| `MetaChips` | `components/ui/MetaChips.tsx` | dados do arquivo (formato, resolução, duração, tamanho) em pílulas com algarismos tabulares; `animate` entra em cascata |
+| `ProgressRing` | `components/ui/ProgressRing.tsx` | progresso em anel (exportação), com a porcentagem no centro; sem `value`, gira |
+| `Skeleton` | `components/ui/Skeleton.tsx` | lugar reservado com brilho enquanto carrega (miniaturas, timeline) |
+| `EmptyState` | `components/ui/EmptyState.tsx` | área vazia: ícone, o que fazer e a ação |
+| `BottomSheet` | `components/ui/BottomSheet.tsx` | painel que sobe de baixo (raio 24, alça, até 85% da altura): fecha arrastando para baixo, no ✕, com Esc, tocando fora ou com o voltar do navegador/Android; `onApply` mostra o ✓ |
+| `ConfirmDialog` | `components/ui/ConfirmDialog.tsx` | confirmação (ex.: "Descartar edição?"), com o foco na opção segura; `destructive` |
+| `ToastProvider`, `useToast` | `components/ui/Toast.tsx`, `toast-context.ts` | aviso curto que sobe de baixo e some em 3 s (ou fica até usar a `action`); o `AppShell` já monta o provedor e o põe acima da barra inferior |
+| `useModalDialog`, `useBackDismiss` | `components/ui/` | mecânica dos painéis: `<dialog>` modal (foco preso), saída animada, foco de volta a quem abriu e um passo no histórico, para o voltar fechar o painel antes de sair da tela |
 | `buttonClasses` | `components/ui/button-classes.ts` | link com aparência de botão |
 | `Badge` | `components/ui/Badge.tsx` | rótulos curtos de estado ("Em breve", "Pronto") |
 | `Field`, `Input` | `components/ui/Field.tsx`, `Input.tsx` | campo com rótulo, dica e erro ligados por ARIA; `unit` para "px" |
-| `SegmentedControl` | `components/ui/SegmentedControl.tsx` | escolha única entre poucas opções; setas, Home e End. Com mais de 5 opções (ex.: os 7 formatos de saída), `columns={4}` quebra em linhas e cabe em 320 px |
-| `Slider` | `components/ui/Slider.tsx` | valor contínuo com leitura formatada (qualidade) |
-| `ProgressBar` | `components/ui/ProgressBar.tsx` | progresso determinado (`value`) ou indeterminado |
+| `SegmentedControl` | `components/ui/SegmentedControl.tsx` | escolha única entre poucas opções; um indicador desliza até a opção marcada; setas, Home e End. Com mais de 5 opções (ex.: os 7 formatos de saída), `columns={4}` quebra em linhas e cabe em 320 px |
+| `Slider` | `components/ui/Slider.tsx` | valor contínuo: trilha de 4 px preenchida no acento, alça branca de 20 px, balão com o valor enquanto arrasta; `resetTo`: toque duplo volta ao padrão |
+| `ProgressBar` | `components/ui/ProgressBar.tsx` | progresso em barra, determinado (`value`) ou indeterminado |
 | `Alert` | `components/ui/Alert.tsx` | mensagens; `error` usa `role="alert"`, os demais `status`; `live={false}` para textos fixos |
 | `NavList`, `NavCard` | `components/ui/` | listas de destinos e categorias; item com `tone` ganha o ícone colorido da ferramenta; item sem `to` aparece como "Em breve" |
-| `ToolIcon` | `components/ui/ToolIcon.tsx` | ícone de ferramenta num ladrilho do tom do tipo (`tone`: `edit`, `crop`, `rotate`, `gif`, `convert`, `audio`, `compress`, `size`); decorativo |
+| `ToolIcon` | `components/ui/ToolIcon.tsx` | ícone de ferramenta num ladrilho da cor da categoria (`tone`: `edit`, `convert`, `compress`, `audio`); `media` põe o selo de imagem ou vídeo no canto; decorativo |
 | `Dropzone` | `components/tool/Dropzone.tsx` | estado vazio da ferramenta: botão real + arrastar e soltar como atalho; `size="lg"` para a entrada principal do início |
 | `FilePickerButton` | `components/tool/FilePickerButton.tsx` | botão que abre o seletor do sistema (ex.: "Adicionar" com a lista já aberta) |
 | `usePageFileDrop` | `components/tool/usePageFileDrop.ts` | aceita arquivos soltos em qualquer ponto da página e impede o navegador de abri-los |
@@ -142,5 +157,5 @@ Componentes de `ui/` e `tool/` não processam arquivos: recebem dados por props.
 
 1. Edite `src/styles/tokens.css` (nunca valores soltos nos componentes).
 2. Se o token for cor usada em par com outra, acrescente o par em `tokens.test.ts`.
-3. Rode `npm test` e confira a vitrine em `/design-system`.
+3. Rode `npm test` e confira a vitrine em `/_design`.
 4. Se mudar cor da marca, atualize `BRAND_COLORS` em `logo-geometry.ts` e rode `npm run icons`.

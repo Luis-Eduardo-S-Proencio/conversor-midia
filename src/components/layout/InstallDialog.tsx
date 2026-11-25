@@ -67,7 +67,7 @@ export function InstallDialog({ open, onClose }: InstallDialogProps) {
       onClick={(event) => {
         if (event.target === event.currentTarget) event.currentTarget.close()
       }}
-      className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-xl border border-border bg-surface p-0 text-fg shadow-overlay backdrop:bg-bg/80 open:animate-enter"
+      className="m-auto w-[calc(100%-2rem)] max-w-sm rounded-xl border border-border bg-surface-1 p-0 text-fg shadow-2 backdrop:bg-bg/80 open:animate-enter"
     >
       <div className="grid gap-5 p-5">
         <div className="grid gap-1.5">
@@ -80,7 +80,7 @@ export function InstallDialog({ open, onClose }: InstallDialogProps) {
         </div>
         <dl className="grid gap-px overflow-hidden rounded-lg border border-border bg-border text-sm">
           {STEPS.map((step) => (
-            <div key={step.device} className="grid gap-0.5 bg-surface-raised px-4 py-3">
+            <div key={step.device} className="grid gap-0.5 bg-surface-2 px-4 py-3">
               <dt className="font-semibold text-fg">{step.device}</dt>
               <dd className="text-fg-muted">{step.how}</dd>
             </div>

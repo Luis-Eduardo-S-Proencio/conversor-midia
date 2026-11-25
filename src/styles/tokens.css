@@ -1,78 +1,108 @@
 /*
- * Tokens do Media Tools: única fonte dos valores visuais.
+ * Tokens do Media Tools ("estúdio de bolso"): única fonte dos valores visuais.
  * Regras de uso: docs/design-system.md. Contraste verificado em tokens.test.ts.
  *
  * Os padrões do Tailwind são removidos (`initial`) para que só existam valores
  * da marca: uma classe como `bg-blue-500` simplesmente não compila.
+ *
+ * Nomes do Tailwind ↔ nomes do guia de redesenho (as variáveis curtas ficam em :root, abaixo):
+ *   bg = --bg · surface-1/2/3 = --surface-1/2/3 · fg / fg-muted / fg-subtle = --text-1/2/3
+ *   accent / accent-solid / accent-soft = --accent / --accent-solid / --accent-soft
+ *   cat-edit / cat-convert / cat-compress / cat-audio = --cat-editar / --cat-converter / --cat-comprimir / --cat-audio
  */
 @theme {
   --color-*: initial;
 
-  /* Neutros: quase preto, sem puxar para nenhuma cor, para a foto e o vídeo serem o destaque */
-  --color-bg: #0b0b0f;
-  --color-surface: #131318;
-  --color-surface-raised: #1b1b22;
-  --color-surface-overlay: #24242d;
-  --color-stage: #07070a;
-  --color-border: #26262e;
-  --color-border-strong: #6b6b78;
-  --color-fg: #f5f5f7;
-  --color-fg-muted: #a3a3af;
-  --color-fg-subtle: #8a8a96;
+  /* Superfícies de grafite em camadas: a mídia do usuário é a estrela */
+  --color-bg: #0a0a0d;
+  --color-surface-1: #111116;
+  --color-surface-2: #17171d;
+  --color-surface-3: #1f1f27;
+  --color-surface-hover: #25252e;
+  /* Fundo dos editores: preto de verdade, como num estúdio */
+  --color-stage: #000000;
 
-  /* Marca: o degradê violeta → rosa da logo (também no título e no ícone de abrir arquivo) */
+  /* Bordas hairline (decorativas) */
+  --color-border: rgb(255 255 255 / 0.07);
+  --color-border-strong: rgb(255 255 255 / 0.12);
+  /* Contorno de controles (campos, opção não marcada): precisa de 3:1 (WCAG 1.4.11), por isso é opaco */
+  --color-stroke: #6b6b78;
+
+  /* Texto: os três passam AA sobre o fundo e as superfícies */
+  --color-fg: #f5f5f7;
+  --color-fg-muted: #a6a6b0;
+  --color-fg-subtle: #8a8a94;
+
+  /* Marca: o degradê fica só no logo (e, no máximo, no botão de exportar) */
   --color-brand-start: #8b5cf6;
   --color-brand-end: #ec4899;
 
   /*
-   * Violeta para ação e seleção. O botão principal é um degradê do violeta ao rosa,
-   * escuro o bastante para o texto branco (o "-end" é a ponta rosa de cada estado).
+   * Acento único. Padrão: o rosa da ponta do logo; a variante violeta fica no fim do arquivo.
+   * O fundo suave é de 12% (o guia sugeria 14%): com 14%, o texto rosa sobre ele, em cima da
+   * surface-3, ficava em 4,4:1, abaixo do mínimo de 4,5:1.
    */
-  --color-accent: #a78bfa;
-  --color-accent-emphasis: #7c3aed;
-  --color-accent-emphasis-end: #db2777;
-  --color-accent-hover: #6d28d9;
-  --color-accent-hover-end: #be185d;
-  --color-accent-active: #5b21b6;
-  --color-accent-active-end: #9d174d;
-  --color-accent-soft: #c4b5fd;
-  --color-accent-subtle: #2a2440;
+  --color-accent: #ff4f8b;
+  --color-accent-solid: #d62466;
+  --color-accent-solid-hover: #c01d5b;
+  --color-accent-solid-active: #a5184e;
+  --color-accent-soft: color-mix(in oklab, #ff4f8b 12%, transparent);
   --color-on-accent: #ffffff;
 
-  /* Uma cor por tipo de ferramenta, a mesma na imagem e no vídeo */
-  --color-tool-edit: #a78bfa;
-  --color-tool-crop: #f472b6;
-  --color-tool-rotate: #fb923c;
-  --color-tool-gif: #facc15;
-  --color-tool-convert: #60a5fa;
-  --color-tool-audio: #f87171;
-  --color-tool-compress: #34d399;
-  --color-tool-size: #22d3ee;
-
   /* Estados */
-  --color-success: #34d399;
-  --color-success-subtle: #182e2a;
-  --color-warning: #fbbf24;
-  --color-warning-subtle: #2e2814;
-  --color-danger: #f87171;
-  --color-danger-subtle: #31181c;
+  --color-success: #3dd68c;
+  --color-success-subtle: #142a20;
+  --color-warning: #f5b841;
+  --color-warning-subtle: #2c2412;
+  --color-danger: #ff5c5c;
+  --color-danger-subtle: #2f1517;
+
+  /* Categorias de ferramenta: só quatro, dessaturadas */
+  --color-cat-edit: #a495ff;
+  --color-cat-convert: #6aa7ff;
+  --color-cat-compress: #4fd1a1;
+  --color-cat-audio: #ffa06b;
+
+  /* Fundo escurecido atrás de painéis e diálogos */
+  --color-scrim: rgb(0 0 0 / 0.6);
 
   /* Fundo quadriculado da pré-visualização (mostra transparência) */
   --color-checker-a: #121217;
   --color-checker-b: #1a1a21;
 
   --font-*: initial;
-  --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Bricolage Grotesque", "Inter Variable", system-ui, sans-serif;
 
   --font-weight-*: initial;
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
+  --font-weight-title: 650;
   --font-weight-bold: 700;
   --font-weight-extrabold: 800;
 
-  /* Escala tipográfica: no máximo quatro tamanhos por tela */
   --text-*: initial;
+  /* Escala por papel (seção 5.2): use estas nas telas novas. Mínimo absoluto: 12 px. */
+  --text-display: clamp(1.875rem, 5vw + 0.75rem, 2.75rem);
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 700;
+  --text-title: clamp(1.5rem, 2.5vw + 0.9rem, 2rem);
+  --text-title--line-height: 1.18;
+  --text-title--letter-spacing: -0.01em;
+  --text-title--font-weight: 650;
+  --text-section: clamp(1.125rem, 0.5vw + 1rem, 1.25rem);
+  --text-section--line-height: 1.3;
+  --text-section--font-weight: 600;
+  --text-body: clamp(0.9375rem, 0.25vw + 0.875rem, 1rem);
+  --text-body--line-height: 1.52;
+  --text-secondary: 0.875rem;
+  --text-secondary--line-height: 1.45;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.35;
+  --text-caption--font-weight: 500;
+  /* Escala de apoio (telas antigas e casos pontuais) */
   --text-xs: 0.75rem;
   --text-xs--line-height: 1rem;
   --text-sm: 0.875rem;
@@ -92,29 +122,35 @@
   --text-5xl: 3rem;
   --text-5xl--line-height: 1.05;
 
-  /* Cantos generosos, como nos apps de celular */
   --radius-*: initial;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
-  --radius-xl: 20px;
-  --radius-2xl: 28px;
+  --radius-xl: 24px;
 
-  /* Sombra só onde algo flutua; a elevação normal vem do tom da superfície */
+  /* Elevação: realce de luz no topo + sombra embaixo */
   --shadow-*: initial;
-  --shadow-overlay: 0 16px 40px rgb(0 0 0 / 0.5);
-  --shadow-media: 0 18px 40px rgb(0 0 0 / 0.55);
-  --shadow-accent: 0 6px 18px rgb(124 58 237 / 0.28);
+  --shadow-1: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 8px 24px rgb(0 0 0 / 0.45);
+  --shadow-sheet: 0 -12px 40px rgb(0 0 0 / 0.5);
 
-  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
-  --default-transition-duration: 150ms;
-  --default-transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  --ease-*: initial;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-emph: cubic-bezier(0.05, 0.7, 0.1, 1);
+  /* Com parcimônia: pílula da barra inferior e pouco mais */
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --default-transition-duration: 200ms;
+  --default-transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  --container-page: 72rem;
+  --breakpoint-wide: 90rem;
+
+  --container-page: 75rem;
+  --container-text: 68ch;
   /* Editores: mais largos que as páginas de texto, para a foto e o vídeo terem espaço */
   --container-editor: 100rem;
 
-  --animate-indeterminate: indeterminate 1.4s cubic-bezier(0.2, 0, 0, 1) infinite;
+  --animate-indeterminate: indeterminate 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
   @keyframes indeterminate {
     from {
       transform: translateX(-100%);
@@ -125,18 +161,105 @@
   }
 
   /* Entrada discreta de um bloco novo (resultado pronto, aviso, painel) */
-  --animate-enter: enter 220ms cubic-bezier(0.2, 0, 0, 1) both;
+  --animate-enter: enter 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   @keyframes enter {
     from {
       opacity: 0;
       transform: translateY(6px);
     }
   }
+
+  /* Carregando sem tempo conhecido (skeleton, progresso indeterminado) */
+  --animate-shimmer: shimmer 1.4s linear infinite;
+  @keyframes shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+
+  --animate-spin: spin 0.8s linear infinite;
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 }
 
-/* Medidas de layout que não geram utilitários */
+/*
+ * Medidas que não geram utilitários e os nomes curtos do guia (para CSS escrito à mão).
+ * O espaçamento do Tailwind já é de base 4 (p-4 = 16 px = --s-4).
+ */
 :root {
-  --bottom-nav-h: 3.5rem;
-  --duration-base: 180ms;
-  --duration-slow: 240ms;
+  --bg: var(--color-bg);
+  --surface-1: var(--color-surface-1);
+  --surface-2: var(--color-surface-2);
+  --surface-3: var(--color-surface-3);
+  --surface-hover: var(--color-surface-hover);
+  --border: var(--color-border);
+  --border-strong: var(--color-border-strong);
+  --highlight: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --text-1: var(--color-fg);
+  --text-2: var(--color-fg-muted);
+  --text-3: var(--color-fg-subtle);
+  --accent: var(--color-accent);
+  --accent-solid: var(--color-accent-solid);
+  --accent-soft: var(--color-accent-soft);
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-14: 56px;
+  --s-18: 72px;
+
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --dur-4: 480ms;
+
+  --header-h: 56px;
+  --bottomnav-h: 64px;
+  --rail-w: 72px;
+  --sidebar-w: 248px;
+  --panel-w: 320px;
+  --container: 1200px;
+
+  /* Margem lateral e espaço entre seções por faixa de largura (seção 7) */
+  --gutter: 16px;
+  --section-gap: 32px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --gutter: 40px;
+    --section-gap: 48px;
+  }
+}
+
+/*
+ * Variante violeta do acento, para comparar na vitrine (/_design).
+ * As variáveis derivadas são repetidas: custom properties já chegam calculadas aos filhos.
+ */
+[data-accent="violet"] {
+  --color-accent: #9d8cff;
+  --color-accent-solid: #6d4aff;
+  --color-accent-solid-hover: #5f3df0;
+  --color-accent-solid-active: #4f2fd6;
+  --color-accent-soft: color-mix(in oklab, #9d8cff 12%, transparent);
+  --accent: var(--color-accent);
+  --accent-solid: var(--color-accent-solid);
+  --accent-soft: var(--color-accent-soft);
 }

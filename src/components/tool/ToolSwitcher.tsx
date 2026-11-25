@@ -71,8 +71,8 @@ export function ToolSwitcher({ label, tools, onSwitch, className }: ToolSwitcher
                 }}
                 className={cx(
                   'flex min-h-11 items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-fg-muted transition-colors',
-                  'hover:bg-surface-raised hover:text-fg lg:w-full lg:flex-col lg:justify-center lg:gap-1.5 lg:px-1 lg:py-2.5 lg:text-center',
-                  'aria-[current=page]:bg-surface-raised aria-[current=page]:text-fg aria-[current=page]:ring-1 aria-[current=page]:ring-border-strong',
+                  'hover:bg-surface-2 hover:text-fg lg:w-full lg:flex-col lg:justify-center lg:gap-1.5 lg:px-1 lg:py-2.5 lg:text-center',
+                  'aria-[current=page]:bg-surface-2 aria-[current=page]:text-fg aria-[current=page]:ring-1 aria-[current=page]:ring-stroke',
                   'forced-colors:aria-[current=page]:underline',
                 )}
               >

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 
 interface VercelHeaderRule {
   source: string
@@ -19,9 +19,31 @@ function productionHeaders(): Record<string, string> {
   return Object.fromEntries((rule?.headers ?? []).map(({ key, value }) => [key, value]))
 }
 
+/** Arquivos das fontes usadas logo na primeira tela (texto e títulos), só o subconjunto latino. */
+const PRELOADED_FONTS = [/inter-latin-wght-normal-[\w-]+\.woff2$/, /bricolage-grotesque-latin-wght-normal-[\w-]+\.woff2$/]
+
+/**
+ * Preload das duas fontes principais no index.html do build: o navegador as baixa junto com o
+ * CSS, em vez de só descobrir que precisa delas depois de montar a página (o texto não "pula").
+ */
+function preloadFonts(): Plugin {
+  return {
+    name: 'media-tools:preload-fonts',
+    apply: 'build',
+    transformIndexHtml(_html, context) {
+      const files = Object.keys(context.bundle ?? {}).filter((file) => PRELOADED_FONTS.some((pattern) => pattern.test(file)))
+      return files.map((file) => ({
+        tag: 'link',
+        attrs: { rel: 'preload', href: `/${file}`, as: 'font', type: 'font/woff2', crossorigin: '' },
+        injectTo: 'head',
+      }))
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), preloadFonts()],
   // Workers como módulos ES: permitem carregar bibliotecas sob demanda dentro deles (ex.: fflate).
   worker: { format: 'es' },
   build: {

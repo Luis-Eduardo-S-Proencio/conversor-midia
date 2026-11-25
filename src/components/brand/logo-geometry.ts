@@ -25,5 +25,5 @@ export const LOGO_BLADE_PATHS = [
 export const BRAND_COLORS = {
   start: '#8b5cf6',
   end: '#ec4899',
-  background: '#0b0b0f',
+  background: '#0a0a0d',
 } as const

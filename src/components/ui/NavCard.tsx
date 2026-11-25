@@ -18,9 +18,9 @@ export function NavCard({ to, icon, title, description, meta, badge }: NavCardPr
   return (
     <Link
       to={to}
-      className="group grid grid-cols-[2.5rem_minmax(0,1fr)_1.25rem] items-center gap-3 rounded-lg border border-border bg-surface p-4 transition-colors hover:border-border-strong md:p-5"
+      className="group grid grid-cols-[2.5rem_minmax(0,1fr)_1.25rem] items-center gap-3 rounded-lg border border-border bg-surface-1 p-4 transition-colors hover:border-stroke md:p-5"
     >
-      <span className="grid size-10 place-items-center rounded-md bg-surface-raised text-fg">
+      <span className="grid size-10 place-items-center rounded-md bg-surface-2 text-fg">
         <Icon icon={icon} />
       </span>
       <span className="grid min-w-0 gap-0.5">

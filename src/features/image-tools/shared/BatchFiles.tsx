@@ -186,7 +186,7 @@ export function BatchFiles({
       )}
 
       {viewing && (
-        <section aria-labelledby={viewingHeadingId} className="grid gap-3 rounded-lg border border-border bg-surface p-3">
+        <section aria-labelledby={viewingHeadingId} className="grid gap-3 rounded-lg border border-border bg-surface-1 p-3">
           <div className="flex items-center justify-between gap-3">
             <h3 id={viewingHeadingId} ref={viewingHeading} tabIndex={-1} className="min-w-0 truncate text-sm font-semibold">
               {`Como ficou: ${viewing.output?.name ?? viewing.name}`}

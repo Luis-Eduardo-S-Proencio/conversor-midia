@@ -15,7 +15,7 @@ export function ActionBar({ className, children }: ActionBarProps) {
   return (
     <div
       className={cx(
-        'sticky bottom-0 z-20 -mx-4 grid gap-2 border-t border-border bg-surface px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:-mx-6 sm:px-6',
+        'sticky bottom-0 z-20 -mx-(--gutter) grid gap-2 border-t border-border bg-surface-1 px-(--gutter) pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]',
         'md:static md:mx-0 md:border-t-0 md:bg-transparent md:p-0',
         className,
       )}

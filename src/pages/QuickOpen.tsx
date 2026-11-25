@@ -108,9 +108,9 @@ export function QuickOpen({ onOpened }: { onOpened: (opened: OpenedMedia | null)
 
   const tools = toolsFor(chosen.kind)
   return (
-    <div className="grid animate-enter gap-4 rounded-xl border border-border bg-surface p-4 sm:p-5">
+    <div className="grid animate-enter gap-4 rounded-xl border border-border bg-surface-1 p-4 sm:p-5">
       <div className="flex items-center gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-md bg-surface-raised text-fg-muted">
+        <span className="grid size-11 shrink-0 place-items-center rounded-md bg-surface-2 text-fg-muted">
           <Icon icon={chosen.kind === 'image' ? ImageIcon : Film} />
         </span>
         <div className="grid min-w-0 gap-0.5">
@@ -126,7 +126,7 @@ export function QuickOpen({ onOpened }: { onOpened: (opened: OpenedMedia | null)
             <Link
               to={tool.to}
               onClick={() => handOffFiles(chosen.kind, files.current)}
-              className="flex min-h-14 items-center gap-3 rounded-lg border border-border bg-surface-raised px-3 py-2 text-sm font-semibold text-fg transition-colors hover:border-border-strong hover:bg-surface-overlay"
+              className="flex min-h-14 items-center gap-3 rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm font-semibold text-fg transition-colors hover:border-stroke hover:bg-surface-3"
             >
               <ToolIcon icon={tool.icon} tone={tool.tone} />
               {tool.title}

@@ -4,7 +4,7 @@
  */
 .crop-area .ReactCrop {
   --rc-border-color: var(--color-fg);
-  --rc-focus-color: var(--color-accent-soft);
+  --rc-focus-color: var(--color-accent);
   --rc-drag-handle-bg-colour: var(--color-fg);
   --rc-drag-handle-size: 14px;
   --rc-drag-handle-mobile-size: 20px;

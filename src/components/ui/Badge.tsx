@@ -6,8 +6,8 @@ import { Icon } from './Icon'
 export type BadgeVariant = 'neutral' | 'accent' | 'success' | 'warning' | 'danger'
 
 const VARIANTS: Record<BadgeVariant, string> = {
-  neutral: 'border-border bg-surface-raised text-fg-muted',
-  accent: 'border-transparent bg-accent-subtle text-accent-soft',
+  neutral: 'border-border bg-surface-2 text-fg-muted',
+  accent: 'border-transparent bg-accent-soft text-accent',
   success: 'border-transparent bg-success-subtle text-success',
   warning: 'border-transparent bg-warning-subtle text-warning',
   danger: 'border-transparent bg-danger-subtle text-danger',

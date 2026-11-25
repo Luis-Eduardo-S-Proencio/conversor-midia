@@ -6,17 +6,42 @@
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /*
+     * Grão sutilíssimo só no fundo da página, nunca por cima da mídia. É um arquivo do próprio
+     * site: a CSP (img-src 'self' blob:) não permite imagens em data:.
+     */
+    background-color: var(--color-bg);
+    background-image: url("/grain.svg");
+    background-size: 160px 160px;
+    /* Âncoras e foco não ficam escondidos sob o cabeçalho fixo */
+    scroll-padding-top: calc(var(--header-h) + env(safe-area-inset-top) + 8px);
   }
 
   body {
-    background-color: var(--color-bg);
+    /* Sem fundo próprio: o do html (com o grão) aparece por trás de tudo. */
     color: var(--color-fg);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  /* No Tailwind v4 a borda padrão é currentColor; aqui ela vira a borda discreta da marca. */
+  /* Títulos com a fonte de personalidade; parágrafos sem viúvas. */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* No Tailwind v4 a borda padrão é currentColor; aqui ela vira a borda hairline da marca. */
   *,
   ::before,
   ::after {
@@ -24,12 +49,12 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent-soft);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
 
   ::selection {
-    background-color: var(--color-accent-subtle);
+    background-color: var(--color-accent-soft);
     color: var(--color-fg);
   }
 
@@ -50,14 +75,14 @@
   background: repeating-conic-gradient(var(--color-checker-a) 0 25%, var(--color-checker-b) 0 50%) 0 0 / 16px 16px;
 }
 
-/* Degradê da marca (violeta → rosa): logo, ícone de abrir arquivo, progresso. */
+/* Degradê da marca (violeta → rosa): só o logo e, no máximo, o botão de exportar. */
 @utility bg-brand {
   background-image: linear-gradient(135deg, var(--color-brand-start), var(--color-brand-end));
 }
 
 /*
- * Texto em degradê, só em títulos grandes. No alto contraste do Windows o fundo some,
- * então o texto volta a ter cor própria.
+ * Texto em degradê. Proibido no redesenho: sai do Início na fase das telas.
+ * No alto contraste do Windows o fundo some, então o texto volta a ter cor própria.
  */
 @utility text-brand {
   background-image: linear-gradient(90deg, var(--color-brand-start), var(--color-brand-end));
@@ -71,9 +96,118 @@
   }
 }
 
+/* Área de abrir arquivos antiga (sai na fase das ferramentas, trocada pelo visor). */
+@utility bg-drop {
+  background: var(--color-surface-1);
+}
+
+/* Cartão: grafite em camadas, borda hairline e luz vindo de cima. */
+@utility surface-card {
+  background: linear-gradient(180deg, var(--color-surface-2), var(--color-surface-1));
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-1);
+}
+
+/* Cabeçalho que ganha vidro ao rolar (o componente liga com data-scrolled). */
+@utility glass-header {
+  background: color-mix(in srgb, var(--color-bg) 72%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* Toque físico: o elemento afunda um pouco. */
+@utility pressable {
+  transition-property: scale, background-color, border-color, color, opacity, translate;
+  transition-duration: var(--dur-1);
+  transition-timing-function: var(--ease-out);
+
+  &:active:not(:disabled, [aria-disabled="true"]) {
+    scale: 0.97;
+  }
+}
+
+/* Carrossel sem barra de rolagem, com encaixe e fade nas bordas. */
+@utility scroller-x {
+  display: flex;
+  gap: var(--s-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+  padding-inline: var(--gutter);
+  scroll-padding-inline: var(--gutter);
+  mask-image: linear-gradient(90deg, transparent, #000 16px, #000 calc(100% - 24px), transparent);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  & > * {
+    flex: none;
+    scroll-snap-align: start;
+  }
+}
+
+/* Carregando: brilho que passa por cima de um bloco neutro. */
+@utility skeleton {
+  background: linear-gradient(
+      100deg,
+      transparent 30%,
+      rgb(255 255 255 / 0.06) 50%,
+      transparent 70%
+    )
+    0 0 / 200% 100% no-repeat,
+    var(--color-surface-3);
+  animation: var(--animate-shimmer);
+}
+
+/*
+ * Visor de câmera: 4 cantoneiras em L no lugar da borda tracejada. Com data-dragover
+ * (arquivo por cima), elas se fecham para o centro na cor do acento, como um foco.
+ */
+@utility viewfinder {
+  position: relative;
+  background: var(--color-surface-1);
+  transition: background-color var(--dur-2) var(--ease-out);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 12px;
+    pointer-events: none;
+    --c: var(--color-border-strong);
+    --l: 22px;
+    --w: 2px;
+    background:
+      linear-gradient(var(--c) 0 0) top left / var(--l) var(--w),
+      linear-gradient(var(--c) 0 0) top left / var(--w) var(--l),
+      linear-gradient(var(--c) 0 0) top right / var(--l) var(--w),
+      linear-gradient(var(--c) 0 0) top right / var(--w) var(--l),
+      linear-gradient(var(--c) 0 0) bottom left / var(--l) var(--w),
+      linear-gradient(var(--c) 0 0) bottom left / var(--w) var(--l),
+      linear-gradient(var(--c) 0 0) bottom right / var(--l) var(--w),
+      linear-gradient(var(--c) 0 0) bottom right / var(--w) var(--l);
+    background-repeat: no-repeat;
+    transition: inset var(--dur-2) var(--ease-out);
+  }
+
+  &[data-dragover] {
+    background: color-mix(in oklab, var(--color-accent) 8%, var(--color-surface-1));
+  }
+
+  &[data-dragover]::before {
+    --c: var(--color-accent);
+    inset: 20px;
+  }
+
+  @media (forced-colors: active) {
+    border: 2px solid CanvasText;
+  }
+}
+
 /*
  * Trilha e alça do Slider: pseudo-elementos que utilitários não alcançam.
- * O preenchimento (degradê da marca) vem da variável --fill, definida pelo componente.
+ * Trilha de 4 px, parte preenchida no acento (variável --fill, do componente), alça branca de 20 px.
  */
 @layer components {
   .slider {
@@ -83,11 +217,12 @@
     margin: 0;
     background: transparent;
     cursor: pointer;
+    touch-action: pan-y;
   }
 
   .slider:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    opacity: 0.4;
   }
 
   /* Com toque, a área de arraste ganha os 44 px de alvo; a trilha continua fina e centralizada. */
@@ -98,34 +233,35 @@
   }
 
   .slider::-webkit-slider-runnable-track {
-    height: 6px;
+    height: 4px;
     border-radius: 9999px;
     background:
-      linear-gradient(90deg, var(--color-brand-start), var(--color-brand-end)) 0 0 / var(--fill, 0%) 100% no-repeat,
-      var(--color-border);
+      linear-gradient(var(--color-accent), var(--color-accent)) 0 0 / var(--fill, 0%) 100% no-repeat,
+      var(--color-surface-hover);
   }
 
   .slider::-moz-range-track {
-    height: 6px;
+    height: 4px;
     border-radius: 9999px;
-    background: var(--color-border);
+    background: var(--color-surface-hover);
   }
 
   .slider::-moz-range-progress {
-    height: 6px;
+    height: 4px;
     border-radius: 9999px;
-    background: linear-gradient(90deg, var(--color-brand-start), var(--color-brand-end));
+    background: var(--color-accent);
   }
 
   .slider::-webkit-slider-thumb {
     appearance: none;
     width: 20px;
     height: 20px;
-    margin-top: -7px;
+    margin-top: -8px;
     border: 0;
     border-radius: 9999px;
     background: var(--color-fg);
-    box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+    transition: scale var(--dur-1) var(--ease-out);
   }
 
   .slider::-moz-range-thumb {
@@ -134,7 +270,11 @@
     border: 0;
     border-radius: 9999px;
     background: var(--color-fg);
-    box-shadow: 0 2px 6px rgb(0 0 0 / 0.5);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+  }
+
+  .slider:active::-webkit-slider-thumb {
+    scale: 1.1;
   }
 
   /* No alto contraste do Windows a trilha some; a alça ganha borda para continuar visível. */
@@ -148,9 +288,104 @@
   }
 }
 
-/* Área de abrir arquivos: superfície com um leve brilho da marca no alto. */
-@utility bg-drop {
-  background:
-    radial-gradient(90% 80% at 50% 0%, color-mix(in srgb, var(--color-brand-start) 12%, transparent), transparent 70%),
-    var(--color-surface);
+/*
+ * Painel que sobe de baixo (BottomSheet) e diálogo central (ConfirmDialog), sobre <dialog> modal.
+ * Entrada com @starting-style (sem suporte, só aparecem, sem animar); saída com [data-closing],
+ * que o componente põe antes de fechar de fato.
+ */
+@layer components {
+  .sheet-dialog,
+  .modal-dialog {
+    max-width: 100%;
+    max-height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    overflow: visible;
+  }
+
+  .sheet-dialog::backdrop,
+  .modal-dialog::backdrop {
+    background: var(--color-scrim);
+    transition: opacity var(--dur-2) var(--ease-out);
+  }
+
+  .sheet-dialog[data-closing]::backdrop,
+  .modal-dialog[data-closing]::backdrop {
+    opacity: 0;
+  }
+
+  @starting-style {
+    .sheet-dialog[open]::backdrop,
+    .modal-dialog[open]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  .sheet-dialog {
+    inset: auto 0 0;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 768px) {
+    .sheet-dialog {
+      width: min(32rem, 100% - 2 * var(--gutter));
+    }
+  }
+
+  .sheet-panel {
+    transition: translate var(--dur-3) var(--ease-emph);
+  }
+
+  .sheet-panel[data-dragging] {
+    transition: none;
+  }
+
+  .sheet-dialog[data-closing] .sheet-panel {
+    translate: 0 100%;
+    transition: translate var(--dur-2) var(--ease-in);
+  }
+
+  @starting-style {
+    .sheet-dialog[open] .sheet-panel {
+      translate: 0 100%;
+    }
+  }
+
+  .modal-dialog {
+    width: min(26rem, 100% - 2 * var(--gutter));
+    margin: auto;
+  }
+
+  .modal-panel {
+    transition:
+      opacity var(--dur-2) var(--ease-out),
+      scale var(--dur-2) var(--ease-out);
+  }
+
+  .modal-dialog[data-closing] .modal-panel {
+    opacity: 0;
+    scale: 0.96;
+  }
+
+  @starting-style {
+    .modal-dialog[open] .modal-panel {
+      opacity: 0;
+      scale: 0.96;
+    }
+  }
+}
+
+/* Dica de botão: aparece com um pequeno atraso ao passar o ponteiro (não pisca ao cruzar a barra). */
+@utility tooltip-in {
+  animation: tooltip-in var(--dur-2) var(--ease-out) 300ms both;
+}
+
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+    translate: 0 -2px;
+  }
 }

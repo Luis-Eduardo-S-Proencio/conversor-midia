@@ -14,7 +14,7 @@ interface VariantStyle {
 
 // Erro interrompe o leitor de tela (alert); os demais esperam a pausa (status).
 const VARIANTS: Record<AlertVariant, VariantStyle> = {
-  info: { icon: Info, container: 'border-accent/45 bg-accent-subtle', iconColor: 'text-accent-soft', role: 'status' },
+  info: { icon: Info, container: 'border-accent/45 bg-accent-soft', iconColor: 'text-accent', role: 'status' },
   success: { icon: CircleCheck, container: 'border-success/30 bg-success-subtle', iconColor: 'text-success', role: 'status' },
   warning: { icon: TriangleAlert, container: 'border-warning/30 bg-warning-subtle', iconColor: 'text-warning', role: 'status' },
   error: { icon: CircleAlert, container: 'border-danger/30 bg-danger-subtle', iconColor: 'text-danger', role: 'alert' },

@@ -32,13 +32,13 @@ export function ProgressBar({ label, value, hideLabel = false, className }: Prog
         aria-valuemin={determinate ? 0 : undefined}
         aria-valuemax={determinate ? 100 : undefined}
         aria-valuenow={determinate ? percent : undefined}
-        className="h-1.5 overflow-hidden rounded-full bg-border"
+        className="h-1.5 overflow-hidden rounded-full bg-surface-hover"
       >
         {/* Desloca a barra (transform) em vez de mudar a largura: não força recálculo de layout. */}
         <div
           className={cx(
-            'h-full rounded-full bg-brand',
-            determinate ? 'w-full transition-transform duration-(--duration-base)' : 'w-1/3 animate-indeterminate',
+            'h-full rounded-full bg-accent',
+            determinate ? 'w-full transition-transform duration-(--dur-3) ease-out' : 'w-1/3 animate-indeterminate',
           )}
           style={determinate ? { transform: `translateX(${clamped - 100}%)` } : undefined}
         />

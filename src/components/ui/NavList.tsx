@@ -54,12 +54,12 @@ export function NavList({ items, columns = 1, unavailableLabel = 'Em breve', cla
       {items.map((item, index) => (
         <li
           key={item.id}
-          className={cx('bg-surface', lastSpansBothColumns && index === items.length - 1 && 'md:col-span-2')}
+          className={cx('bg-surface-1', lastSpansBothColumns && index === items.length - 1 && 'md:col-span-2')}
         >
           {item.to ? (
             <Link
               to={item.to}
-              className={cx(ROW, 'transition-colors hover:bg-surface-raised focus-visible:-outline-offset-2')}
+              className={cx(ROW, 'transition-colors hover:bg-surface-2 focus-visible:-outline-offset-2')}
             >
               <RowContent item={item} trailing={<Icon icon={ChevronRight} size="sm" className="text-fg-subtle" />} />
             </Link>

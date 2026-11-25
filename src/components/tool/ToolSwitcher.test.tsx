@@ -6,7 +6,7 @@ import { ToolSwitcher, type SwitcherTool } from './ToolSwitcher'
 
 const TOOLS: SwitcherTool[] = [
   { id: 'compress', to: '/imagens/comprimir', label: 'Comprimir', icon: Minimize2, tone: 'compress' },
-  { id: 'crop', to: '/imagens/recortar', label: 'Recortar', icon: Crop, tone: 'crop' },
+  { id: 'crop', to: '/imagens/recortar', label: 'Recortar', icon: Crop, tone: 'edit' },
 ]
 
 function renderSwitcher(switched: string[]) {

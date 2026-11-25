@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Outlet, ScrollRestoration, useLocation, useMatches } from 'react-router'
 import { cx } from '../ui/cx'
+import { ToastProvider } from '../ui/Toast'
 import { BottomNav } from './BottomNav'
 import { Footer } from './Footer'
 import { MobileHeader } from './MobileHeader'
@@ -34,10 +35,17 @@ export function AppShell() {
   }, [pathname, hash])
 
   return (
-    <div className="min-h-dvh pr-[env(safe-area-inset-right)] md:flex">
+    <div
+      className={cx(
+        'min-h-dvh pr-[env(safe-area-inset-right)] md:flex',
+        // Avisos acima da barra inferior do celular, quando ela aparece.
+        !editor && 'max-md:[--toast-lift:var(--bottomnav-h)]',
+      )}
+    >
+      <ToastProvider>
       <a
         href="#conteudo"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-surface-raised focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-fg"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-surface-2 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-fg"
       >
         Pular para o conteúdo
       </a>
@@ -45,7 +53,7 @@ export function AppShell() {
       <div
         className={cx(
           'flex min-h-dvh min-w-0 flex-1 flex-col pl-[env(safe-area-inset-left)] md:pl-0',
-          !editor && 'pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom))] md:pb-0',
+          !editor && 'pb-[calc(var(--bottomnav-h)+env(safe-area-inset-bottom))] md:pb-0',
         )}
       >
         <MobileHeader />
@@ -57,6 +65,7 @@ export function AppShell() {
       </div>
       {!editor && <BottomNav />}
       <ScrollRestoration />
+      </ToastProvider>
     </div>
   )
 }

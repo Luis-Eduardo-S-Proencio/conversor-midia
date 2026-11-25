@@ -1,6 +1,7 @@
 import { LoaderCircle, type LucideIcon } from 'lucide-react'
 import type { ComponentProps, MouseEvent } from 'react'
 import { buttonClasses, type ButtonStyleOptions } from './button-classes'
+import { cx } from './cx'
 import { Icon } from './Icon'
 
 interface ButtonProps extends ComponentProps<'button'>, Omit<ButtonStyleOptions, 'iconOnly'> {
@@ -29,6 +30,9 @@ export function Button({
     onClick?.(event)
   }
 
+  // Carregando: o spinner ocupa o lugar do ícone. Sem ícone, ele fica por cima do texto
+  // (que só fica invisível), para o botão não mudar de largura.
+  const spinnerOverText = loading && !icon
   return (
     <button
       {...rest}
@@ -38,8 +42,19 @@ export function Button({
       onClick={handleClick}
       className={buttonClasses({ variant, size, block, className })}
     >
-      {loading ? <Icon icon={LoaderCircle} className="animate-spin" /> : icon && <Icon icon={icon} />}
-      {children}
+      {loading && icon && <Icon icon={LoaderCircle} className="animate-spin" />}
+      {!loading && icon && <Icon icon={icon} />}
+      {spinnerOverText ? (
+        <>
+          {/* opacity (não visibility): o texto continua sendo o nome do botão para o leitor de tela */}
+          <span className="opacity-0">{children}</span>
+          <span className="absolute inset-0 grid place-items-center">
+            <Icon icon={LoaderCircle} className="animate-spin" />
+          </span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   )
 }
@@ -48,25 +63,49 @@ interface IconButtonProps extends Omit<ComponentProps<'button'>, 'children' | 'a
   icon: LucideIcon
   /** Nome acessível e dica visual: o botão não tem texto. */
   label: string
+  /** Atalho de teclado mostrado na dica (ex.: "S"); só informativo. */
+  shortcut?: string
   variant?: ButtonStyleOptions['variant']
+  /** sm = 36 px (só com mouse), md = 44 px. */
   size?: ButtonStyleOptions['size']
 }
 
-export function IconButton({ icon, label, variant = 'ghost', size = 'md', className, type = 'button', ...rest }: IconButtonProps) {
+/**
+ * Botão só com ícone. Com mouse, a dica aparece ao passar o ponteiro ou ao focar pelo teclado;
+ * o nome acessível vem de `label` (aria-label), então a dica é só visual.
+ */
+export function IconButton({ icon, label, shortcut, variant = 'ghost', size = 'md', className, type = 'button', ...rest }: IconButtonProps) {
   return (
     <button
       {...rest}
       type={type}
       aria-label={label}
-      title={label}
+      aria-keyshortcuts={shortcut}
       className={buttonClasses({
         variant,
         size,
         iconOnly: true,
-        className: `aria-pressed:border-accent aria-pressed:bg-accent-subtle aria-pressed:text-accent-soft ${className ?? ''}`,
+        className: cx(
+          'group/tip aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent',
+          // Com toque, nunca abaixo de 44 px.
+          size === 'sm' && 'pointer-coarse:size-11',
+          className,
+        ),
       })}
     >
       <Icon icon={icon} />
+      <span
+        aria-hidden="true"
+        className={cx(
+          // Fora da tela até aparecer (display: none): invisível, mas existindo, ela alargaria a página perto das bordas.
+          'pointer-events-none absolute top-full left-1/2 z-40 mt-2 hidden -translate-x-1/2 items-center gap-1.5 rounded-sm border border-border-strong',
+          'bg-surface-3 px-2 py-1 text-caption font-medium whitespace-nowrap text-fg shadow-2',
+          'pointer-fine:group-hover/tip:flex pointer-fine:group-focus-visible/tip:flex tooltip-in',
+        )}
+      >
+        {label}
+        {shortcut && <kbd className="rounded-sm bg-surface-hover px-1 font-sans text-xs text-fg-muted">{shortcut}</kbd>}
+      </span>
     </button>
   )
 }

@@ -109,7 +109,7 @@ export function EditOptions({ edit, duration, selection, plan, saveBlocker, onSe
         {selection && (
           <div className="flex items-baseline justify-between gap-3">
             <dt className="text-fg-muted">Parte marcada</dt>
-            <dd className="text-right tabular-nums text-accent-soft">
+            <dd className="text-right tabular-nums text-accent">
               {`${formatTime(selection.start)} a ${formatTime(selection.end)} · ${formatTime(selection.end - selection.start)}`}
             </dd>
           </div>

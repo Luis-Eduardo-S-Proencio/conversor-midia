@@ -1,4 +1,4 @@
-import { Navigate, createBrowserRouter, type RouteObject } from 'react-router'
+import { Navigate, createBrowserRouter } from 'react-router'
 import { AppShell } from '../components/layout/AppShell'
 import type { RouteHandle } from '../components/layout/route-handle'
 import { ErrorPage } from '../pages/ErrorPage'
@@ -7,21 +7,6 @@ import { ImagesPage } from '../pages/ImagesPage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { RouteLoading } from '../pages/RouteLoading'
 import { VideosPage } from '../pages/VideosPage'
-
-// A vitrine de componentes só existe em desenvolvimento: no build, import.meta.env.DEV vira
-// `false` e a rota e seu código saem do pacote.
-const devRoutes: RouteObject[] = import.meta.env.DEV
-  ? [
-      {
-        path: 'design-system',
-        handle: { editor: true } satisfies RouteHandle,
-        lazy: async () => {
-          const { DesignSystemPage } = await import('../pages/dev/DesignSystemPage')
-          return { Component: DesignSystemPage }
-        },
-      },
-    ]
-  : []
 
 export const router = createBrowserRouter([
   {
@@ -143,7 +128,15 @@ export const router = createBrowserRouter([
           return { Component: GifPage }
         },
       },
-      ...devRoutes,
+      {
+        // Vitrine de tokens e componentes: publicada, mas fora da navegação (e sem indexação).
+        path: '_design',
+        handle: { editor: true } satisfies RouteHandle,
+        lazy: async () => {
+          const { DesignPage } = await import('../pages/DesignPage')
+          return { Component: DesignPage }
+        },
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

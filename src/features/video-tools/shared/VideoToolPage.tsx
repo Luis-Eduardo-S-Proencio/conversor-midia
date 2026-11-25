@@ -144,7 +144,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
     <>
       <title>{`${title} · Media Tools`}</title>
       {/* Editor: título no alto; ferramentas, palco com o vídeo e painel de opções lado a lado a partir de 1024 px. */}
-      <div className="mx-auto grid w-full max-w-editor gap-4 px-4 pt-4 pb-6 sm:px-6 lg:grid-cols-[6.5rem_minmax(0,1fr)_21rem] lg:gap-x-5 lg:pt-5">
+      <div className="mx-auto grid w-full max-w-editor gap-4 px-(--gutter) pt-4 pb-6 lg:grid-cols-[6.5rem_minmax(0,1fr)_21rem] lg:gap-x-5 lg:pt-5">
         <header className="grid gap-1 border-b border-border pb-4 lg:col-span-3">
           <div className="text-sm">
             <BackToVideos />
@@ -238,7 +238,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
             <section
               aria-labelledby={state.phase === 'done' ? undefined : optionsHeadingId}
               aria-label={state.phase === 'done' ? 'Resultado' : undefined}
-              className="grid content-start gap-5 rounded-xl border border-border bg-surface p-4 md:p-5 lg:sticky lg:top-5 lg:self-start"
+              className="grid content-start gap-5 rounded-xl border border-border bg-surface-1 p-4 md:p-5 lg:sticky lg:top-5 lg:self-start"
             >
               {state.phase === 'done' && state.file && state.result ? (
                 <div className="grid gap-4">

@@ -76,9 +76,11 @@ test.describe('navegação', () => {
     await expect(page).toHaveURL(/\/$/)
   })
 
-  test('a vitrine de componentes não existe no build de produção', async ({ page }) => {
-    await page.goto('/design-system')
-    await expect(page.getByRole('heading', { level: 1, name: 'Página não encontrada' })).toBeVisible()
+  test('a vitrine fica em /_design, fora da navegação', async ({ page }) => {
+    await page.goto('/_design')
+    await expect(page.getByRole('heading', { level: 1, name: 'Design System' })).toBeVisible()
+    await page.goto('/')
+    await expect(page.locator('a[href="/_design"]')).toHaveCount(0)
   })
 })
 

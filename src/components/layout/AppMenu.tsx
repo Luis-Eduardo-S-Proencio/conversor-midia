@@ -9,7 +9,7 @@ import { requestInstall, useInstallMode } from './install-app'
 
 const ITEM =
   'flex min-h-12 w-full items-center gap-3 rounded-md px-3 text-left text-sm font-medium text-fg transition-colors ' +
-  'hover:bg-surface-overlay focus-visible:-outline-offset-2'
+  'hover:bg-surface-3 focus-visible:-outline-offset-2'
 
 /**
  * "Mais opções", no canto do cabeçalho do celular: instalar o app e a página Sobre.
@@ -79,12 +79,12 @@ export function AppMenu({ className }: { className?: string }) {
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpenOn(open ? null : pathname)}
-        className="aria-expanded:bg-surface-raised aria-expanded:text-fg"
+        className="aria-expanded:bg-surface-2 aria-expanded:text-fg"
       />
       {open && (
         <div
           id={panelId}
-          className="absolute top-full right-0 z-30 mt-2 w-60 animate-enter rounded-xl border border-border bg-surface-raised p-1.5 shadow-overlay"
+          className="absolute top-full right-0 z-30 mt-2 w-60 animate-enter rounded-xl border border-border bg-surface-2 p-1.5 shadow-2"
         >
           <ul className="grid gap-0.5">
             {mode !== 'installed' && (

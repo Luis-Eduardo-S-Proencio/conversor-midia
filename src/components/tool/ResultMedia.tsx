@@ -41,7 +41,7 @@ export function ResultAudio({ src, name }: ResultMediaProps) {
   return (
     <div className="grid min-h-48 content-center gap-4 rounded-lg border border-border bg-bg p-4 md:p-6">
       <div className="flex min-w-0 items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-md bg-accent-subtle text-accent-soft">
+        <span className="grid size-10 shrink-0 place-items-center rounded-md bg-accent-soft text-accent">
           <Icon icon={Music} />
         </span>
         <p className="min-w-0 truncate text-sm text-fg tabular-nums" title={name}>

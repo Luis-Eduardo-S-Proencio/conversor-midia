@@ -79,7 +79,7 @@ export function FileListItem({
   return (
     <li
       className={cx(
-        'grid items-center gap-3 bg-surface px-4 py-3',
+        'grid items-center gap-3 bg-surface-1 px-4 py-3',
         showThumbnail ? 'grid-cols-[3rem_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]',
       )}
     >
@@ -90,7 +90,7 @@ export function FileListItem({
             aria-label={`Mostrar ${name}`}
             aria-pressed={shown}
             onClick={onShow}
-            className="grid size-12 place-items-center overflow-hidden rounded-sm bg-checker text-fg-subtle ring-offset-2 ring-offset-surface transition-shadow aria-pressed:ring-2 aria-pressed:ring-accent"
+            className="grid size-12 place-items-center overflow-hidden rounded-sm bg-checker text-fg-subtle ring-offset-2 ring-offset-surface-1 transition-shadow aria-pressed:ring-2 aria-pressed:ring-accent"
           >
             <Thumbnail url={thumbnailUrl} state={state} orientation={orientation} />
           </button>

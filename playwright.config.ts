@@ -1,8 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// O app é testado no build de produção (preview); a vitrine só existe no servidor de desenvolvimento.
+// O app é testado no build de produção (preview), inclusive a vitrine (/_design).
 const PREVIEW_URL = 'http://localhost:4173'
-const DEV_URL = 'http://localhost:5173'
 
 export default defineConfig({
   testDir: 'tests/e2e',
@@ -53,21 +52,13 @@ export default defineConfig({
     {
       name: 'vitrine',
       testMatch: /design-system/,
-      use: { ...devices['Desktop Chrome'], baseURL: DEV_URL },
+      use: { ...devices['Desktop Chrome'], baseURL: PREVIEW_URL },
     },
   ],
-  webServer: [
-    {
-      command: 'npm run build && npm run preview -- --port 4173 --strictPort',
-      url: PREVIEW_URL,
-      reuseExistingServer: !process.env.CI,
-      timeout: 180_000,
-    },
-    {
-      command: 'npm run dev -- --port 5173 --strictPort',
-      url: DEV_URL,
-      reuseExistingServer: !process.env.CI,
-      timeout: 120_000,
-    },
-  ],
+  webServer: {
+    command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+    url: PREVIEW_URL,
+    reuseExistingServer: !process.env.CI,
+    timeout: 180_000,
+  },
 })

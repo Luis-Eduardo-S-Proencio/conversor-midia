@@ -7,7 +7,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Principal"
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface-1 pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] md:hidden"
     >
       <ul className="mx-auto grid max-w-md grid-cols-3">
         {NAV_ITEMS.map((item) => (
@@ -15,9 +15,9 @@ export function BottomNav() {
             <NavLink
               to={item.to}
               end={item.end}
-              className="group flex h-(--bottom-nav-h) flex-col items-center justify-center gap-0.5 text-xs font-medium text-fg-muted focus-visible:-outline-offset-2 aria-[current=page]:text-fg forced-colors:aria-[current=page]:underline"
+              className="group flex h-(--bottomnav-h) flex-col items-center justify-center gap-0.5 text-xs font-medium text-fg-muted focus-visible:-outline-offset-2 aria-[current=page]:text-fg forced-colors:aria-[current=page]:underline"
             >
-              <span className="grid h-7 w-13 place-items-center rounded-full transition-colors group-aria-[current=page]:bg-accent-subtle group-aria-[current=page]:text-accent-soft">
+              <span className="grid h-7 w-13 place-items-center rounded-full transition-colors group-aria-[current=page]:bg-accent-soft group-aria-[current=page]:text-accent">
                 <Icon icon={item.icon} />
               </span>
               {item.label}

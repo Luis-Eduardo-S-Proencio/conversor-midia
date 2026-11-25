@@ -85,7 +85,7 @@ Marque ✔ ou ✘ e anote o que estranhar.
 
 34. Os botões são fáceis de tocar, e a ação principal fica no rodapé, ao alcance do polegar. Com o celular em pé e deitado, nada fica cortado nem obriga a rolar para o lado. Em Pixels e no Recortar, os campos abrem o teclado numérico.
 35. Opcional: com o VoiceOver ou o TalkBack ligado, o fim da conversão é anunciado ("Imagem convertida. Pronta para baixar."), cada toque em girar ou espelhar diz como a imagem ficou, e a área de recorte e os cantos têm nomes em português. No Editar vídeo, "Dividir" e "Excluir" anunciam o que aconteceu, e as alças dizem o tempo da ponta.
-36. Opcional, só no endereço https, instale o app. No iPhone, use Compartilhar › Adicionar à Tela de Início. No Android, use o menu › Instalar app. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo.
+36. Opcional, só no endereço https, instale o app pelo menu do site: os três pontos no canto do cabeçalho › "Instalar o app". No Android (Chrome), abre o pedido de instalação do próprio Chrome. No iPhone, aparecem as instruções: Compartilhar › Adicionar à Tela de Início. Aberto pelo ícone, o app aparece sem a barra do navegador e com o ícone certo, e o menu não mostra mais "Instalar o app".
 
 **Extrair áudio** (`/videos/extrair-audio`; itens novos, no fim para não mudar a numeração acima)
 
@@ -112,7 +112,7 @@ Marque ✔ ou ✘ e anote o que estranhar.
 
 **Visual novo** (redesenho de 24/11/2026; itens novos, no fim para não mudar a numeração acima)
 
-48. Abra o site: aparece a logo nova (lâminas de câmera brancas num quadrado violeta e rosa). No celular, as abas Início, Imagens, Vídeos e Sobre ficam embaixo; no computador ou no tablet, numa barra à esquerda. Se o app já estiver instalado na tela inicial, o ícone novo pode demorar a aparecer: o aparelho guarda o antigo por um tempo (desinstalar e instalar de novo resolve).
+48. Abra o site: aparece a logo nova (lâminas de câmera brancas num quadrado violeta e rosa). No celular, as abas Início, Imagens e Vídeos ficam embaixo, e os três pontos no canto do cabeçalho abrem "Instalar o app" e "Sobre o Media Tools"; no computador ou no tablet, as abas ficam numa barra à esquerda, e o Sobre, no rodapé. Se o app já estiver instalado na tela inicial, o ícone novo pode demorar a aparecer: o aparelho guarda o antigo por um tempo (desinstalar e instalar de novo resolve).
 49. No Início, toque em "Abrir foto ou vídeo" e escolha uma foto: aparece "O que fazer com [nome da foto]?" com as ferramentas de imagem. Toque em "Comprimir imagem": a ferramenta já abre com a foto, sem escolher de novo.
 50. Volte ao Início e abra um vídeo: aparecem as 7 ferramentas de vídeo. "Editar vídeo" abre com o vídeo.
 51. No Início, escolha 3 fotos de uma vez: aparece "O que fazer com as 3 imagens?". Em "Converter imagem", as 3 estão na lista.

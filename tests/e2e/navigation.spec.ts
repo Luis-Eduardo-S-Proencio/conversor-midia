@@ -1,4 +1,6 @@
 import { expect, test } from '@playwright/test'
+import { expectNoAxeViolations } from './image-tool.ts'
+import { horizontalOverflow } from './video-tool.ts'
 
 test.describe('navegação', () => {
   test('o menu leva às páginas e marca a atual', async ({ page }) => {
@@ -40,9 +42,18 @@ test.describe('navegação', () => {
     expect(footerLine.y + footerLine.height).toBeLessThanOrEqual(nav.y)
   })
 
-  test('"Como funciona" leva à explicação do processamento local', async ({ page }) => {
+  test('o menu principal leva a Início, Imagens e Vídeos; o Sobre fica no rodapé', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('link', { name: 'Como funciona' }).click()
+    await expect(page.getByRole('navigation', { name: 'Principal' }).getByRole('link')).toHaveText(['Início', 'Imagens', 'Vídeos'])
+
+    await page.getByRole('navigation', { name: 'Rodapé' }).getByRole('link', { name: 'Sobre', exact: true }).click()
+    await expect(page).toHaveURL(/\/sobre$/)
+    await expect(page.getByRole('heading', { level: 1, name: 'Sobre o Media Tools' })).toBeVisible()
+  })
+
+  test('"Processamento local", no rodapé, leva à explicação', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('navigation', { name: 'Rodapé' }).getByRole('link', { name: 'Processamento local' }).click()
 
     await expect(page).toHaveURL(/\/sobre#processamento-local$/)
     const section = page.getByRole('heading', { name: 'Processamento local' })
@@ -71,6 +82,53 @@ test.describe('navegação', () => {
   })
 })
 
+test.describe('celular: menu "Mais opções" do cabeçalho', () => {
+  test.skip(({ isMobile }) => !isMobile, 'a partir de 768 px o cabeçalho é a barra lateral, sem este menu')
+
+  test.beforeEach(async ({ page }) => {
+    // Se o Chromium liberar o pedido de instalação, ele vai para o próprio navegador; aqui vale o caminho
+    // de quem não o tem (Safari, Firefox): as instruções. O pedido é conferido no teste do componente.
+    await page.addInitScript(() => {
+      window.addEventListener('beforeinstallprompt', (event) => event.stopImmediatePropagation())
+    })
+  })
+
+  test('leva ao Sobre e explica como instalar o app', async ({ page }) => {
+    await page.goto('/')
+    const menu = page.getByRole('banner').getByRole('button', { name: 'Mais opções' })
+    await menu.click()
+    await expect(menu).toHaveAttribute('aria-expanded', 'true')
+    await expectNoAxeViolations(page) // menu aberto
+
+    await page.getByRole('link', { name: 'Sobre o Media Tools' }).click()
+    await expect(page).toHaveURL(/\/sobre$/)
+    await expect(page.getByRole('heading', { level: 1, name: 'Sobre o Media Tools' })).toBeVisible()
+    await expect(menu).toHaveAttribute('aria-expanded', 'false')
+
+    await menu.click()
+    await page.getByRole('button', { name: 'Instalar o app' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Instalar o app' })
+    await expect(dialog).toBeVisible()
+    await expect(dialog).toContainText('Adicionar à Tela de Início')
+    await expectNoAxeViolations(page) // instruções abertas
+    expect(await horizontalOverflow(page)).toBe(0)
+
+    await dialog.getByRole('button', { name: 'Entendi' }).click()
+    await expect(dialog).toBeHidden()
+    await expect(menu).toBeFocused()
+  })
+
+  test('também nas ferramentas, sem sair da tela', async ({ page }) => {
+    await page.goto('/videos/editar')
+    await expect(page.getByRole('heading', { level: 1, name: 'Editar vídeo' })).toBeVisible()
+    await page.getByRole('banner').getByRole('button', { name: 'Mais opções' }).click()
+    await page.getByRole('button', { name: 'Instalar o app' }).click()
+
+    await expect(page.getByRole('dialog', { name: 'Instalar o app' })).toBeVisible()
+    await expect(page).toHaveURL(/\/videos\/editar$/)
+  })
+})
+
 test.describe('teclado', () => {
   test.skip(({ isMobile }) => isMobile, 'teclado físico')
 
@@ -84,8 +142,9 @@ test.describe('teclado', () => {
     await page.keyboard.press('Enter')
     await expect(page.locator('#conteudo')).toBeFocused()
 
+    // O próximo Tab já é o primeiro controle do conteúdo, a entrada principal do início.
     await page.keyboard.press('Tab')
-    await expect(page.getByRole('main').getByRole('link').first()).toBeFocused()
+    await expect(page.getByRole('main').getByRole('button', { name: 'Abrir foto ou vídeo' })).toBeFocused()
   })
 
   test('ao trocar de página, o foco vai para o conteúdo', async ({ page }) => {

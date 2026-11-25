@@ -14,6 +14,7 @@ function renderShell(initialPath = '/') {
         children: [
           { index: true, element: <h1>Página inicial</h1> },
           { path: 'imagens', element: <h1>Imagens</h1> },
+          { path: 'sobre', element: <h1>Sobre o Media Tools</h1> },
           { path: 'ferramenta', handle: { editor: true } satisfies RouteHandle, element: <h1>Ferramenta</h1> },
         ],
       },
@@ -33,6 +34,18 @@ describe('AppShell no celular', () => {
     await expect.element(nav).toBeVisible()
     await expect.element(nav.getByRole('link', { name: 'Imagens' })).toHaveAttribute('aria-current', 'page')
     await expect.element(nav.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current')
+    expect(nav.getByRole('link').elements().map((link) => link.textContent)).toEqual(['Início', 'Imagens', 'Vídeos'])
+  })
+
+  it('o menu "Mais opções" do cabeçalho leva ao Sobre', async () => {
+    await page.viewport(390, 844)
+    const { router, screenPromise } = renderShell('/')
+    const screen = await screenPromise
+
+    await screen.getByRole('banner').getByRole('button', { name: 'Mais opções' }).click()
+    await screen.getByRole('link', { name: 'Sobre o Media Tools' }).click()
+    await expect.element(screen.getByRole('heading', { name: 'Sobre o Media Tools' })).toBeVisible()
+    expect(router.state.location.pathname).toBe('/sobre')
   })
 
   it('esconde a barra inferior em rotas de ferramenta', async () => {
@@ -64,6 +77,19 @@ describe('AppShell no desktop', () => {
     const nav = navs.element()
     expect(nav.getBoundingClientRect().left).toBeLessThan(10)
     expect(sideWidth(nav)).toBe(240)
+  })
+
+  it('a barra lateral leva a Início, Imagens e Vídeos; o Sobre fica no rodapé', async () => {
+    await page.viewport(1280, 800)
+    const { screenPromise } = renderShell('/')
+    const screen = await screenPromise
+    const nav = screen.getByRole('navigation', { name: 'Principal' })
+
+    await expect.element(nav).toBeVisible()
+    expect(nav.getByRole('link').elements().map((link) => link.textContent?.trim())).toEqual(['Início', 'Imagens', 'Vídeos'])
+    await expect.element(screen.getByRole('navigation', { name: 'Rodapé' }).getByRole('link', { name: 'Sobre', exact: true })).toBeVisible()
+    // O menu "Mais opções" é do cabeçalho do celular, que some a partir de 768 px.
+    expect(screen.getByRole('button', { name: 'Mais opções' }).elements()).toHaveLength(0)
   })
 
   it('nas telas de editor a barra lateral fica estreita, com os mesmos destinos', async () => {

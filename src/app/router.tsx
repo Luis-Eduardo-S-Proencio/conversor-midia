@@ -1,7 +1,6 @@
 import { Navigate, createBrowserRouter, type RouteObject } from 'react-router'
 import { AppShell } from '../components/layout/AppShell'
 import type { RouteHandle } from '../components/layout/route-handle'
-import { AboutPage } from '../pages/AboutPage'
 import { ErrorPage } from '../pages/ErrorPage'
 import { HomePage } from '../pages/HomePage'
 import { ImagesPage } from '../pages/ImagesPage'
@@ -34,7 +33,15 @@ export const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'imagens', element: <ImagesPage /> },
       { path: 'videos', element: <VideosPage /> },
-      { path: 'sobre', element: <AboutPage /> },
+      {
+        // Sob demanda: a página lista formatos e limites lidos do núcleo, que de outro modo
+        // entrariam no pacote inicial junto com o código das ferramentas de onde eles vêm.
+        path: 'sobre',
+        lazy: async () => {
+          const { AboutPage } = await import('../pages/AboutPage')
+          return { Component: AboutPage }
+        },
+      },
       {
         // Ferramentas carregam sob demanda: o código e o Worker não pesam na página inicial.
         path: 'imagens/converter',

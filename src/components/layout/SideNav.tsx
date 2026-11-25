@@ -1,4 +1,3 @@
-import { ShieldCheck } from 'lucide-react'
 import { Link, NavLink } from 'react-router'
 import { LogoMark } from '../brand/Logo'
 import { cx } from '../ui/cx'
@@ -59,13 +58,6 @@ export function SideNav({ compact }: SideNavProps) {
           ))}
         </ul>
       </nav>
-
-      {wide && (
-        <p className="mx-3 mt-auto hidden gap-2.5 rounded-lg border border-success/25 bg-success/10 p-3 text-xs text-fg-muted lg:flex">
-          <Icon icon={ShieldCheck} size="sm" className="mt-px text-success" />
-          <span>Seus arquivos não saem do seu aparelho.</span>
-        </p>
-      )}
     </header>
   )
 }

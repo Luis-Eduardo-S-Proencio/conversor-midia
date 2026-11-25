@@ -3,6 +3,7 @@ import { useId, useState, type ReactNode } from 'react'
 import { IMAGE_TOOLS, VIDEO_TOOLS, switcherTools } from '../../app/tool-catalog'
 import { LogoMark, Logo } from '../../components/brand/Logo'
 import { ActionBar } from '../../components/layout/ActionBar'
+import { AppMenu } from '../../components/layout/AppMenu'
 import { Container } from '../../components/layout/Container'
 import { PageHeader } from '../../components/layout/PageHeader'
 import { DownloadActions } from '../../components/tool/DownloadActions'
@@ -260,6 +261,18 @@ export function DesignSystemPage() {
             <ResultSummary beforeBytes={9_017_753} afterBytes={1_992_294} />
             <ResultSummary beforeBytes={1_000_000} afterBytes={1_120_000} />
             <DownloadActions getFiles={() => [SAMPLE_FILE]} downloadLabel="Baixar exemplo" />
+          </Panel>
+        </Section>
+
+        <Section title="Menu do cabeçalho">
+          <Panel>
+            <p className="text-sm text-fg-muted">
+              No celular, no canto do cabeçalho. "Instalar o app" abre o pedido do navegador ou, quando ele não existe
+              (Safari, Firefox), as instruções.
+            </p>
+            <div className="flex justify-end">
+              <AppMenu />
+            </div>
           </Panel>
         </Section>
 

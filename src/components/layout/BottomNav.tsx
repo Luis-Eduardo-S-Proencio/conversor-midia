@@ -9,7 +9,7 @@ export function BottomNav() {
       aria-label="Principal"
       className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] md:hidden"
     >
-      <ul className="mx-auto grid max-w-md grid-cols-4">
+      <ul className="mx-auto grid max-w-md grid-cols-3">
         {NAV_ITEMS.map((item) => (
           <li key={item.to}>
             <NavLink

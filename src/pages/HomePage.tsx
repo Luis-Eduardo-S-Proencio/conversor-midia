@@ -1,4 +1,4 @@
-import { ChevronRight, ShieldCheck } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { useCallback, useRef } from 'react'
 import { Link } from 'react-router'
 import { TOOL_GROUPS, type ToolEntry, type ToolGroup } from '../app/tool-catalog'
@@ -66,24 +66,11 @@ export function HomePage() {
       <Container className="grid gap-10 py-8 md:gap-12 md:py-12">
         <section aria-labelledby="home-title" className="grid items-center gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-12">
           <div className="grid gap-4">
-            <p className="text-sm font-semibold text-accent-soft">Grátis · sem cadastro · sem marca d'água</p>
             <h1 id="home-title" className="text-3xl font-extrabold tracking-tight text-balance md:text-5xl">
               Edite fotos e vídeos <span className="text-brand">direto no navegador</span>
             </h1>
             <p className="max-w-xl text-base text-fg-muted md:text-lg">
               Converta, comprima, recorte e corte em segundos, sem instalar nada.
-            </p>
-            <p className="flex gap-2.5 text-sm text-fg-muted">
-              <Icon icon={ShieldCheck} className="text-success" />
-              <span>
-                Tudo acontece no seu aparelho: nenhum arquivo é enviado.{' '}
-                <Link
-                  to="/sobre#processamento-local"
-                  className="whitespace-nowrap text-accent-soft underline underline-offset-4 transition-colors hover:text-fg"
-                >
-                  Como funciona
-                </Link>
-              </span>
             </p>
           </div>
           <QuickOpen onOpened={remember} />

@@ -37,6 +37,8 @@ test('alvos de toque têm pelo menos 44 px no celular', async ({ page }, testInf
 
   for (const route of PUBLIC_ROUTES) {
     await page.goto(route.path)
+    // Páginas carregadas sob demanda (ferramentas, Sobre): conferir depois que o conteúdo aparece.
+    await expect(page.getByRole('heading', { level: 1, name: route.heading })).toBeVisible()
     const small = await page.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>('a, button, input, [role="radio"]')]
         // Links dentro de frases são exceção da WCAG 2.5.8; elementos ocultos não contam.

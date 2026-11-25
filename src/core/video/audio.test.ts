@@ -1,14 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  AUDIO_FORMATS,
-  audioChoices,
-  audioOutputName,
-  copyableAudioFormat,
-  defaultAudioFormat,
-  extractedAudioBitrate,
-  reencodedAudioBitrate,
-  type AudioCapabilities,
-} from './audio'
+import { AUDIO_FORMATS, audioChoices, audioOutputName, copyableAudioFormat, defaultAudioFormat, reencodedAudioBitrate, type AudioCapabilities } from './audio'
 
 const capable = { canDecodeAudio: true, canEncodeAac: true, canEncodeMp3: true }
 const caps = (audioCodec: string | null, overrides: Partial<AudioCapabilities> = {}): AudioCapabilities => ({ audioCodec, ...capable, ...overrides })
@@ -117,20 +108,5 @@ describe('reencodedAudioBitrate', () => {
     expect(reencodedAudioBitrate(1_536_000)).toBe(192_000)
     expect(reencodedAudioBitrate(32_000)).toBe(96_000)
     expect(reencodedAudioBitrate(null)).toBe(192_000)
-  })
-})
-
-describe('extractedAudioBitrate', () => {
-  it('som refeito ao extrair: um degrau acima do original (folga para trocar de codec), não sempre 192', () => {
-    expect(extractedAudioBitrate(96_400)).toBe(128_000) // som de celular comum: MP3 a 128, não a 192
-    expect(extractedAudioBitrate(128_000)).toBe(160_000)
-    expect(extractedAudioBitrate(160_000)).toBe(192_000)
-    expect(extractedAudioBitrate(256_000)).toBe(192_000) // nunca acima de 192
-  })
-
-  it('som sem compressão (PCM) ou de taxa desconhecida sai a 192; muito comprimido, a 96', () => {
-    expect(extractedAudioBitrate(1_536_000)).toBe(192_000)
-    expect(extractedAudioBitrate(null)).toBe(192_000)
-    expect(extractedAudioBitrate(48_000)).toBe(96_000)
   })
 })

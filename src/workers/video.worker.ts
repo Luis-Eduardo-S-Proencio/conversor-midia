@@ -39,7 +39,7 @@ import { isCropWithin, type CropRect } from '../core/image/crop'
 import { GIF_END, GIF_MAX_COLORS, GifFrameEncoder, gifHeader } from '../core/image/encode/gif'
 import { ColorHistogram, buildPalette } from '../core/image/encode/quantize'
 import type { Dimensions } from '../core/image/resize'
-import { AUDIO_FORMATS, REENCODED_AUDIO_BITRATE, copyableAudioFormat, extractedAudioBitrate, reencodedAudioBitrate, type AudioFormat } from '../core/video/audio'
+import { AUDIO_FORMATS, REENCODED_AUDIO_BITRATE, copyableAudioFormat, reencodedAudioBitrate, type AudioFormat } from '../core/video/audio'
 import { VIDEO_MODES, convertActions } from '../core/video/convert'
 import { MIN_VIDEO_CROP_SIDE, encodableCrop, encodableSize } from '../core/video/crop'
 import { VIDEO_FORMATS, type VideoFormat } from '../core/video/formats'
@@ -624,11 +624,11 @@ async function reencodedAudio(audio: InputAudioTrack, codec: AudioCodec, bitrate
   }
 }
 
-/** Som refeito para um arquivo de som: AAC (M4A) ou MP3, um degrau acima da taxa do original (até 192 kbit/s). */
+/** Som refeito para um arquivo de som: AAC (M4A) ou MP3. */
 async function reencodedAudioOptions(audio: InputAudioTrack, format: Exclude<AudioFormat, 'webm'>): Promise<ConversionAudioOptions> {
   if (!(await audio.canDecode())) throw new JobError('decode-unsupported')
   if (format === 'mp3') await loadMp3Encoder()
-  return reencodedAudio(audio, format === 'mp3' ? 'mp3' : 'aac', extractedAudioBitrate(await audioBitrate(audio)))
+  return reencodedAudio(audio, format === 'mp3' ? 'mp3' : 'aac')
 }
 
 /** Opções do som: copiar, quando o formato pedido comporta o som original, ou refazer. */

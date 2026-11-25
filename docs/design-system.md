@@ -102,14 +102,13 @@ Lucide, sempre pelo componente `Icon` ([`src/components/ui/Icon.tsx`](../src/com
 | `Slider` | `components/ui/Slider.tsx` | valor contínuo: trilha de 4 px preenchida no acento, alça branca de 20 px, balão com o valor enquanto arrasta; `resetTo`: toque duplo volta ao padrão |
 | `ProgressBar` | `components/ui/ProgressBar.tsx` | progresso em barra, determinado (`value`) ou indeterminado |
 | `Alert` | `components/ui/Alert.tsx` | mensagens; `error` usa `role="alert"`, os demais `status`; `live={false}` para textos fixos |
-| `NavList` | `components/ui/NavList.tsx` | listas de destinos (Imagens, Vídeos); item com `tone` ganha o ícone colorido da ferramenta; item sem `to` aparece como "Em breve" |
+| `NavList`, `NavCard` | `components/ui/` | listas de destinos e categorias; item com `tone` ganha o ícone colorido da ferramenta; item sem `to` aparece como "Em breve" |
 | `ToolIcon` | `components/ui/ToolIcon.tsx` | ícone de ferramenta num ladrilho da cor da categoria (`tone`: `edit`, `convert`, `compress`, `audio`); `media` põe o selo de imagem ou vídeo no canto; decorativo |
 | `Dropzone` | `components/tool/Dropzone.tsx` | estado vazio da ferramenta: botão real + arrastar e soltar como atalho; `size="lg"` para a entrada principal do início |
 | `FilePickerButton` | `components/tool/FilePickerButton.tsx` | botão que abre o seletor do sistema (ex.: "Adicionar" com a lista já aberta) |
 | `usePageFileDrop` | `components/tool/usePageFileDrop.ts` | aceita arquivos soltos em qualquer ponto da página e impede o navegador de abri-los |
 | `FilePreview` | `components/tool/FilePreview.tsx` | prévia grande; `backdrop` mostra o fundo que o resultado terá (JPG); `orientation` mostra o giro escolhido, sem reprocessar; quem cria a Object URL a revoga |
 | `FileListItem` | `components/tool/FileListItem.tsx` | um arquivo na lista: miniatura decorativa (girada com `orientation`), linha técnica, estado, erro ou aviso e ações; com `onShow`, a miniatura vira o botão "Mostrar nome" (`aria-pressed`) que leva a imagem para a prévia grande |
-| `ToolWorkspace`, `ToolStage`, `ToolPanel`, `ToolUnsupported` | `components/tool/ToolWorkspace.tsx` | esqueleto comum dos editores de imagem e de vídeo: título com o caminho de volta, troca de ferramenta, palco escuro (`empty` para a área de abrir), painel ao lado e a barra de ações do celular |
 | `ToolSwitcher` | `components/tool/ToolSwitcher.tsx` | troca de ferramenta dentro do editor: coluna à esquerda a partir de 1024 px, fileira que rola (já centralizada na atual) abaixo disso; a atual leva `aria-current` e não recarrega; `onSwitch` roda antes de sair (para levar o arquivo aberto) |
 | `FileInfo` | `components/tool/FileInfo.tsx` | nome + linha técnica do arquivo |
 | `ResultSummary` | `components/tool/ResultSummary.tsx` | antes, depois e variação de tamanho |

@@ -1,7 +1,7 @@
 import { Music } from 'lucide-react'
 import { Alert } from '../../../components/ui/Alert'
 import { formatBytes } from '../../../core/format'
-import { AUDIO_FORMATS, extractedAudioBitrate } from '../../../core/video/audio'
+import { AUDIO_FORMATS, REENCODED_AUDIO_BITRATE } from '../../../core/video/audio'
 import { SourcePlayer } from '../shared/SourcePlayer'
 import { VideoToolPage } from '../shared/VideoToolPage'
 import { AudioOptions } from './AudioOptions'
@@ -14,8 +14,6 @@ export function ExtractAudioPage() {
   const { state } = tool
   const { info } = state
   const busy = state.phase === 'processing'
-  // A mesma conta do Worker: um degrau acima da taxa do som original.
-  const reencodedBitrate = extractedAudioBitrate(info?.audioBitrate ?? null)
 
   const blocker = !info
     ? undefined
@@ -51,7 +49,6 @@ export function ExtractAudioPage() {
               choice={choice}
               onFormatChange={extract.changeFormat}
               canDecodeAudio={info.canDecodeAudio}
-              reencodedBitrate={reencodedBitrate}
               extraTracks={info.extraTracks}
               disabled={busy}
             />
@@ -72,7 +69,7 @@ export function ExtractAudioPage() {
             </div>
             <div className="flex items-baseline justify-between gap-3">
               <dt className="text-fg-muted">Som</dt>
-              <dd className="text-right text-fg">{choice.copy ? 'Copiado, sem perder qualidade' : `Refeito a ${Math.round(reencodedBitrate / 1000)} kbit/s`}</dd>
+              <dd className="text-right text-fg">{choice.copy ? 'Copiado, sem perder qualidade' : `Refeito a ${REENCODED_AUDIO_BITRATE / 1000} kbit/s`}</dd>
             </div>
           </dl>
         )

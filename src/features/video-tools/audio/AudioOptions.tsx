@@ -1,17 +1,19 @@
 import { SegmentedControl } from '../../../components/ui/SegmentedControl'
-import { AUDIO_FORMATS, type AudioChoice, type AudioFormat } from '../../../core/video/audio'
+import { AUDIO_FORMATS, REENCODED_AUDIO_BITRATE, type AudioChoice, type AudioFormat } from '../../../core/video/audio'
 import { Note } from '../shared/Note'
 
+const KBPS = REENCODED_AUDIO_BITRATE / 1000
+
 /** O que acontece com o som no formato escolhido, e onde ele toca. */
-function describeAudioChoice({ format, copy }: AudioChoice, kbps: number): string {
+function describeAudioChoice({ format, copy }: AudioChoice): string {
   if (copy && format === 'webm') {
     return 'Cópia exata do som do vídeo: rápido e sem perder qualidade. iPhones mais antigos podem não tocar WEBM: para eles, escolha M4A ou MP3.'
   }
   if (copy) return 'Cópia exata do som do vídeo: rápido e sem perder qualidade. Toca em praticamente todo lugar.'
   if (format === 'mp3') {
-    return `O som é refeito em MP3, a ${kbps} kbit/s: abre em qualquer aparelho, inclusive os mais antigos. Em vídeos longos, leva alguns minutos.`
+    return `O som é refeito em MP3, a ${KBPS} kbit/s: abre em qualquer aparelho, inclusive os mais antigos. Em vídeos longos, leva alguns minutos.`
   }
-  return `O som é refeito em AAC, a ${kbps} kbit/s: toca em praticamente todo lugar, inclusive no iPhone.`
+  return `O som é refeito em AAC, a ${KBPS} kbit/s: toca em praticamente todo lugar, inclusive no iPhone.`
 }
 
 /** Por que um formato está indisponível, em linguagem simples. */
@@ -35,21 +37,19 @@ interface AudioOptionsProps {
   choice: AudioChoice
   onFormatChange: (format: AudioFormat) => void
   canDecodeAudio: boolean
-  /** Taxa do som se ele for refeito, em bits por segundo (um degrau acima da do original). */
-  reencodedBitrate: number
   extraTracks: boolean
   disabled?: boolean
 }
 
 /** Formato do arquivo de som: a cópia do som original primeiro, depois os refeitos, com o que cada um faz. */
-export function AudioOptions({ choices, choice, onFormatChange, canDecodeAudio, reencodedBitrate, extraTracks, disabled = false }: AudioOptionsProps) {
+export function AudioOptions({ choices, choice, onFormatChange, canDecodeAudio, extraTracks, disabled = false }: AudioOptionsProps) {
   const options = choices.map(({ format, available }) => ({ value: format, label: AUDIO_FORMATS[format].label, disabled: !available }))
 
   return (
     <div className="grid gap-6">
       <div className="grid gap-2">
         <SegmentedControl label="Formato do áudio" options={options} value={choice.format} onChange={onFormatChange} disabled={disabled} />
-        <p className="text-xs text-fg-muted">{describeAudioChoice(choice, Math.round(reencodedBitrate / 1000))}</p>
+        <p className="text-xs text-fg-muted">{describeAudioChoice(choice)}</p>
       </div>
       {unavailableNotes(choices, canDecodeAudio).map((note) => (
         <Note key={note}>{note}</Note>

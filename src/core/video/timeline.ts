@@ -49,18 +49,6 @@ export function sourceTimeAt(pieces: readonly TrimRange[], editedTime: number): 
   return { index: 0, time: 0 }
 }
 
-/** Ponto do vídeo editado para um tempo do original. Em parte excluída: o começo do pedaço seguinte (ou o fim). */
-export function editedTimeAt(pieces: readonly TrimRange[], sourceTime: number): number {
-  const offsets = pieceOffsets(pieces)
-  for (let index = 0; index < pieces.length; index += 1) {
-    const piece = pieces[index] as TrimRange
-    const offset = offsets[index] ?? 0
-    if (sourceTime < piece.start) return offset
-    if (sourceTime <= piece.end) return offset + sourceTime - piece.start
-  }
-  return editedDuration(pieces)
-}
-
 /** O pedaço que o ponto divide e onde, quando fica ao menos 0,1 s de cada lado. */
 function splitPoint(edit: Edit, editedTime: number): { index: number; time: number } | null {
   const { index, time } = sourceTimeAt(edit.pieces, editedTime)

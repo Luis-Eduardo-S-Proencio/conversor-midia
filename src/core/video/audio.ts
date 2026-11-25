@@ -19,7 +19,7 @@ export const AUDIO_FORMATS: Record<AudioFormat, AudioFormatInfo> = {
   mp3: { label: 'MP3', mimeType: 'audio/mpeg', extension: 'mp3' },
 }
 
-/** Taxa do som refeito (M4A ou MP3), em bits por segundo: boa qualidade para música e voz. */
+/** Maior taxa do som refeito, em bits por segundo: boa qualidade para música e voz (e a de som sem compressão). */
 export const REENCODED_AUDIO_BITRATE = 192_000
 
 /**
@@ -39,6 +39,21 @@ const AUDIO_BITRATE_TOLERANCE = 0.95
 export function reencodedAudioBitrate(originalAudioBitrate: number | null): number {
   if (originalAudioBitrate === null) return REENCODED_AUDIO_BITRATE
   return AUDIO_BITRATE_STEPS.find((step) => step >= originalAudioBitrate * AUDIO_BITRATE_TOLERANCE) ?? REENCODED_AUDIO_BITRATE
+}
+
+/**
+ * Folga do som refeito no Extrair áudio: trocar de codec com perdas (ex.: AAC para MP3, Opus para AAC) na
+ * mesma taxa piora o som; um degrau acima evita isso sem inflar o arquivo.
+ */
+const EXTRACTED_AUDIO_MARGIN = 1.2
+
+/**
+ * Taxa do som refeito no Extrair áudio (MP3, ou M4A a partir de som que não é AAC): a menor da lista que
+ * alcança a do original com 20% de folga, até 192 kbit/s. Som de 96 kbit/s vira MP3 de 128 (não de 192, o
+ * dobro do original); som sem compressão (PCM) ou de taxa desconhecida sai a 192.
+ */
+export function extractedAudioBitrate(originalAudioBitrate: number | null): number {
+  return reencodedAudioBitrate(originalAudioBitrate === null ? null : originalAudioBitrate * EXTRACTED_AUDIO_MARGIN)
 }
 
 /**

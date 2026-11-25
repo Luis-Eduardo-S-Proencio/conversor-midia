@@ -4,7 +4,6 @@ import {
   canSplitAt,
   commit,
   editedDuration,
-  editedTimeAt,
   initialEdit,
   moveSelectionEdge,
   pieceOffsets,
@@ -138,14 +137,11 @@ describe('tempo editado e tempo do original', () => {
     expect(pieceOffsets(edit.pieces)).toEqual([0, 2, 5])
   })
 
-  it('do editado para o original e de volta', () => {
+  it('do tempo do vídeo editado para o do original', () => {
     expect(sourceTimeAt(edit.pieces, 1)).toEqual({ index: 0, time: 1 })
     expect(sourceTimeAt(edit.pieces, 2)).toEqual({ index: 1, time: 5 }) // a emenda já é o pedaço seguinte
     expect(sourceTimeAt(edit.pieces, 6)).toEqual({ index: 2, time: 9 })
     expect(sourceTimeAt(edit.pieces, 7)).toEqual({ index: 2, time: 10 }) // o fim
-    expect(editedTimeAt(edit.pieces, 6)).toBe(3)
-    expect(editedTimeAt(edit.pieces, 3)).toBe(2) // parte excluída: o começo do pedaço seguinte
-    expect(editedTimeAt(edit.pieces, 12)).toBe(7)
   })
 })
 

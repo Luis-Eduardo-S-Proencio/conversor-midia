@@ -481,16 +481,16 @@ describe('Worker de vídeo: extrair áudio', () => {
     expect(tone.rms).toBeGreaterThan(0.1)
   })
 
-  it('MP4 para MP3: refeito pelo codificador próprio, a 192 kbit/s, com o mesmo tom', SLOW, async () => {
+  it('MP4 para MP3: refeito pelo codificador próprio, um degrau acima do som original, com o mesmo tom', SLOW, async () => {
     const result = await client.run({ kind: 'extract-audio', file: await fixtureBlob(segundosMp4Url), format: 'mp3' })
     expect(result.copied).toBe(false)
     expect(result.blob.type).toBe('audio/mpeg')
     const audio = await readAudio(result.blob)
     expect(audio).toMatchObject({ format: 'MP3', videoTracks: 0, codec: 'mp3', numberOfChannels: 2 })
     expect(audio.duration).toBeCloseTo(4, 1)
-    // 192 kbit/s durante 4 s: cerca de 96 KB.
-    expect(result.blob.size).toBeGreaterThan(85_000)
-    expect(result.blob.size).toBeLessThan(110_000)
+    // Som original de 96 kbit/s: MP3 a 128 kbit/s durante 4 s, cerca de 64 KB (a 192 kbit/s seriam 96 KB).
+    expect(result.blob.size).toBeGreaterThan(55_000)
+    expect(result.blob.size).toBeLessThan(75_000)
     const tone = await measureTone(result.blob, 1, 3)
     expect(tone.frequency).toBeCloseTo(440, -1)
     expect(tone.rms).toBeGreaterThan(0.1)

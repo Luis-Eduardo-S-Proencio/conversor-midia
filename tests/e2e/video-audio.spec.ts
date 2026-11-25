@@ -93,10 +93,11 @@ test.describe('Extrair áudio', () => {
     await extract(page) // M4A primeiro
     await button(page, 'Alterar opções').click()
     await chooseReencoded(page, 'MP3')
-    await expect(page.getByText(/^O som é refeito em MP3, a 192 kbit\/s/)).toBeVisible()
+    // Som de 96 kbit/s no vídeo de teste: o MP3 sai um degrau acima (128), não nos 192 de antes.
+    await expect(page.getByText(/^O som é refeito em MP3, a 128 kbit\/s/)).toBeVisible()
     await extract(page)
 
-    await expect(page.getByText('Refeito a 192 kbit/s')).toBeVisible()
+    await expect(page.getByText('Refeito a 128 kbit/s')).toBeVisible()
     await expectPlayableResult(page, 4)
     const result = await download(page, button(page, 'Baixar áudio'))
     expect(result.name).toBe('segundos-audio.mp3')

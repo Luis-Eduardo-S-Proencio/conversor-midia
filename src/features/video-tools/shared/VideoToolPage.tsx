@@ -1,15 +1,13 @@
-import { ArrowLeft, CircleCheck, Download, Eye, Headphones, RefreshCw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
+import { CircleCheck, Download, Eye, Headphones, RefreshCw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
-import { Link } from 'react-router'
 import { switcherTools } from '../../../app/tool-catalog'
-import { ActionBar } from '../../../components/layout/ActionBar'
 import { CompareView } from '../../../components/tool/CompareView'
 import { ResultAudio, ResultGif, ResultVideo } from '../../../components/tool/ResultMedia'
 import { saveBlob } from '../../../components/tool/download'
 import { Dropzone } from '../../../components/tool/Dropzone'
 import { FileListItem, type FileItemState, type MessageTone } from '../../../components/tool/FileListItem'
 import { FilePickerButton } from '../../../components/tool/FilePickerButton'
-import { ToolSwitcher } from '../../../components/tool/ToolSwitcher'
+import { ToolPanel, ToolStage, ToolUnsupported, ToolWorkspace } from '../../../components/tool/ToolWorkspace'
 import { ResultSummary } from '../../../components/tool/ResultSummary'
 import { usePageFileDrop } from '../../../components/tool/usePageFileDrop'
 import { Alert } from '../../../components/ui/Alert'
@@ -25,14 +23,7 @@ import { describeVideo } from './video-meta'
 
 const VIDEO_SWITCHER = switcherTools('video')
 
-function BackToVideos() {
-  return (
-    <Link to="/videos" className="inline-flex min-h-11 items-center gap-1.5 text-fg-muted transition-colors hover:text-fg pointer-fine:min-h-0">
-      <Icon icon={ArrowLeft} size="sm" />
-      Vídeos
-    </Link>
-  )
-}
+const BACK_TO_VIDEOS = { to: '/videos', label: 'Vídeos' }
 
 interface ItemView {
   state: FileItemState
@@ -141,146 +132,121 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
   const waiting = state.phase === 'opening' ? 'Abrindo o vídeo…' : `Escolha outro vídeo para ${purposeOf(labels)}.`
 
   return (
-    <>
-      <title>{`${title} · Media Tools`}</title>
-      {/* Editor: título no alto; ferramentas, palco com o vídeo e painel de opções lado a lado a partir de 1024 px. */}
-      <div className="mx-auto grid w-full max-w-editor gap-4 px-(--gutter) pt-4 pb-6 lg:grid-cols-[6.5rem_minmax(0,1fr)_21rem] lg:gap-x-5 lg:pt-5">
-        <header className="grid gap-1 border-b border-border pb-4 lg:col-span-3">
-          <div className="text-sm">
-            <BackToVideos />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-balance">{title}</h1>
-          <p className="max-w-3xl text-sm text-fg-muted">{description}</p>
-        </header>
-
-        <ToolSwitcher
-          label="Ferramentas de vídeo"
-          tools={VIDEO_SWITCHER}
-          onSwitch={() => {
-            const source = tool.getSourceFile()
-            handOffFiles('video', source ? [source] : [])
-          }}
-          className="lg:sticky lg:top-5 lg:self-start"
-        />
-
-        {!supported ? (
-          <div className="lg:col-span-2">
-            <Alert variant="error" title="Navegador sem suporte" live={false}>
-              Este navegador não tem os recursos necessários para processar vídeos. Use uma versão recente do Chrome, Edge,
-              Firefox ou Safari.
-            </Alert>
-          </div>
-        ) : state.phase === 'empty' ? (
-          <div className="grid place-items-center rounded-xl bg-stage p-3 sm:p-6 lg:col-span-2 lg:min-h-112">
-            <Dropzone
-              buttonRef={pickerButton}
-              accept={ACCEPTED_VIDEO_TYPES}
-              onFiles={tool.selectFiles}
-              multiple={false}
-              buttonLabel="Selecionar vídeo"
-              dragLabel="Arraste um vídeo para cá"
-              hint="MP4, MOV ou WEBM · até 1 GB"
-              className="w-full max-w-xl"
-            />
-          </div>
-        ) : (
-          <>
-            <div className="min-w-0 rounded-xl bg-stage p-3 sm:p-4">
-              <section aria-labelledby={fileHeadingId} className="grid min-w-0 gap-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h2 id={fileHeadingId} className="text-lg font-bold tracking-tight">
-                    Vídeo
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    <FilePickerButton accept={ACCEPTED_VIDEO_TYPES} icon={RefreshCw} multiple={false} onFiles={tool.selectFiles} disabled={busy}>
-                      Trocar vídeo
-                    </FilePickerButton>
-                    <Button variant="ghost" onClick={handleReset} disabled={busy}>
-                      Limpar
-                    </Button>
-                  </div>
-                </div>
-
-                {state.notice && (
-                  <Alert variant="warning" title="Um vídeo por vez" live={false}>
-                    {state.notice}
-                  </Alert>
-                )}
-
-                {opened &&
-                  (state.phase === 'done' && state.result ? (
-                    <CompareView
-                      resultKey={state.result.url}
-                      containerRef={compareRef}
-                      result={<ResultMedia key={state.result.url} src={state.result.url} name={state.result.name} />}
-                      original={preview}
-                    />
-                  ) : (
-                    preview
-                  ))}
-
-                {state.file && (
-                  <ul className="grid gap-px overflow-hidden rounded-lg border border-border bg-border">
-                    <FileListItem
-                      name={state.file.name}
-                      meta={describeVideo(state.file.size, state.info)}
-                      showThumbnail={false}
-                      {...describeItem(state)}
-                      actions={
-                        state.phase === 'done' &&
-                        state.result && <IconButton icon={Download} label={`Baixar ${state.result.name}`} onClick={handleDownload} />
-                      }
-                    />
-                  </ul>
-                )}
-              </section>
-            </div>
-            <section
-              aria-labelledby={state.phase === 'done' ? undefined : optionsHeadingId}
-              aria-label={state.phase === 'done' ? 'Resultado' : undefined}
-              className="grid content-start gap-5 rounded-xl border border-border bg-surface-1 p-4 md:p-5 lg:sticky lg:top-5 lg:self-start"
-            >
-              {state.phase === 'done' && state.file && state.result ? (
-                <div className="grid gap-4">
-                  <h2 ref={resultHeading} tabIndex={-1} className="flex items-center gap-2 text-lg font-bold tracking-tight">
-                    <Icon icon={CircleCheck} className="text-success" />
-                    {`${texts.noun} ${labels.done}`}
-                  </h2>
-                  <p className="truncate text-xs text-fg-muted tabular-nums" title={state.result.name}>
-                    {state.result.name}
-                  </p>
-                  {/* Som e GIF não se comparam ao vídeo de onde saíram: a ferramenta mostra o tamanho nos detalhes. */}
-                  {(labels.output ?? 'video') === 'video' && <ResultSummary beforeBytes={state.file.size} afterBytes={state.result.size} />}
-                  {resultDetails}
-                  <Button icon={labels.output === 'audio' ? Headphones : Eye} onClick={showResult}>
-                    {texts.view}
+    <ToolWorkspace
+      title={title}
+      description={description}
+      back={BACK_TO_VIDEOS}
+      tools={VIDEO_SWITCHER}
+      toolsLabel="Ferramentas de vídeo"
+      onSwitch={() => {
+        const source = tool.getSourceFile()
+        handOffFiles('video', source ? [source] : [])
+      }}
+      mobileActions={supported && state.phase !== 'empty' ? actions('lg') : undefined}
+      announcement={tool.announcement}
+    >
+      {!supported ? (
+        <ToolUnsupported media="vídeos" />
+      ) : state.phase === 'empty' ? (
+        <ToolStage empty>
+          <Dropzone
+            buttonRef={pickerButton}
+            accept={ACCEPTED_VIDEO_TYPES}
+            onFiles={tool.selectFiles}
+            multiple={false}
+            buttonLabel="Selecionar vídeo"
+            dragLabel="Arraste um vídeo para cá"
+            hint="MP4, MOV ou WEBM · até 1 GB"
+            className="w-full max-w-xl"
+          />
+        </ToolStage>
+      ) : (
+        <>
+          <ToolStage>
+            <section aria-labelledby={fileHeadingId} className="grid min-w-0 gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 id={fileHeadingId} className="text-lg font-bold tracking-tight">
+                  Vídeo
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  <FilePickerButton accept={ACCEPTED_VIDEO_TYPES} icon={RefreshCw} multiple={false} onFiles={tool.selectFiles} disabled={busy}>
+                    Trocar vídeo
+                  </FilePickerButton>
+                  <Button variant="ghost" onClick={handleReset} disabled={busy}>
+                    Limpar
                   </Button>
                 </div>
-              ) : (
-                <>
-                  <h2 id={optionsHeadingId} className="text-lg font-bold tracking-tight">
-                    Opções
-                  </h2>
-                  {opened ? options : <p className="text-sm text-fg-muted">{waiting}</p>}
-                </>
+              </div>
+
+              {state.notice && (
+                <Alert variant="warning" title="Um vídeo por vez" live={false}>
+                  {state.notice}
+                </Alert>
               )}
-              <div className="hidden gap-2 md:grid">{actions('md')}</div>
-              {state.phase === 'done' && (
-                // Depois do download, a ação principal; no celular o download fica na barra fixa.
-                <Button variant="ghost" icon={SlidersHorizontal} onClick={tool.invalidateResult}>
-                  Alterar opções
-                </Button>
+
+              {opened &&
+                (state.phase === 'done' && state.result ? (
+                  <CompareView
+                    resultKey={state.result.url}
+                    containerRef={compareRef}
+                    result={<ResultMedia key={state.result.url} src={state.result.url} name={state.result.name} />}
+                    original={preview}
+                  />
+                ) : (
+                  preview
+                ))}
+
+              {state.file && (
+                <ul className="grid gap-px overflow-hidden rounded-lg border border-border bg-border">
+                  <FileListItem
+                    name={state.file.name}
+                    meta={describeVideo(state.file.size, state.info)}
+                    showThumbnail={false}
+                    {...describeItem(state)}
+                    actions={
+                      state.phase === 'done' &&
+                      state.result && <IconButton icon={Download} label={`Baixar ${state.result.name}`} onClick={handleDownload} />
+                    }
+                  />
+                </ul>
               )}
             </section>
-          </>
-        )}
-
-        {supported && state.phase !== 'empty' && <ActionBar className="md:hidden">{actions('lg')}</ActionBar>}
-      </div>
-
-      <p role="status" className="sr-only">
-        {tool.announcement}
-      </p>
-    </>
+          </ToolStage>
+          <ToolPanel labelledBy={state.phase === 'done' ? undefined : optionsHeadingId} label={state.phase === 'done' ? 'Resultado' : undefined}>
+            {state.phase === 'done' && state.file && state.result ? (
+              <div className="grid gap-4">
+                <h2 ref={resultHeading} tabIndex={-1} className="flex items-center gap-2 text-lg font-bold tracking-tight">
+                  <Icon icon={CircleCheck} className="text-success" />
+                  {`${texts.noun} ${labels.done}`}
+                </h2>
+                <p className="truncate text-xs text-fg-muted tabular-nums" title={state.result.name}>
+                  {state.result.name}
+                </p>
+                {/* Som e GIF não se comparam ao vídeo de onde saíram: a ferramenta mostra o tamanho nos detalhes. */}
+                {(labels.output ?? 'video') === 'video' && <ResultSummary beforeBytes={state.file.size} afterBytes={state.result.size} />}
+                {resultDetails}
+                <Button icon={labels.output === 'audio' ? Headphones : Eye} onClick={showResult}>
+                  {texts.view}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <h2 id={optionsHeadingId} className="text-lg font-bold tracking-tight">
+                  Opções
+                </h2>
+                {opened ? options : <p className="text-sm text-fg-muted">{waiting}</p>}
+              </>
+            )}
+            <div className="hidden gap-2 md:grid">{actions('md')}</div>
+            {state.phase === 'done' && (
+              // Depois do download, a ação principal; no celular o download fica na barra fixa.
+              <Button variant="ghost" icon={SlidersHorizontal} onClick={tool.invalidateResult}>
+                Alterar opções
+              </Button>
+            )}
+          </ToolPanel>
+        </>
+      )}
+    </ToolWorkspace>
   )
 }

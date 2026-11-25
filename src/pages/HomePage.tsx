@@ -70,7 +70,7 @@ export function HomePage() {
               Edite fotos e vídeos <span className="text-brand">direto no navegador</span>
             </h1>
             <p className="max-w-xl text-base text-fg-muted md:text-lg">
-              Converta, comprima, recorte e corte em segundos, sem instalar nada.
+              Converta, comprima, recorte e corte em segundos.
             </p>
           </div>
           <QuickOpen onOpened={remember} />

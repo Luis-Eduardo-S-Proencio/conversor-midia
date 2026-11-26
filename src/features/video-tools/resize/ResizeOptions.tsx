@@ -55,7 +55,6 @@ export function ResizeOptions({ choices, plan, onResolutionChange, current, orig
 
       <Note>{`O vídeo é refeito em qualidade alta, nunca acima da do original, o que pode demorar em vídeos longos.${hasAudio ? ' O som é copiado, sem perder qualidade.' : ''}`}</Note>
       {extraTracks && <Note>Este vídeo tem mais de uma faixa de vídeo ou de áudio: o resultado fica só com a principal de cada.</Note>}
-      <Note>O vídeo sai sem metadados, como localização e data da gravação.</Note>
     </div>
   )
 }

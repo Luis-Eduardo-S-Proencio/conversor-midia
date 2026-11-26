@@ -2,7 +2,7 @@ import { Upload } from 'lucide-react'
 import { useRef } from 'react'
 import { cx } from '../../components/ui/cx'
 import { Icon } from '../../components/ui/Icon'
-import { OPEN_ACCEPT } from '../open/accept'
+import { OPEN_ACCEPT } from '../../features/open/accept'
 
 interface UploadPanelProps {
   onFiles: (files: File[]) => void

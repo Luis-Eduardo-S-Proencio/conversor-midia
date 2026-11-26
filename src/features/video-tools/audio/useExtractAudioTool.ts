@@ -22,7 +22,7 @@ export function useExtractAudioTool() {
   const choice = choices.find((item) => item.format === format)
 
   const changeFormat = useCallback(
-    (next: AudioFormat) => {
+    (next: AudioFormat | undefined) => {
       setPicked(next)
       invalidateResult()
     },
@@ -37,5 +37,5 @@ export function useExtractAudioTool() {
     )
   }, [format, run])
 
-  return { tool, choices, choice, changeFormat, apply }
+  return { tool, choices, choice, picked, changeFormat, apply }
 }

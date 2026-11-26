@@ -13,9 +13,9 @@ import { MediaBlocks } from './home/MediaBlocks'
 import { QuickShortcuts } from './home/QuickShortcuts'
 import { ToolGrid } from './home/ToolGrid'
 import { UploadPanel } from './home/UploadPanel'
-import { OPEN_ACCEPT } from './open/accept'
-import { FileActionSheet } from './open/FileActionSheet'
-import { useOpenMedia } from './open/useOpenMedia'
+import { OPEN_ACCEPT } from '../features/open/accept'
+import { FileActionSheet } from '../features/open/FileActionSheet'
+import { useOpenMedia } from '../features/open/useOpenMedia'
 
 /**
  * Início. Celular: dois blocos grandes (Vídeo e Imagem) que abrem o seletor já filtrado; computador:

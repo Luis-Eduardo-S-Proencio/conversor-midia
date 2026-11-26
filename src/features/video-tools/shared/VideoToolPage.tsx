@@ -12,6 +12,10 @@ import { FileListItem, type FileItemState, type MessageTone } from '../../../com
 import { FilePickerButton } from '../../../components/tool/FilePickerButton'
 import { ToolSwitcher } from '../../../components/tool/ToolSwitcher'
 import { ResultSummary } from '../../../components/tool/ResultSummary'
+import { LeaveGuard } from '../../../components/tool/LeaveGuard'
+import { OptionsPreview } from '../../../components/tool/OptionsPreview'
+import { PageDropOverlay } from '../../../components/tool/PageDropOverlay'
+import { useRemainingTime, useWakeLock } from '../../../components/tool/processing'
 import { usePageFileDrop } from '../../../components/tool/usePageFileDrop'
 import { Alert } from '../../../components/ui/Alert'
 import { Button, IconButton } from '../../../components/ui/Button'
@@ -22,7 +26,7 @@ import { supportsVideoWorker } from '../../../workers/video-client'
 import { handOffOpenFiles, useOpenFilesSource } from '../../shared/file-handoff'
 import { VideoActions } from './VideoActions'
 import { outputTexts, purposeOf, type VideoTool, type VideoToolLabels, type VideoToolState } from './useVideoTool'
-import { describeVideo } from './video-meta'
+import { videoMetaItems } from './video-meta'
 
 const VIDEO_SWITCHER = switcherTools('video')
 
@@ -65,13 +69,30 @@ interface VideoToolPageProps {
   /** A ferramenta consegue processar este vídeo neste navegador e com estas opções disponíveis. */
   canStart: boolean
   onStart: () => void
+  /** O que vai dar para ajustar, mostrado no painel desligado antes de abrir o vídeo (computador). */
+  adjustables: readonly string[]
+  /** Atalhos da própria ferramenta, embaixo da área de abrir (ex.: destinos do Comprimir). */
+  shortcuts?: ReactNode
 }
 
 /**
  * Esqueleto das ferramentas de vídeo, um vídeo por vez: seleção → prévia → opções → processamento → resultado.
  * Cuida de foco, anúncios para leitor de tela, arrastar e soltar na página e da barra de ação no celular.
  */
-export function VideoToolPage({ title, description, labels, actionIcon, tool, preview, options, resultDetails, canStart, onStart }: VideoToolPageProps) {
+export function VideoToolPage({
+  title,
+  description,
+  labels,
+  actionIcon,
+  tool,
+  preview,
+  options,
+  resultDetails,
+  canStart,
+  onStart,
+  adjustables,
+  shortcuts,
+}: VideoToolPageProps) {
   const { state } = tool
   const optionsHeadingId = useId()
   const fileHeadingId = useId()
@@ -86,7 +107,10 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
   const busy = state.phase === 'processing'
   const opened = state.phase === 'ready' || state.phase === 'processing' || state.phase === 'done' || state.phase === 'failed'
 
-  usePageFileDrop(tool.selectFiles, supported && !busy)
+  const dragging = usePageFileDrop(tool.selectFiles, supported && !busy)
+  // Processando: a tela fica acesa, o tempo que falta aparece e sair pede confirmação.
+  useWakeLock(busy)
+  const remaining = useRemainingTime(busy ? state.progress : undefined, busy)
   // Indo para outra ferramenta de vídeo (fileira de troca ou barra lateral), o vídeo aberto vai junto.
   useOpenFilesSource('video', () => {
     const source = tool.getSourceFile()
@@ -134,6 +158,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
       onCancel={tool.cancel}
       onReset={handleReset}
       getFile={tool.getResultFile}
+      remaining={remaining}
     />
   )
 
@@ -162,18 +187,23 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
             </Alert>
           </div>
         ) : state.phase === 'empty' ? (
-          <div className="grid place-items-center rounded-xl bg-stage p-3 sm:p-6 lg:col-span-2 lg:min-h-112">
-            <Dropzone
-              buttonRef={pickerButton}
-              accept={ACCEPTED_VIDEO_TYPES}
-              onFiles={tool.selectFiles}
-              multiple={false}
-              buttonLabel="Selecionar vídeo"
-              dragLabel="Arraste um vídeo para cá"
-              hint="MP4, MOV ou WEBM · até 1 GB"
-              className="w-full max-w-xl"
-            />
-          </div>
+          <>
+            {/* Vazio: área de abrir do tamanho do conteúdo e, no computador, o painel de opções já visível (desligado). */}
+            <div className="grid min-w-0 content-start gap-4">
+              <Dropzone
+                buttonRef={pickerButton}
+                accept={ACCEPTED_VIDEO_TYPES}
+                onFiles={tool.selectFiles}
+                multiple={false}
+                buttonLabel="Selecionar vídeo"
+                dragLabel="Arraste um vídeo para cá"
+                hint="MP4, MOV ou WEBM · até 1 GB"
+                className="lg:min-h-96"
+              />
+              {shortcuts}
+            </div>
+            <OptionsPreview adjustables={adjustables} subject="um vídeo" actionLabel={labels.action} actionIcon={actionIcon} className="hidden lg:grid" />
+          </>
         ) : (
           <>
             <div className="min-w-0 rounded-xl bg-stage p-3 sm:p-4">
@@ -214,7 +244,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
                   <ul className="grid gap-px overflow-hidden rounded-lg border border-border bg-border">
                     <FileListItem
                       name={state.file.name}
-                      meta={describeVideo(state.file.size, state.info)}
+                      metaItems={videoMetaItems(state.file.size, state.info)}
                       showThumbnail={false}
                       {...describeItem(state)}
                       actions={
@@ -272,6 +302,14 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
       <p role="status" className="sr-only">
         {tool.announcement}
       </p>
+      <PageDropOverlay active={dragging} label="Solte o vídeo para abrir" />
+      <LeaveGuard
+        active={busy}
+        title="Parar o processamento?"
+        description={`O vídeo ainda está sendo processado. Se sair agora, o processamento é cancelado.`}
+        confirmLabel="Sair e cancelar"
+        cancelLabel="Continuar aqui"
+      />
     </>
   )
 }

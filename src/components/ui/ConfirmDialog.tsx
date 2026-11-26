@@ -13,6 +13,11 @@ interface ConfirmDialogProps {
   onConfirm: () => void
   /** Cancelar: botão, Esc, toque no fundo, voltar do Android. */
   onCancel: () => void
+  /**
+   * Empilhar um passo no histórico, para o voltar fechar o diálogo (padrão). Desligue quando o diálogo
+   * nasce de uma navegação bloqueada: aí o voltar já é a navegação em questão.
+   */
+  historyStep?: boolean
 }
 
 /**
@@ -28,10 +33,11 @@ export function ConfirmDialog({
   destructive = false,
   onConfirm,
   onCancel,
+  historyStep = true,
 }: ConfirmDialogProps) {
   const titleId = useId()
   const descriptionId = useId()
-  const { ref: dialogRef, onCancel: handleCancel, onClick: handleBackdropClick } = useModalDialog(open, onCancel)
+  const { ref: dialogRef, onCancel: handleCancel, onClick: handleBackdropClick } = useModalDialog(open, onCancel, { historyStep })
 
   return (
     <dialog

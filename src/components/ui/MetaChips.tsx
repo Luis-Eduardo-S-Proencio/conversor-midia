@@ -15,13 +15,14 @@ interface MetaChipsProps {
 
 /**
  * Dados técnicos do arquivo (formato, resolução, duração, tamanho) em pílulas, com algarismos
- * tabulares: os números não "dançam" quando mudam. Lista de definição para o leitor de tela.
+ * tabulares: os números não "dançam" quando mudam. Para o leitor de tela, cada pílula diz o nome do
+ * dado ("Formato: MP4"); lista simples, para não se confundir com as linhas de termo e valor das opções.
  */
 export function MetaChips({ items, animate = false, className }: MetaChipsProps) {
   return (
-    <dl className={cx('flex flex-wrap gap-1.5', className)}>
+    <ul className={cx('flex flex-wrap gap-1.5', className)}>
       {items.map((item, index) => (
-        <div
+        <li
           key={item.label}
           className={cx(
             'inline-flex h-7 items-center rounded-full border border-border bg-surface-2 px-2.5 text-caption text-fg-muted tabular-nums',
@@ -29,10 +30,10 @@ export function MetaChips({ items, animate = false, className }: MetaChipsProps)
           )}
           style={animate ? { animationDelay: `${Math.min(index, 7) * 40}ms` } : undefined}
         >
-          <dt className="sr-only">{item.label}</dt>
-          <dd>{item.value}</dd>
-        </div>
+          <span className="sr-only">{`${item.label}: `}</span>
+          <span>{item.value}</span>
+        </li>
       ))}
-    </dl>
+    </ul>
   )
 }

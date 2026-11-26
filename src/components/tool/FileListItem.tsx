@@ -2,6 +2,7 @@ import { Check, CircleAlert, Image as ImageIcon, ImageOff, Info, LoaderCircle, T
 import type { ReactNode } from 'react'
 import { orientationCss, type Orientation } from '../../core/image/orientation'
 import { Badge } from '../ui/Badge'
+import { MetaChips, type MetaItem } from '../ui/MetaChips'
 import { cx } from '../ui/cx'
 import { Icon } from '../ui/Icon'
 import { ProgressBar } from '../ui/ProgressBar'
@@ -20,6 +21,8 @@ interface FileListItemProps {
   name: string
   /** Linha técnica já formatada ("PNG · 3024 × 4032 · 8,6 MB"). */
   meta?: string
+  /** Os mesmos dados separados, mostrados em pílulas com algarismos tabulares (no lugar da linha). */
+  metaItems?: readonly MetaItem[]
   thumbnailUrl?: string
   state: FileItemState
   /** Texto curto do estado, como "Na fila" ou o tamanho do resultado. */
@@ -64,6 +67,7 @@ function Thumbnail({ url, state, orientation }: { url?: string; state: FileItemS
 export function FileListItem({
   name,
   meta,
+  metaItems,
   thumbnailUrl,
   state,
   statusLabel,
@@ -103,7 +107,11 @@ export function FileListItem({
         <p className="truncate text-sm font-medium text-fg" title={name}>
           {name}
         </p>
-        {meta && <p className="truncate text-xs text-fg-muted tabular-nums">{meta}</p>}
+        {metaItems ? (
+          <MetaChips items={metaItems} className="mt-1" />
+        ) : (
+          meta && <p className="truncate text-xs text-fg-muted tabular-nums">{meta}</p>
+        )}
         {/* Em telas estreitas o estado fica sob o nome, para não espremê-lo. A visibilidade fica num
             invólucro: no próprio Badge, `hidden` disputaria com o `inline-flex` dele. */}
         {statusLabel && (

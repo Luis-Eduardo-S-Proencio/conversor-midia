@@ -22,11 +22,12 @@ interface ModalDialog {
  * devolver o foco a quem abriu, Esc e toque no fundo pedem para fechar, e o voltar do
  * navegador/Android fecha antes de sair da tela.
  */
-export function useModalDialog(open: boolean, onClose: () => void): ModalDialog {
+export function useModalDialog(open: boolean, onClose: () => void, { historyStep = true }: { historyStep?: boolean } = {}): ModalDialog {
   const ref = useRef<HTMLDialogElement>(null)
   const opener = useRef<HTMLElement | null>(null)
 
-  useBackDismiss(open, onClose)
+  // Sem o passo no histórico quando o próprio diálogo nasce de uma navegação bloqueada (LeaveGuard).
+  useBackDismiss(historyStep && open, onClose)
 
   useEffect(() => {
     const dialog = ref.current

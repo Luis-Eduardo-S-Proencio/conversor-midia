@@ -1,4 +1,6 @@
 import { Minimize2 } from 'lucide-react'
+import { SIZE_DESTINATIONS, SIZE_DESTINATION_IDS } from '../../../app/destinations'
+import { ToolShortcuts } from '../../../components/tool/ToolShortcuts'
 import { Alert } from '../../../components/ui/Alert'
 import { formatDimensions } from '../../../core/format'
 import { codecLabel } from '../../../core/video/formats'
@@ -25,12 +27,21 @@ export function CompressPage() {
   return (
     <VideoToolPage
       title="Comprimir vídeo"
+      adjustables={['Nível', 'Ou ajuste para enviar por']}
       description="Diminua o tamanho do vídeo para enviar ou guardar. MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
       labels={COMPRESS_LABELS}
       actionIcon={Minimize2}
       tool={tool}
       canStart={Boolean(plan?.fits) && !blocker}
       onStart={compress.apply}
+      shortcuts={
+        <ToolShortcuts
+          label="Ajustar para enviar por"
+          options={SIZE_DESTINATION_IDS.map((id) => ({ value: id, label: SIZE_DESTINATIONS[id].label }))}
+          value={destination}
+          onChange={compress.changeDestination}
+        />
+      }
       preview={state.sourceUrl && <SourcePlayer key={state.fileId} src={state.sourceUrl} name={state.file?.name ?? ''} />}
       options={
         blocker ? (

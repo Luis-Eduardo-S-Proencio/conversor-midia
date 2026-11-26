@@ -16,6 +16,8 @@ export function CropPage() {
   return (
     <ImageToolPage
       title="Recortar imagem"
+      adjustables={['Proporção', 'Área de recorte']}
+      overlayCompare={false}
       description="Mantenha só a parte que importa de uma imagem JPG, PNG ou WEBP, arrastando a área ou digitando as medidas. A imagem não sai do seu dispositivo."
       labels={CROP_LABELS}
       actionIcon={Crop}

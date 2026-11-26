@@ -11,6 +11,7 @@ export function CompressPage() {
   return (
     <ImageToolPage
       title="Comprimir imagem"
+      adjustables={['Nível de compressão']}
       description="Reduza o tamanho de fotos em JPG, PNG e WEBP com pouca perda de qualidade. As imagens não saem do seu dispositivo."
       labels={COMPRESS_LABELS}
       actionIcon={Minimize2}

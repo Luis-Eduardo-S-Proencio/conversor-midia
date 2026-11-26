@@ -3,7 +3,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router'
 import { afterEach, describe, expect, it } from 'vitest'
 import { render } from 'vitest-browser-react'
 import { ToastProvider } from '../../components/ui/Toast'
-import { clearHandOff, peekHandOff } from '../../features/shared/file-handoff'
+import { clearHandOff, peekHandOff } from '../shared/file-handoff'
 import { FileActionSheet } from './FileActionSheet'
 import type { OpenedMedia } from './useOpenMedia'
 

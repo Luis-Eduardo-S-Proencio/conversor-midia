@@ -20,6 +20,7 @@ export function GifPage() {
   return (
     <VideoToolPage
       title="Criar GIF"
+      adjustables={['Trecho do GIF', 'Tamanho', 'Fluidez']}
       description="Transforme um trecho de até 15 segundos do vídeo em GIF animado. MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
       labels={GIF_LABELS}
       actionIcon={ImagePlay}

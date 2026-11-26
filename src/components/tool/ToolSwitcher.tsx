@@ -1,8 +1,11 @@
 import type { LucideIcon } from 'lucide-react'
 import { useLayoutEffect, useRef } from 'react'
-import { Link, useLocation } from 'react-router'
+import { useLocation } from 'react-router'
+import { TransitionLink } from '../layout/TransitionLink'
+import { CHIP_CLASSES } from '../ui/Chip'
 import { cx } from '../ui/cx'
-import { ToolIcon, type ToolTone } from '../ui/ToolIcon'
+import { Icon } from '../ui/Icon'
+import type { ToolTone } from '../ui/ToolIcon'
 
 export interface SwitcherTool {
   id: string
@@ -22,10 +25,18 @@ interface ToolSwitcherProps {
   className?: string
 }
 
+/** Cor do ícone de cada categoria (a ferramenta atual fica no acento). */
+const TONE_TEXT: Record<ToolTone, string> = {
+  edit: 'text-cat-edit',
+  convert: 'text-cat-convert',
+  compress: 'text-cat-compress',
+  audio: 'text-cat-audio',
+}
+
 /**
- * Troca de ferramenta dentro do editor, como nos apps de edição: em coluna a partir de 1024 px;
- * abaixo disso, uma fileira que rola para o lado. A ferramenta atual (pelo endereço) leva
- * `aria-current` e não recarrega a tela ao ser tocada de novo.
+ * Troca de ferramenta no celular e no tablet (no computador, quem faz isso é a barra lateral): chips
+ * num carrossel, com a atual centralizada. A atual (pelo endereço) leva `aria-current` e não recarrega
+ * a tela ao ser tocada de novo.
  */
 export function ToolSwitcher({ label, tools, onSwitch, className }: ToolSwitcherProps) {
   const { pathname } = useLocation()
@@ -49,18 +60,17 @@ export function ToolSwitcher({ label, tools, onSwitch, className }: ToolSwitcher
   }, [pathname])
 
   return (
-    <nav aria-label={label} className={cx('min-w-0', className)}>
-      <ul
-        ref={list}
-        // Relativa: as medidas dos links (offsetLeft) contam a partir da fileira.
-        className="relative -mx-1 flex gap-1 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0"
-      >
+    <nav aria-label={label} className={cx('-mx-(--gutter) min-w-0', className)}>
+      {/* Carrossel sem barra de rolagem, com fade nas bordas e encaixe; relativo para medir a posição dos chips. */}
+      <ul ref={list} className="scroller-x relative py-0.5">
         {tools.map((tool) => {
           const current = tool.to === pathname
           return (
-            <li key={tool.id} className="shrink-0">
-              <Link
+            // Encaixe pelo centro: a atual fica no meio da fileira, e a rolagem não a puxa de volta para a borda.
+            <li key={tool.id} className="snap-center!">
+              <TransitionLink
                 to={tool.to}
+                direction="tab"
                 aria-current={current ? 'page' : undefined}
                 onClick={(event) => {
                   if (current) {
@@ -69,16 +79,11 @@ export function ToolSwitcher({ label, tools, onSwitch, className }: ToolSwitcher
                   }
                   onSwitch(tool)
                 }}
-                className={cx(
-                  'flex min-h-11 items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-fg-muted transition-colors',
-                  'hover:bg-surface-2 hover:text-fg lg:w-full lg:flex-col lg:justify-center lg:gap-1.5 lg:px-1 lg:py-2.5 lg:text-center',
-                  'aria-[current=page]:bg-surface-2 aria-[current=page]:text-fg aria-[current=page]:ring-1 aria-[current=page]:ring-stroke',
-                  'forced-colors:aria-[current=page]:underline',
-                )}
+                className={CHIP_CLASSES}
               >
-                <ToolIcon icon={tool.icon} tone={tool.tone} />
+                <Icon icon={tool.icon} size="sm" className={current ? undefined : TONE_TEXT[tool.tone]} />
                 {tool.label}
-              </Link>
+              </TransitionLink>
             </li>
           )
         })}

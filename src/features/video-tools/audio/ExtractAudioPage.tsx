@@ -1,4 +1,5 @@
 import { Music } from 'lucide-react'
+import { ToolShortcuts } from '../../../components/tool/ToolShortcuts'
 import { Alert } from '../../../components/ui/Alert'
 import { formatBytes } from '../../../core/format'
 import { AUDIO_FORMATS, REENCODED_AUDIO_BITRATE } from '../../../core/video/audio'
@@ -10,7 +11,7 @@ import { useExtractAudioTool } from './useExtractAudioTool'
 
 export function ExtractAudioPage() {
   const extract = useExtractAudioTool()
-  const { tool, choices, choice } = extract
+  const { tool, choices, choice, picked } = extract
   const { state } = tool
   const { info } = state
   const busy = state.phase === 'processing'
@@ -29,12 +30,24 @@ export function ExtractAudioPage() {
   return (
     <VideoToolPage
       title="Extrair áudio"
+      adjustables={['Formato do áudio']}
       description="Salve só o som do vídeo, em M4A, MP3 ou WEBM. Vídeos MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
       labels={EXTRACT_AUDIO_LABELS}
       actionIcon={Music}
       tool={tool}
       canStart={Boolean(choice?.available) && !blocker}
       onStart={extract.apply}
+      shortcuts={
+        <ToolShortcuts
+          label="Formato do áudio"
+          options={[
+            { value: 'mp3', label: 'MP3' },
+            { value: 'm4a', label: 'M4A' },
+          ]}
+          value={picked === 'mp3' || picked === 'm4a' ? picked : undefined}
+          onChange={extract.changeFormat}
+        />
+      }
       preview={state.sourceUrl && <SourcePlayer key={state.fileId} src={state.sourceUrl} name={state.file?.name ?? ''} />}
       options={
         blocker ? (

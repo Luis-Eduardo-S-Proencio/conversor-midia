@@ -6,10 +6,12 @@ interface ProgressBarProps {
   /** De 0 a 100. Sem valor, a barra fica indeterminada. */
   value?: number
   hideLabel?: boolean
+  /** Linha curta embaixo, como o tempo que falta ("cerca de 30 s"). Texto comum, sem anúncio a cada mudança. */
+  hint?: string
   className?: string
 }
 
-export function ProgressBar({ label, value, hideLabel = false, className }: ProgressBarProps) {
+export function ProgressBar({ label, value, hideLabel = false, hint, className }: ProgressBarProps) {
   const labelId = useId()
   const determinate = value !== undefined
   const clamped = determinate ? Math.min(100, Math.max(0, value)) : 0
@@ -43,6 +45,7 @@ export function ProgressBar({ label, value, hideLabel = false, className }: Prog
           style={determinate ? { transform: `translateX(${clamped - 100}%)` } : undefined}
         />
       </div>
+      {hint && <p className="text-caption font-normal text-fg-subtle tabular-nums">{hint}</p>}
     </div>
   )
 }

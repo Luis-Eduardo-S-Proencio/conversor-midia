@@ -2,7 +2,7 @@ import { Film, Image as ImageIcon, type LucideIcon } from 'lucide-react'
 import { useId, useRef } from 'react'
 import { cx } from '../../components/ui/cx'
 import { Icon } from '../../components/ui/Icon'
-import { IMAGE_ACCEPT, VIDEO_ACCEPT } from '../open/accept'
+import { IMAGE_ACCEPT, VIDEO_ACCEPT } from '../../features/open/accept'
 
 interface BlockProps {
   icon: LucideIcon

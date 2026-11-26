@@ -1,3 +1,4 @@
+import { estimateCompressedBytes, type SizeEstimate } from '../../../core/video/compress'
 import { useCallback, useMemo, useState } from 'react'
 import type { Dimensions } from '../../../core/image/resize'
 import { videoOutputName } from '../../../core/video/output-name'
@@ -18,6 +19,8 @@ export interface ResizePlan {
   size: Dimensions
   /** Taxa do vídeo, em bits por segundo. */
   bitrate: number
+  /** Tamanho estimado; só onde o navegador respeita a taxa pedida (senão, prometer um tamanho enganaria). */
+  estimate?: SizeEstimate
 }
 
 /**
@@ -26,7 +29,8 @@ export interface ResizePlan {
  * pela mesma tarefa do Comprimir (medidas e taxa novas, som copiado), sem a promessa de tamanho.
  */
 export function useResizeTool() {
-  const tool = useVideoTool(RESIZE_LABELS)
+  // A abertura confere se o codificador respeita a taxa: só então o tamanho estimado aparece.
+  const tool = useVideoTool(RESIZE_LABELS, { checkSizeControl: true })
   const { info, file } = tool.state
   const { invalidateResult, run } = tool
   const [picked, setPicked] = useState<Resolution>()
@@ -42,7 +46,10 @@ export function useResizeTool() {
       size,
       info.format,
     )
-    return { resolution, size, bitrate }
+    const estimate = info.controlsSize
+      ? estimateCompressedBytes({ duration: info.duration, originalBytes: file.size, audioBitrate: info.audioBitrate }, bitrate)
+      : undefined
+    return { resolution, size, bitrate, estimate }
   }, [info, file, resolution])
 
   const changeResolution = useCallback(

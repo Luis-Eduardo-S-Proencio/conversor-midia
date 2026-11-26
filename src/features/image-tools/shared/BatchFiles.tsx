@@ -1,5 +1,6 @@
 import { Download, Eye, Plus, RefreshCw, X } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode, type Ref, type RefObject } from 'react'
+import { CompareSlider } from '../../../components/tool/CompareSlider'
 import { CompareView } from '../../../components/tool/CompareView'
 import { FileListItem, type FileItemState, type MessageTone } from '../../../components/tool/FileListItem'
 import { FilePickerButton } from '../../../components/tool/FilePickerButton'
@@ -68,6 +69,8 @@ interface BatchFilesProps {
   progressVerb: string
   /** A comparação do arquivo único, para o botão "Ver como ficou" do painel levar até ela. */
   compareRef?: Ref<HTMLDivElement>
+  /** Antes e depois com a mesma moldura: oferece a sobreposição com divisória. */
+  overlayCompare: boolean
   onAdd: (files: File[]) => void
   onRemove: (id: string) => void
   onClear: () => void
@@ -79,10 +82,12 @@ interface ResultComparisonProps {
   /** Nome acessível da prévia original. */
   name: string
   containerRef?: Ref<HTMLDivElement>
+  /** Antes e depois têm a mesma moldura (não vale ao girar ou recortar): dá para sobrepor com a divisória. */
+  overlay: boolean
 }
 
 /** Como ficou e o original, um de cada vez. A prévia original sai sem o giro e o fundo escolhidos: é a imagem de antes. */
-function ResultComparison({ item, name, containerRef }: ResultComparisonProps) {
+function ResultComparison({ item, name, containerRef, overlay }: ResultComparisonProps) {
   const url = item.output?.url
   if (!url || !item.output || !item.previewUrl) return null
   return (
@@ -91,6 +96,7 @@ function ResultComparison({ item, name, containerRef }: ResultComparisonProps) {
       containerRef={containerRef}
       result={<ResultImage key={url} src={url} name={item.output.name} />}
       original={<FilePreview src={item.previewUrl} alt={`Pré-visualização de ${name}`} />}
+      overlay={overlay ? <CompareSlider beforeUrl={item.previewUrl} afterUrl={url} name={item.output.name} /> : undefined}
     />
   )
 }
@@ -107,6 +113,7 @@ export function BatchFiles({
   renderPreview,
   progressVerb,
   compareRef,
+  overlayCompare,
   onAdd,
   onRemove,
   onClear,
@@ -164,7 +171,7 @@ export function BatchFiles({
 
       {single?.previewUrl &&
         (single.status === 'done' && single.output?.url ? (
-          <ResultComparison item={single} name={single.name} containerRef={compareRef} />
+          <ResultComparison item={single} name={single.name} containerRef={compareRef} overlay={overlayCompare} />
         ) : renderPreview ? (
           renderPreview(single)
         ) : (
@@ -193,7 +200,7 @@ export function BatchFiles({
             </h3>
             <IconButton icon={X} label="Fechar a comparação" onClick={closeViewing} />
           </div>
-          <ResultComparison item={viewing} name={viewing.name} />
+          <ResultComparison item={viewing} name={viewing.name} overlay={overlayCompare} />
         </section>
       )}
 

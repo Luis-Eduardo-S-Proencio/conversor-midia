@@ -13,9 +13,9 @@ import { formatBytes } from '../core/format'
 import { IMAGE_LIMITS } from '../core/image/inspect'
 import type { MediaKind } from '../core/media-kind'
 import { VIDEO_LIMITS } from '../core/video/inspect'
-import { IMAGE_ACCEPT, VIDEO_ACCEPT } from './open/accept'
-import { FileActionSheet } from './open/FileActionSheet'
-import { useOpenMedia } from './open/useOpenMedia'
+import { IMAGE_ACCEPT, VIDEO_ACCEPT } from '../features/open/accept'
+import { FileActionSheet } from '../features/open/FileActionSheet'
+import { useOpenMedia } from '../features/open/useOpenMedia'
 import { TOOL_ROW_ITEM, ToolCardBody, ToolRowBody } from './tool-links'
 
 interface MediaPageText {

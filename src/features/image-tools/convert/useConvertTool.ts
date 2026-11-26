@@ -56,5 +56,5 @@ export function useConvertTool() {
   // Formato sem transparência (JPG, BMP, PDF): a prévia já mostra o fundo que o arquivo terá.
   const backdrop = OUTPUT_FORMAT_INFO[settings.target].supportsAlpha ? undefined : BACKGROUND_COLORS[settings.background]
 
-  return { batch: { ...batch, reset }, settings, updateSettings, convert, backdrop }
+  return { batch: { ...batch, reset }, settings, chosenTarget: preferences.target, updateSettings, convert, backdrop }
 }

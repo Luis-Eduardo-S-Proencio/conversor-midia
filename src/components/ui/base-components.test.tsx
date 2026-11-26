@@ -57,7 +57,7 @@ describe('Chip', () => {
 })
 
 describe('MetaChips', () => {
-  it('lê cada dado com o nome dele', async () => {
+  it('lê cada dado com o nome dele, sem se confundir com as linhas de termo e valor', async () => {
     const screen = await render(
       <MetaChips
         items={[
@@ -66,8 +66,9 @@ describe('MetaChips', () => {
         ]}
       />,
     )
-    await expect.element(screen.getByRole('term').first()).toHaveTextContent('Formato')
-    await expect.element(screen.getByRole('definition').first()).toHaveTextContent('MP4')
+    const items = screen.getByRole('listitem').elements().map((item) => item.textContent)
+    expect(items).toEqual(['Formato: MP4', 'Tamanho: 22,4 MB'])
+    expect(screen.getByRole('term').elements()).toHaveLength(0)
     await expect.element(screen.getByText('22,4 MB')).toBeVisible()
   })
 })

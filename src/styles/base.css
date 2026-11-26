@@ -96,11 +96,6 @@
   }
 }
 
-/* Área de abrir arquivos antiga (sai na fase das ferramentas, trocada pelo visor). */
-@utility bg-drop {
-  background: var(--color-surface-1);
-}
-
 /* Cartão: grafite em camadas, borda hairline e luz vindo de cima. */
 @utility surface-card {
   background: linear-gradient(180deg, var(--color-surface-2), var(--color-surface-1));
@@ -473,5 +468,16 @@
 @keyframes fade-in {
   from {
     opacity: 0;
+  }
+}
+
+/* Economia do resultado: a barra começa cheia (o original) e encolhe até o tamanho novo. */
+@utility savings-bar {
+  animation: savings-shrink var(--dur-4) var(--ease-out) 120ms both;
+}
+
+@keyframes savings-shrink {
+  from {
+    scale: 1 1;
   }
 }

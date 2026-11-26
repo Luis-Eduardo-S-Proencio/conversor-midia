@@ -23,6 +23,7 @@ export function ConvertPage() {
   return (
     <VideoToolPage
       title="Converter vídeo"
+      adjustables={['Formato final']}
       description="Troque o formato do vídeo entre MP4, MOV e WEBM. Quando dá, só copia: rápido e sem perder qualidade. O vídeo não sai do seu dispositivo."
       labels={CONVERT_LABELS}
       actionIcon={ArrowLeftRight}

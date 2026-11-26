@@ -81,17 +81,20 @@ export function Dropzone({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      data-dragging={dragging || undefined}
+      data-dragover={dragging || undefined}
       className={cx(
-        'grid justify-items-center gap-3 rounded-xl border-2 border-dashed border-accent/40 bg-drop px-5 py-8 text-center transition-colors',
-        'data-dragging:border-accent data-dragging:bg-accent-soft',
+        // Visor de câmera: cantoneiras no lugar da borda tracejada; com o arquivo por cima, fecham no acento.
+        'viewfinder group grid min-h-52 content-center justify-items-center gap-3 rounded-xl px-5 py-8 text-center',
         className,
       )}
     >
-      <span className="mb-1 grid size-14 place-items-center rounded-lg bg-brand text-on-accent">
+      <span
+        aria-hidden="true"
+        className="grid size-12 place-items-center rounded-lg bg-surface-3 text-fg transition-[translate,color] duration-(--dur-2) group-data-dragover:-translate-y-1 group-data-dragover:text-accent"
+      >
         <Icon icon={Upload} size="lg" />
       </span>
-      <p className="hidden font-semibold text-fg pointer-fine:block">{dragLabel}</p>
+      <p className="hidden text-label text-fg pointer-fine:block">{dragging ? 'Solte para abrir' : dragLabel}</p>
       <FilePickerButton
         ref={buttonRef}
         variant="primary"
@@ -105,7 +108,7 @@ export function Dropzone({
         {buttonLabel}
       </FilePickerButton>
       {hint && (
-        <p id={hintId} className="text-xs text-fg-subtle">
+        <p id={hintId} className="text-caption font-normal text-fg-subtle tabular-nums">
           {hint}
         </p>
       )}

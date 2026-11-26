@@ -1,10 +1,18 @@
 import { formatBytes, formatDimensions } from '../../../core/format'
 import { VIDEO_FORMATS } from '../../../core/video/formats'
 import { formatDuration } from '../../../core/video/time'
+import type { MetaItem } from '../../../components/ui/MetaChips'
 import type { VideoInfo } from '../../../workers/video-protocol'
 
-/** Linha técnica do vídeo: "MP4 · 1920 × 1080 · 1:05 · 48,2 MB" (só o tamanho, enquanto ele abre). */
-export function describeVideo(sizeBytes: number, info?: VideoInfo): string {
-  if (!info) return formatBytes(sizeBytes)
-  return [VIDEO_FORMATS[info.format].label, formatDimensions(info.width, info.height), formatDuration(info.duration), formatBytes(sizeBytes)].join(' · ')
+/** Dados do vídeo em itens separados, para as pílulas sob o vídeo (só o tamanho, enquanto ele abre). */
+export function videoMetaItems(sizeBytes: number, info?: VideoInfo): MetaItem[] {
+  const size = { label: 'Tamanho', value: formatBytes(sizeBytes) }
+  if (!info) return [size]
+  return [
+    { label: 'Formato', value: VIDEO_FORMATS[info.format].label },
+    { label: 'Medidas', value: formatDimensions(info.width, info.height) },
+    { label: 'Duração', value: formatDuration(info.duration) },
+    size,
+  ]
 }
+

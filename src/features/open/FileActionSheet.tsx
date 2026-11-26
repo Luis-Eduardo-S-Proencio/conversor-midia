@@ -7,7 +7,7 @@ import { Badge } from '../../components/ui/Badge'
 import { BottomSheet } from '../../components/ui/BottomSheet'
 import { Icon } from '../../components/ui/Icon'
 import { ToolIcon } from '../../components/ui/ToolIcon'
-import { handOffFiles } from '../../features/shared/file-handoff'
+import { handOffFiles } from '../shared/file-handoff'
 import { OPEN_ACCEPT } from './accept'
 import { OpenedSummary } from './OpenedSummary'
 import type { OpenedMedia } from './useOpenMedia'
@@ -16,8 +16,8 @@ interface FileActionSheetProps {
   /** O que foi aberto; `null` fecha o painel. */
   opened: OpenedMedia | null
   onClose: () => void
-  /** "Escolher outro arquivo", sem sair do painel. */
-  onChooseAnother: (files: File[]) => void
+  /** "Escolher outro arquivo", sem sair do painel. Sem isso (resultado indo para outra ferramenta), o botão some. */
+  onChooseAnother?: (files: File[]) => void
 }
 
 /**
@@ -42,9 +42,11 @@ export function FileActionSheet({ opened, onClose, onChooseAnother }: FileAction
       closeLabel="Fechar"
       title={title}
       footer={
-        <FilePickerButton variant="ghost" accept={OPEN_ACCEPT} onFiles={onChooseAnother} className="-ml-2">
-          Escolher outro arquivo
-        </FilePickerButton>
+        onChooseAnother && (
+          <FilePickerButton variant="ghost" accept={OPEN_ACCEPT} onFiles={onChooseAnother} className="-ml-2">
+            Escolher outro arquivo
+          </FilePickerButton>
+        )
       }
     >
       <div className="grid gap-4">

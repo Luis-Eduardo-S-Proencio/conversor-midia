@@ -13,6 +13,7 @@ const renderFiles = (items: BatchItem[]) =>
       busy={items.some((item) => item.status === 'processing')}
       headingRef={createRef()}
       progressVerb="Comprimindo"
+      overlayCompare
       onAdd={() => {}}
       onRemove={() => {}}
       onClear={() => {}}
@@ -44,6 +45,7 @@ describe('BatchFiles', () => {
         renderPreview={(previewed) => <p>Área de recorte de {previewed.name}</p>}
         headingRef={createRef()}
         progressVerb="Recortando"
+        overlayCompare
         onAdd={() => {}}
         onRemove={() => {}}
         onClear={() => {}}

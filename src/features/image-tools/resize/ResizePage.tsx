@@ -11,6 +11,7 @@ export function ResizePage() {
   return (
     <ImageToolPage
       title="Redimensionar imagem"
+      adjustables={['Redimensionar por', 'Novo tamanho', 'Manter proporção']}
       description="Mude a largura e a altura de imagens JPG, PNG e WEBP, por porcentagem ou em pixels, uma ou várias de uma vez. As imagens não saem do seu dispositivo."
       labels={RESIZE_LABELS}
       actionIcon={Scaling}

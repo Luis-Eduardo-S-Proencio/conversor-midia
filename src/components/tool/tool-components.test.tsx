@@ -129,8 +129,11 @@ describe('FileInfo e ResultSummary', () => {
       </>,
     )
     await expect.element(screen.getByText('PNG · 3024 × 4032 · 8,6 MB')).toBeVisible()
-    await expect.element(screen.getByText('Redução')).toBeVisible()
+    // Antes → depois e a variação; os nomes ("Antes", "Depois", "Redução") ficam para o leitor de tela.
+    const values = screen.getByRole('definition').elements().map((value) => value.textContent)
+    expect(values).toEqual(['8,6 MB', '1,9 MB', '−78%'])
     await expect.element(screen.getByText('−78%')).toBeVisible()
+    expect(screen.getByRole('term').elements().map((term) => term.textContent)).toEqual(['Antes', 'Depois', 'Redução'])
   })
 })
 
@@ -190,10 +193,21 @@ describe('DownloadActions', () => {
     await expect.element(screen.getByRole('alert')).toHaveTextContent('Não foi possível montar o arquivo para baixar. Baixe os arquivos um a um.')
   })
 
-  it('não mostra "Salvar na galeria" em aparelho com mouse', async () => {
+  it('sem compartilhamento de arquivos no navegador, fica só o Baixar', async () => {
+    Object.defineProperty(navigator, 'canShare', { value: () => false, configurable: true })
     const screen = await render(<DownloadActions getFiles={() => [png('a.png')]} />)
     await expect.element(screen.getByRole('button', { name: 'Baixar' })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Salvar na galeria' }).elements()).toHaveLength(0)
+    expect(screen.getByRole('button', { name: 'Compartilhar' }).elements()).toHaveLength(0)
+  })
+
+  it('com compartilhamento de arquivos, "Compartilhar" envia o próprio arquivo', async () => {
+    Object.defineProperty(navigator, 'canShare', { value: () => true, configurable: true })
+    const share = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'share', { value: share, configurable: true })
+    const file = png('resultado.png')
+    const screen = await render(<DownloadActions getFiles={() => [file]} />)
+    await screen.getByRole('button', { name: 'Compartilhar' }).click()
+    expect(share).toHaveBeenCalledWith({ files: [file] })
   })
 })
 

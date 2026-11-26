@@ -1,8 +1,7 @@
-import { Download, Share } from 'lucide-react'
+import { Download, Share2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '../ui/Button'
 import { cx } from '../ui/cx'
-import { useMediaQuery } from '../ui/useMediaQuery'
 import { canShareFiles, saveBlob, shareFiles } from './download'
 
 interface DownloadActionsProps {
@@ -16,15 +15,24 @@ interface DownloadActionsProps {
   stacked?: boolean
 }
 
+/** O navegador compartilha arquivos (Web Share com arquivos)? Conferido uma vez, com um arquivo de teste. */
+function supportsFileSharing(): boolean {
+  if (typeof navigator.canShare !== 'function') return false
+  try {
+    return navigator.canShare({ files: [new File([''], 'teste.png', { type: 'image/png' })] })
+  } catch {
+    return false // alguns navegadores lançam em vez de responder "não"
+  }
+}
+
 /**
- * Baixar e, em aparelhos de toque que permitem, "Salvar na galeria".
+ * Baixar e, onde o navegador permite, "Compartilhar" o próprio arquivo (WhatsApp, e-mail, galeria).
  * No iPhone o download vai para o app Arquivos; a galeria só é alcançada pelo compartilhamento.
  */
 export function DownloadActions({ getFiles, bundle, downloadLabel = 'Baixar', size = 'md', stacked = false }: DownloadActionsProps) {
-  const isTouchDevice = useMediaQuery('(pointer: coarse)')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const showShare = isTouchDevice && typeof navigator.canShare === 'function'
+  const [showShare] = useState(supportsFileSharing)
 
   async function handleDownload() {
     setError(null)
@@ -50,7 +58,7 @@ export function DownloadActions({ getFiles, bundle, downloadLabel = 'Baixar', si
     setError(null)
     const files = getFiles()
     if (!canShareFiles(files)) {
-      setError('Este navegador não permite salvar estes arquivos na galeria. Use o botão Baixar.')
+      setError('Este navegador não permite compartilhar estes arquivos. Use o botão Baixar.')
       return
     }
     try {
@@ -67,8 +75,8 @@ export function DownloadActions({ getFiles, bundle, downloadLabel = 'Baixar', si
           {downloadLabel}
         </Button>
         {showShare && (
-          <Button size={size} block={stacked} icon={Share} onClick={() => void handleShare()}>
-            Salvar na galeria
+          <Button size={size} block={stacked} icon={Share2} onClick={() => void handleShare()}>
+            Compartilhar
           </Button>
         )}
       </div>

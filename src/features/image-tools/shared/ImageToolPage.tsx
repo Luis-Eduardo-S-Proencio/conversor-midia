@@ -7,11 +7,16 @@ import { TopAppBar } from '../../../components/layout/TopAppBar'
 import { saveBlob } from '../../../components/tool/download'
 import { Dropzone } from '../../../components/tool/Dropzone'
 import { ToolSwitcher } from '../../../components/tool/ToolSwitcher'
+import { LeaveGuard } from '../../../components/tool/LeaveGuard'
+import { OptionsPreview } from '../../../components/tool/OptionsPreview'
+import { PageDropOverlay } from '../../../components/tool/PageDropOverlay'
+import { useRemainingTime, useWakeLock } from '../../../components/tool/processing'
 import { usePageFileDrop } from '../../../components/tool/usePageFileDrop'
 import { Alert } from '../../../components/ui/Alert'
 import { Button } from '../../../components/ui/Button'
 import type { Orientation } from '../../../core/image/orientation'
 import { supportsImageWorker } from '../../../workers/image-client'
+import { canReuse } from '../../open/reuse'
 import { handOffOpenFiles, useOpenFilesSource } from '../../shared/file-handoff'
 import { BatchActions } from './BatchActions'
 import { BatchFiles } from './BatchFiles'
@@ -41,6 +46,15 @@ interface ImageToolPageProps {
   singleImage?: boolean
   /** Prévia própria da ferramenta para o arquivo único (ex.: a área de recorte). */
   renderPreview?: (item: BatchItem) => ReactNode
+  /** O que vai dar para ajustar, mostrado no painel desligado antes de abrir a imagem (computador). */
+  adjustables: readonly string[]
+  /** Atalhos da própria ferramenta, embaixo da área de abrir (ex.: formatos do Converter). */
+  shortcuts?: ReactNode
+  /**
+   * O resultado tem a mesma moldura do original, e a comparação oferece "Antes e depois" com divisória.
+   * Desligue quando o enquadramento muda (girar, recortar).
+   */
+  overlayCompare?: boolean
 }
 
 /**
@@ -60,6 +74,9 @@ export function ImageToolPage({
   orientation,
   singleImage = false,
   renderPreview,
+  adjustables,
+  shortcuts,
+  overlayCompare = true,
 }: ImageToolPageProps) {
   const { items, summary } = batch
   const optionsHeadingId = useId()
@@ -73,7 +90,12 @@ export function ImageToolPage({
   const [onlyItem] = items
   const singleResult = items.length === 1 && onlyItem?.status === 'done' && Boolean(onlyItem.output?.url)
 
-  usePageFileDrop(batch.addFiles, supported && !summary.isProcessing)
+  const dragging = usePageFileDrop(batch.addFiles, supported && !summary.isProcessing)
+  // Processando: a tela fica acesa, o tempo que falta aparece e sair pede confirmação.
+  const busy = summary.isProcessing
+  useWakeLock(busy)
+  const progressShare = batch.progress ? batch.progress.completed / batch.progress.total : undefined
+  const remaining = useRemainingTime(progressShare, busy)
   // Indo para outra ferramenta de imagem (fileira de troca ou barra lateral), as imagens abertas vão junto.
   useOpenFilesSource('image', batch.getOriginalFiles)
 
@@ -129,6 +151,8 @@ export function ImageToolPage({
       onReset={handleReset}
       getFiles={batch.getResultFiles}
       bundle={() => batch.createZip(zipName)}
+      remaining={remaining}
+      reusable={canReuse('image', items.flatMap((item) => (item.status === 'done' && item.output ? [item.output.name] : [])))}
     />
   )
 
@@ -155,18 +179,29 @@ export function ImageToolPage({
             </Alert>
           </div>
         ) : items.length === 0 ? (
-          <div className="grid place-items-center rounded-xl bg-stage p-3 sm:p-6 lg:col-span-2 lg:min-h-112">
-            <Dropzone
-              buttonRef={pickerButton}
-              accept={ACCEPTED_TYPES}
-              onFiles={batch.addFiles}
-              multiple={!singleImage}
-              buttonLabel={singleImage ? 'Selecionar imagem' : 'Selecionar imagens'}
-              dragLabel={singleImage ? 'Arraste uma imagem para cá' : 'Arraste imagens para cá'}
-              hint={singleImage ? 'JPG, PNG ou WEBP · até 50 MB' : 'JPG, PNG ou WEBP · até 50 MB por arquivo · até 20 arquivos'}
-              className="w-full max-w-xl"
+          <>
+            {/* Vazio: área de abrir do tamanho do conteúdo e, no computador, o painel de opções já visível (desligado). */}
+            <div className="grid min-w-0 content-start gap-4">
+              <Dropzone
+                buttonRef={pickerButton}
+                accept={ACCEPTED_TYPES}
+                onFiles={batch.addFiles}
+                multiple={!singleImage}
+                buttonLabel={singleImage ? 'Selecionar imagem' : 'Selecionar imagens'}
+                dragLabel={singleImage ? 'Arraste uma imagem para cá' : 'Arraste imagens para cá'}
+                hint={singleImage ? 'JPG, PNG ou WEBP · até 50 MB' : 'JPG, PNG ou WEBP · até 50 MB por arquivo · até 20 arquivos'}
+                className="lg:min-h-96"
+              />
+              {shortcuts}
+            </div>
+            <OptionsPreview
+              adjustables={adjustables}
+              subject={singleImage ? 'uma imagem' : 'as imagens'}
+              actionLabel={labels.action}
+              actionIcon={actionIcon}
+              className="hidden lg:grid"
             />
-          </div>
+          </>
         ) : (
           <>
             <div className="min-w-0 rounded-xl bg-stage p-3 sm:p-4">
@@ -181,6 +216,7 @@ export function ImageToolPage({
                 renderPreview={renderPreview}
                 progressVerb={labels.progress}
                 compareRef={compareRef}
+                overlayCompare={overlayCompare}
                 onAdd={batch.addFiles}
                 onRemove={handleRemove}
                 onClear={handleReset}
@@ -226,6 +262,14 @@ export function ImageToolPage({
       <p role="status" className="sr-only">
         {batch.announcement}
       </p>
+      <PageDropOverlay active={dragging} label={singleImage ? 'Solte a imagem para abrir' : 'Solte as imagens para abrir'} />
+      <LeaveGuard
+        active={busy}
+        title="Parar o processamento?"
+        description="As imagens ainda estão sendo processadas. Se sair agora, o processamento é cancelado."
+        confirmLabel="Sair e cancelar"
+        cancelLabel="Continuar aqui"
+      />
     </>
   )
 }

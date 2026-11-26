@@ -1,12 +1,14 @@
 import { SegmentedControl } from '../../../components/ui/SegmentedControl'
 import type { Dimensions } from '../../../core/image/resize'
-import { formatDimensions } from '../../../core/format'
+import { describeSizeChange, formatBytes, formatDimensions } from '../../../core/format'
 import { resolutionLabel, type Resolution, type ResolutionChoice } from '../../../core/video/resize'
 import { Note } from '../shared/Note'
 import { ONLY_DOWNSCALE } from './settings'
 import type { ResizePlan } from './useResizeTool'
 
 interface ResizeOptionsProps {
+  /** Tamanho do vídeo original, para a variação do tamanho estimado. */
+  originalBytes: number
   choices: readonly ResolutionChoice[]
   plan: ResizePlan
   onResolutionChange: (resolution: Resolution) => void
@@ -18,7 +20,7 @@ interface ResizeOptionsProps {
 }
 
 /** Resolução final (só menores que a do vídeo), com as medidas de antes e de depois, e o que acontece com o vídeo. */
-export function ResizeOptions({ choices, plan, onResolutionChange, current, hasAudio, extraTracks, disabled = false }: ResizeOptionsProps) {
+export function ResizeOptions({ choices, plan, onResolutionChange, current, originalBytes, hasAudio, extraTracks, disabled = false }: ResizeOptionsProps) {
   // O controle trabalha com texto; a resolução volta a ser número pela própria lista.
   const options = choices.map(({ resolution, available }) => ({ value: String(resolution), label: resolutionLabel(resolution), disabled: !available }))
   const select = (value: string) => {
@@ -43,6 +45,12 @@ export function ResizeOptions({ choices, plan, onResolutionChange, current, hasA
           <dt className="text-fg-muted">Resolução final</dt>
           <dd className="tabular-nums text-fg">{formatDimensions(plan.size.width, plan.size.height)}</dd>
         </div>
+        {plan.estimate && (
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="text-fg-muted">Tamanho estimado</dt>
+            <dd className="whitespace-nowrap tabular-nums text-fg">{`≈ ${formatBytes(plan.estimate.bytes)} · ${describeSizeChange(originalBytes, plan.estimate.bytes).value}`}</dd>
+          </div>
+        )}
       </dl>
 
       <Note>{`O vídeo é refeito em qualidade alta, nunca acima da do original, o que pode demorar em vídeos longos.${hasAudio ? ' O som é copiado, sem perder qualidade.' : ''}`}</Note>

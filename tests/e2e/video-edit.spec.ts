@@ -178,27 +178,6 @@ test.describe('Editar vídeo', () => {
     expect(await frameColors(page, result.bytes, 1.5, [[160, 120]])).toEqual(['blue'])
   })
 
-  test('o ajuste fino digita as pontas da parte marcada, com aviso fora do vídeo', async ({ page }) => {
-    await openWithDecoding(page)
-    await load(page)
-    await selectPiece(page, 1, 1)
-    await page.getByText('Ajuste fino', { exact: true }).click()
-    await page.getByRole('textbox', { name: 'Fim', exact: true }).fill('0:09,00')
-    await button(page, 'Aplicar').click()
-    await expect(page.getByRole('alert')).toContainText('O vídeo tem 0:04,01: o fim não pode passar disso.')
-
-    await page.getByRole('textbox', { name: 'Início', exact: true }).fill('0:00,50')
-    await page.getByRole('textbox', { name: 'Fim', exact: true }).fill('0:03,50')
-    await button(page, 'Aplicar').click()
-    await expect(detail(page, 'Parte marcada')).toHaveText('0:00,50 a 0:03,50 · 0:03,00')
-    await button(page, 'Excluir').click()
-    await expect(detail(page, 'Vídeo final')).toHaveText('0:01,01')
-
-    await save(page)
-    const result = await download(page, button(page, 'Baixar vídeo'))
-    expect((await probeVideo(result.bytes)).duration).toBeCloseTo(1, 1)
-  })
-
   test('a barra mostra miniaturas do vídeo', async ({ page }) => {
     await openWithDecoding(page)
     await load(page)

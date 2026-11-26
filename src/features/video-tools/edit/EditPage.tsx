@@ -53,13 +53,10 @@ export function EditPage() {
         plan && (
           <EditOptions
             edit={edit}
-            duration={info.duration}
             selection={editor.selection}
             plan={plan}
             saveBlocker={editor.saveBlocker}
-            onSelectionChange={editor.setSelectionRange}
             extraTracks={info.extraTracks}
-            disabled={busy}
           />
         )
       }

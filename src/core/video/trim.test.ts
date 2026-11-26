@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { availableTrimModes, canRemoveParts, checkRange, checkTimeValues, fieldsOfRange, type TrimFields } from './trim'
 
-/** As duas etapas da validação dos campos, como o Criar GIF e o ajuste fino do Editar vídeo usam. */
+/** As duas etapas da validação dos campos, como o Criar GIF usa. */
 function validateTrim(fields: TrimFields, duration: number) {
   const checked = checkTimeValues(fields, duration)
   return checked.ok ? checkRange(fields, checked.values, duration, 'O trecho') : checked

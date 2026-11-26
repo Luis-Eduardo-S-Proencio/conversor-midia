@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { button, fileInput, fixture, openImageTool } from './image-tool.ts'
-import { OPEN_TIMEOUT, UNSUPPORTED_DECODING, canDecodeVideo, timeField, videoFixture } from './video-tool.ts'
+import { OPEN_TIMEOUT, UNSUPPORTED_DECODING, canDecodeVideo, videoFixture } from './video-tool.ts'
 
 // Depois de processar, a pessoa vê como ficou (e o original, para comparar) antes de baixar.
 
@@ -68,20 +68,21 @@ test.describe('Ver como ficou', () => {
     await page.goto('/videos/editar')
     test.skip(!(await canDecodeVideo(page)), UNSUPPORTED_DECODING)
     await fileInput(page).setInputFiles(videoFixture('segundos.mp4')) // 4 s
-    // Marca do 1,5 s até o fim pelo ajuste fino e exclui: fica de 0 a 1,5 s.
-    await page.getByRole('button', { name: /^Pedaço 1 de 1/ }).click({ timeout: OPEN_TIMEOUT })
-    await page.getByText('Ajuste fino', { exact: true }).click()
-    await timeField(page, 'Início').fill('0:01,50')
-    await timeField(page, 'Fim').fill('0:04,01')
-    await button(page, 'Aplicar').click()
+    // Marca do 1 s até o fim pela alça do começo e exclui: fica de 0 a 1 s.
+    const timeline = page.getByRole('group', { name: /^Linha do tempo do vídeo editado/ })
+    await expect(timeline).toBeVisible({ timeout: OPEN_TIMEOUT })
+    await timeline.evaluate((element) => element.scrollIntoView({ block: 'center', inline: 'nearest' }))
+    await page.getByRole('button', { name: /^Pedaço 1 de 1/ }).click()
+    await page.getByRole('slider', { name: 'Começo da parte marcada' }).focus()
+    await page.keyboard.press('Shift+ArrowRight')
     await button(page, 'Excluir').click()
     await button(page, 'Salvar vídeo').click()
     await expect(page.getByRole('heading', { name: 'Vídeo editado' })).toBeFocused({ timeout: PROCESS_TIMEOUT })
 
     await expect(page.getByRole('radio', { name: 'Como ficou' })).toBeChecked()
     const result = page.getByLabel('Como ficou: segundos-editado.mp4')
-    // O player toca o arquivo gerado: 1,5 s, e não os 4 s do original.
-    await expect.poll(() => result.evaluate((video: HTMLVideoElement) => video.duration)).toBeCloseTo(1.5, 1)
+    // O player toca o arquivo gerado: 1 s, e não os 4 s do original.
+    await expect.poll(() => result.evaluate((video: HTMLVideoElement) => video.duration)).toBeCloseTo(1, 1)
 
     await page.getByRole('radio', { name: 'Original' }).click()
     await expect(page.getByLabel('Vídeo segundos.mp4, como está ficando')).toBeVisible()

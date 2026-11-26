@@ -131,19 +131,6 @@ export function useEditTool() {
     [session],
   )
 
-  /** Ajuste fino: as duas pontas da marca de uma vez, pelos campos de tempo. */
-  const setSelectionRange = useCallback(
-    (start: number, end: number) => {
-      if (!session?.selection) return
-      const present = session.history.present
-      // A ponta que encolhe primeiro: assim a outra não fica presa à posição antiga.
-      const widened = { ...session.selection, start: Math.min(start, session.selection.start), end: Math.max(end, session.selection.end) }
-      const withStart = moveSelectionEdge(present, widened, 'start', start)
-      setStored({ ...session, selection: moveSelectionEdge(present, withStart, 'end', end) })
-    },
-    [session],
-  )
-
   const undoEdit = useCallback(() => {
     update((current) => ({ ...current, history: undo(current.history), selection: undefined }))
     setAnnouncement('Desfeito.')
@@ -197,7 +184,6 @@ export function useEditTool() {
     remove,
     select,
     moveSelection,
-    setSelectionRange,
     undo: undoEdit,
     redo: redoEdit,
     apply,

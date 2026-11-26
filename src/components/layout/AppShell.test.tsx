@@ -1,5 +1,5 @@
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { AppShell } from './AppShell'
@@ -65,6 +65,39 @@ describe('AppShell no celular', () => {
 
     await menu.getByRole('button', { name: 'Fechar menu' }).click()
     await expect.element(menu).not.toBeInTheDocument()
+  })
+
+  describe('Compartilhar app, no menu', () => {
+    afterEach(() => {
+      Reflect.deleteProperty(navigator, 'share')
+      vi.restoreAllMocks()
+    })
+
+    it('abre a folha do sistema com o endereço do app e fecha o menu', async () => {
+      const share = vi.fn(() => Promise.resolve())
+      Object.defineProperty(navigator, 'share', { value: share, configurable: true })
+      await page.viewport(390, 844)
+      const screen = await renderShell('/imagens').screenPromise
+
+      await screen.getByRole('button', { name: 'Menu' }).click()
+      await screen.getByRole('dialog', { name: 'Menu' }).getByRole('button', { name: 'Compartilhar app' }).click()
+
+      expect(share).toHaveBeenCalledWith(expect.objectContaining({ title: 'Media Tools', url: `${window.location.origin}/` }))
+      await expect.element(screen.getByRole('dialog', { name: 'Menu' })).not.toBeInTheDocument()
+    })
+
+    it('sem a folha do sistema, copia o link e avisa', async () => {
+      Object.defineProperty(navigator, 'share', { value: undefined, configurable: true })
+      const write = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined)
+      await page.viewport(390, 844)
+      const screen = await renderShell('/').screenPromise
+
+      await screen.getByRole('button', { name: 'Menu' }).click()
+      await screen.getByRole('button', { name: 'Compartilhar app' }).click()
+
+      expect(write).toHaveBeenCalledWith(`${window.location.origin}/`)
+      await expect.element(screen.getByText('Link copiado.')).toBeVisible()
+    })
   })
 
   it('o Sobre não tem as abas: só a barra com voltar da própria tela', async () => {

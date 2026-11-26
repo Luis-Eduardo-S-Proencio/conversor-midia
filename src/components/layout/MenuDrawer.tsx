@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Download, X, type LucideIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, Share2, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Logo } from '../brand/Logo'
 import { Button, IconButton } from '../ui/Button'
@@ -7,6 +7,7 @@ import { useToast } from '../ui/toast-context'
 import { useModalDialog } from '../ui/useModalDialog'
 import { installPlatform, requestInstall, useInstallMode } from './install-app'
 import { InstallSteps } from './InstallSteps'
+import { appUrl, shareApp } from './share-app'
 import { TransitionLink } from './TransitionLink'
 
 const ROW =
@@ -37,7 +38,8 @@ interface MenuDrawerProps {
 }
 
 /**
- * Menu (☰): gaveta que entra pela esquerda com "Instalar app" (enquanto o app não está instalado); no rodapé,
+ * Menu (☰): gaveta que entra pela esquerda com "Instalar app" (enquanto o app não está instalado) e
+ * "Compartilhar app" (folha do sistema; sem ela, copia o link); no rodapé,
  * Sobre o Media Tools, Termos de uso e Política de privacidade. Sem o pedido de instalação
  * do navegador, "Instalar app" mostra o passo a passo do aparelho dentro da própria gaveta.
  * Os links substituem a entrada do menu no histórico: voltar da página aberta leva de volta à tela de antes.
@@ -91,6 +93,21 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
     onClose()
   }
 
+  function share() {
+    // A folha do sistema abre já no toque; o menu fecha junto, e o aviso aparece fora da gaveta.
+    const outcome = shareApp()
+    onClose()
+    outcome.then(
+      (result) => {
+        if (result === 'copied') toast({ message: 'Link copiado.', tone: 'success' })
+        if (result === 'failed') toast({ message: `Endereço do app: ${appUrl()}` })
+      },
+      (error: unknown) => {
+        if (import.meta.env.DEV) console.error(error)
+      },
+    )
+  }
+
   return (
     <dialog
       ref={ref}
@@ -110,13 +127,22 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
 
               <IconButton icon={X} label="Fechar menu" onClick={onClose} />
             </div>
-            {installMode !== 'installed' && (
-              <div className="px-3 pt-2">
-                <button ref={installRow} type="button" onClick={install} className={`${ROW} rounded-lg bg-surface-2`}>
-                  <RowContent icon={Download}>Instalar app</RowContent>
-                </button>
-              </div>
-            )}
+            <div className="px-3 pt-2">
+              <ul className="overflow-hidden rounded-lg bg-surface-2">
+                {installMode !== 'installed' && (
+                  <li className="border-b border-border">
+                    <button ref={installRow} type="button" onClick={install} className={ROW}>
+                      <RowContent icon={Download}>Instalar app</RowContent>
+                    </button>
+                  </li>
+                )}
+                <li>
+                  <button type="button" onClick={share} className={ROW}>
+                    <RowContent icon={Share2}>Compartilhar app</RowContent>
+                  </button>
+                </li>
+              </ul>
+            </div>
             <nav aria-label="Sobre e documentos" className="mt-auto px-5 pt-6 pb-5">
               <ul className="grid justify-items-start gap-0.5">
                 {FOOTER_LINKS.map((link) => (

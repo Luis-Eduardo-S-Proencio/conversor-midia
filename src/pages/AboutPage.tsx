@@ -2,6 +2,7 @@ import { ArchiveX, MonitorSmartphone, Share2, UserRoundX, type LucideIcon } from
 import type { ReactNode } from 'react'
 import { LogoMark } from '../components/brand/Logo'
 import { Container } from '../components/layout/Container'
+import { appUrl, shareApp } from '../components/layout/share-app'
 import { TopAppBar } from '../components/layout/TopAppBar'
 import { Accordion, type AccordionItem } from '../components/ui/Accordion'
 import { Button } from '../components/ui/Button'
@@ -131,21 +132,9 @@ function ShareButton() {
   const toast = useToast()
 
   async function share() {
-    const url = `${window.location.origin}/`
-    if (typeof navigator.share === 'function') {
-      try {
-        await navigator.share({ title: 'Media Tools', text: 'Converta, comprima e edite fotos e vídeos direto no navegador.', url })
-        return
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return // a pessoa fechou a folha
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(url)
-      toast({ message: 'Link copiado.', tone: 'success' })
-    } catch {
-      toast({ message: `Endereço do app: ${url}` })
-    }
+    const outcome = await shareApp()
+    if (outcome === 'copied') toast({ message: 'Link copiado.', tone: 'success' })
+    if (outcome === 'failed') toast({ message: `Endereço do app: ${appUrl()}` })
   }
 
   return (

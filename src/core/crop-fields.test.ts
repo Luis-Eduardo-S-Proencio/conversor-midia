@@ -4,6 +4,7 @@ import {
   aspectLabel,
   aspectRatio,
   editField,
+  parseAspect,
   fieldsOf,
   nothingCroppedMessage,
   validateCropFields,
@@ -11,22 +12,25 @@ import {
 } from './crop-fields'
 
 const landscape = { width: 400, height: 300 }
-const portrait = { width: 300, height: 400 }
 const fields = (x: string, y: string, width: string, height: string): CropFields => ({ x, y, width, height })
 
 describe('proporções', () => {
-  it('Livre, 1:1, 4:3 e 16:9 numa foto deitada', () => {
-    expect(ASPECT_CHOICES.map((choice) => aspectLabel(choice, landscape))).toEqual(['Livre', '1:1', '4:3', '16:9'])
-    expect(aspectRatio('free', landscape)).toBeUndefined()
-    expect(aspectRatio('square', landscape)).toBe(1)
-    expect(aspectRatio('standard', landscape)).toBeCloseTo(4 / 3)
-    expect(aspectRatio('wide', landscape)).toBeCloseTo(16 / 9)
+  it('Livre, 1:1, 4:5, 9:16, 16:9 e 3:2, sempre na orientação escrita', () => {
+    expect(ASPECT_CHOICES.map(aspectLabel)).toEqual(['Livre', '1:1', '4:5', '9:16', '16:9', '3:2'])
+    expect(aspectRatio('free')).toBeUndefined()
+    expect(aspectRatio('1:1')).toBe(1)
+    expect(aspectRatio('4:5')).toBeCloseTo(4 / 5)
+    expect(aspectRatio('9:16')).toBeCloseTo(9 / 16) // em pé, mesmo num vídeo deitado (Story)
+    expect(aspectRatio('16:9')).toBeCloseTo(16 / 9)
+    expect(aspectRatio('3:2')).toBeCloseTo(3 / 2)
   })
 
-  it('numa foto em pé a área acompanha a foto: 3:4 e 9:16', () => {
-    expect(ASPECT_CHOICES.map((choice) => aspectLabel(choice, portrait))).toEqual(['Livre', '1:1', '3:4', '9:16'])
-    expect(aspectRatio('standard', portrait)).toBeCloseTo(3 / 4)
-    expect(aspectRatio('wide', portrait)).toBeCloseTo(9 / 16)
+  it('a proporção pedida no endereço (atalho) só vale se for uma das prontas', () => {
+    expect(parseAspect('9:16')).toBe('9:16')
+    expect(parseAspect('4:5')).toBe('4:5')
+    expect(parseAspect('free')).toBeUndefined()
+    expect(parseAspect('7:3')).toBeUndefined()
+    expect(parseAspect(null)).toBeUndefined()
   })
 })
 

@@ -99,7 +99,7 @@ test.describe('navegação', () => {
     await page.getByRole('complementary', { name: 'Navegação' }).getByRole('link', { name: 'Processamento local' }).click()
 
     await expect(page).toHaveURL(/\/sobre#privacidade$/)
-    const section = page.getByRole('heading', { name: 'Processamento local' })
+    const section = page.getByRole('heading', { name: 'Privacidade' })
     await expect(section).toBeInViewport()
     await expect(section).toBeFocused() // o leitor de tela começa pela seção pedida
   })
@@ -211,9 +211,10 @@ test.describe('teclado', () => {
     await page.keyboard.press('Enter')
     await expect(page.locator('#conteudo')).toBeFocused()
 
-    // O próximo Tab já é o primeiro controle do conteúdo, a entrada principal do início.
+    // O próximo Tab já é o primeiro controle do conteúdo, a entrada principal do início
+    // ("Abrir arquivo" no computador; o bloco "Vídeo" no tablet).
     await page.keyboard.press('Tab')
-    await expect(page.getByRole('main').getByRole('button', { name: 'Abrir foto ou vídeo' })).toBeFocused()
+    await expect(page.getByRole('main').getByRole('button', { name: /^Abrir (arquivo|vídeo)$/i })).toBeFocused()
   })
 
   test('ao trocar de página, o foco vai para o conteúdo', async ({ page }) => {

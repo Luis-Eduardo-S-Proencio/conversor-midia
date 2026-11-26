@@ -32,6 +32,12 @@ export const OUTPUT_FORMAT_INFO: Record<OutputFormat, ImageFormatInfo> = {
 
 export const OUTPUT_FORMATS: readonly OutputFormat[] = ['jpeg', 'png', 'webp', 'bmp', 'tiff', 'ico', 'pdf']
 
+/** Formato de saída pedido no endereço (ex.: "?formato=pdf", vindo do atalho "Imagem para PDF"; "jpg" vale JPEG). */
+export function parseOutputFormat(text: string | null): OutputFormat | undefined {
+  const name = text === 'jpg' ? 'jpeg' : text
+  return OUTPUT_FORMATS.find((format) => format === name)
+}
+
 /**
  * Formato para comprimir: o canvas só tem compressão com perdas em JPG e WEBP. PNG (e WEBP, onde o
  * navegador não gera WEBP) vira WEBP ou, se opaco, JPG. Com transparência e sem WEBP não há como

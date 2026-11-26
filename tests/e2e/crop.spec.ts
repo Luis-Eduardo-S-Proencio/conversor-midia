@@ -174,10 +174,10 @@ test.describe('Recortar imagem', () => {
     await expect(page.getByText(NOTHING_CROPPED)).toBeVisible()
     await expect(field(page, 'Largura')).toBeFocused()
 
-    await page.getByRole('radio', { name: '4:3' }).click() // a foto já é 4:3: a área continua inteira
-    await expect(field(page, 'Largura')).toHaveValue('64')
-    await page.getByRole('radio', { name: '16:9' }).click()
+    await page.getByRole('radio', { name: '1:1' }).click() // quadrado no meio da foto 4:3
+    await expect(field(page, 'Largura')).toHaveValue('48')
     await expect(page.getByText(NOTHING_CROPPED)).toHaveCount(0)
+    await page.getByRole('radio', { name: '16:9' }).click()
     await expect(field(page, 'Altura')).toHaveValue('36')
 
     await button(page, 'Usar a imagem inteira').click()

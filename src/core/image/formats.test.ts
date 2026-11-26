@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { IMAGE_FORMATS, OUTPUT_FORMATS, OUTPUT_FORMAT_INFO, compressionFormat, defaultTargetFormat, preservedFormat } from './formats'
+import { compressionFormat, defaultTargetFormat, IMAGE_FORMATS, OUTPUT_FORMAT_INFO, OUTPUT_FORMATS, parseOutputFormat, preservedFormat } from './formats'
 
 describe('IMAGE_FORMATS', () => {
   it('descreve tipo, extensão, qualidade e transparência de cada formato', () => {
@@ -73,3 +73,14 @@ describe('preservedFormat (redimensionar, girar e espelhar)', () => {
     expect(preservedFormat('webp', false, false)).toBe('jpeg')
   })
 })
+
+describe('parseOutputFormat', () => {
+  it('aceita os formatos de saída, e "jpg" vale JPEG (atalho "Imagem para PDF")', () => {
+    expect(parseOutputFormat('pdf')).toBe('pdf')
+    expect(parseOutputFormat('jpg')).toBe('jpeg')
+    expect(parseOutputFormat('jpeg')).toBe('jpeg')
+    expect(parseOutputFormat('heic')).toBeUndefined()
+    expect(parseOutputFormat(null)).toBeUndefined()
+  })
+})
+

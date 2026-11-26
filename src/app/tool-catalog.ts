@@ -1,11 +1,15 @@
-import { ArrowLeftRight, Crop, ImagePlay, Minimize2, Monitor, Music, RotateCw, Scaling, Scissors } from 'lucide-react'
+import { ArrowLeftRight, Crop, ImagePlay, Minimize2, Monitor, Music, RotateCw, Scaling, Scissors, type LucideIcon } from 'lucide-react'
 import type { SwitcherTool } from '../components/tool/ToolSwitcher'
-import type { NavListItem } from '../components/ui/NavList'
 import type { ToolTone } from '../components/ui/ToolIcon'
 import type { MediaKind } from '../core/media-kind'
 
 /** Uma ferramenta do catálogo: destino, cor do ícone e o tipo de arquivo que ela abre. */
-export interface ToolEntry extends NavListItem {
+export interface ToolEntry {
+  id: string
+  title: string
+  /** Uma linha: o que a ferramenta faz. */
+  description: string
+  icon: LucideIcon
   to: string
   tone: ToolTone
   media: MediaKind
@@ -15,6 +19,8 @@ export interface ToolEntry extends NavListItem {
   switchLabel: string
   /** Nome na lista de ferramentas da barra lateral do computador ("Redimensionar", "Extrair áudio"). */
   navLabel: string
+  /** Trabalha com um arquivo por vez (Recortar imagem): fica fora das opções quando há várias imagens abertas. */
+  single?: boolean
 }
 
 export const IMAGE_TOOLS: readonly ToolEntry[] = [
@@ -24,7 +30,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
     switchLabel: 'Converter',
     title: 'Converter imagem',
     shortTitle: 'Converter imagem',
-    description: 'Para JPG, PNG, WEBP, PDF e mais',
+    description: 'JPG, PNG, WEBP, PDF e mais',
     icon: ArrowLeftRight,
     tone: 'convert',
     media: 'image',
@@ -48,7 +54,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
     switchLabel: 'Tamanho',
     title: 'Redimensionar imagem',
     shortTitle: 'Tamanho da imagem',
-    description: 'Por porcentagem ou em pixels',
+    description: 'Em porcentagem ou pixels',
     icon: Scaling,
     tone: 'compress',
     media: 'image',
@@ -57,10 +63,11 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   {
     id: 'image-crop',
     navLabel: 'Recortar',
+    single: true,
     switchLabel: 'Recortar',
     title: 'Recortar imagem',
     shortTitle: 'Recortar imagem',
-    description: 'Mantenha só a área que importa',
+    description: 'Só a área que importa',
     icon: Crop,
     tone: 'edit',
     media: 'image',
@@ -72,7 +79,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
     switchLabel: 'Girar',
     title: 'Girar e espelhar',
     shortTitle: 'Girar e espelhar',
-    description: 'Corrija a orientação da foto',
+    description: 'Acerte a orientação',
     icon: RotateCw,
     tone: 'edit',
     media: 'image',
@@ -87,7 +94,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
     switchLabel: 'Editar',
     title: 'Editar vídeo',
     shortTitle: 'Editar vídeo',
-    description: 'Tire as partes que não quer, vendo na hora',
+    description: 'Corte e veja na hora',
     icon: Scissors,
     tone: 'edit',
     media: 'video',
@@ -99,7 +106,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
     switchLabel: 'Recortar',
     title: 'Recortar vídeo',
     shortTitle: 'Recortar vídeo',
-    description: 'Só a parte do quadro que importa',
+    description: 'Só a parte do quadro',
     icon: Crop,
     tone: 'edit',
     media: 'video',
@@ -111,7 +118,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
     switchLabel: 'Comprimir',
     title: 'Comprimir vídeo',
     shortTitle: 'Comprimir vídeo',
-    description: 'Menor para enviar ou guardar',
+    description: 'Menor para enviar',
     icon: Minimize2,
     tone: 'compress',
     media: 'video',
@@ -123,7 +130,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
     switchLabel: 'Áudio',
     title: 'Extrair áudio',
     shortTitle: 'Extrair áudio',
-    description: 'Só o som, em M4A, WEBM ou MP3',
+    description: 'Só o som do vídeo',
     icon: Music,
     tone: 'audio',
     media: 'video',
@@ -135,7 +142,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
     switchLabel: 'Resolução',
     title: 'Mudar resolução',
     shortTitle: 'Resolução do vídeo',
-    description: 'Diminua para 1080p, 720p, 480p ou 360p',
+    description: 'De 1080p até 360p',
     icon: Monitor,
     tone: 'compress',
     media: 'video',
@@ -159,7 +166,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
     switchLabel: 'GIF',
     title: 'Criar GIF',
     shortTitle: 'Criar GIF',
-    description: 'Um trecho de até 15 segundos',
+    description: 'Trecho de até 15 s',
     icon: ImagePlay,
     tone: 'edit',
     media: 'video',
@@ -188,13 +195,6 @@ export function toolsFor(media: MediaKind): readonly ToolEntry[] {
   return media === 'image' ? IMAGE_TOOLS : VIDEO_TOOLS
 }
 
-export interface ToolGroup {
-  id: string
-  title: string
-  description: string
-  tools: readonly ToolEntry[]
-}
-
 function pick(...ids: string[]): ToolEntry[] {
   return ids.map((id) => {
     const tool = [...IMAGE_TOOLS, ...VIDEO_TOOLS].find((entry) => entry.id === id)
@@ -203,24 +203,31 @@ function pick(...ids: string[]): ToolEntry[] {
   })
 }
 
-/** As ferramentas agrupadas pelo que a pessoa quer fazer (página inicial). */
-export const TOOL_GROUPS: readonly ToolGroup[] = [
-  {
-    id: 'editar',
-    title: 'Editar',
-    description: 'Cortar, recortar e girar',
-    tools: pick('video-edit', 'image-crop', 'video-crop', 'image-rotate-flip', 'video-gif'),
-  },
-  {
-    id: 'converter',
-    title: 'Converter',
-    description: 'Trocar o formato do arquivo',
-    tools: pick('image-convert', 'video-convert', 'video-audio'),
-  },
-  {
-    id: 'deixar-menor',
-    title: 'Deixar menor',
-    description: 'Ocupar menos espaço',
-    tools: pick('image-compress', 'video-compress', 'image-resize', 'video-resize'),
-  },
-]
+/** Todas as ferramentas, da mais usada para a menos usada (grade do Início). */
+export const TOOLS_BY_USAGE: readonly ToolEntry[] = pick(
+  'video-edit',
+  'video-compress',
+  'image-convert',
+  'video-audio',
+  'image-compress',
+  'video-convert',
+  'image-crop',
+  'video-gif',
+  'image-resize',
+  'video-resize',
+  'video-crop',
+  'image-rotate-flip',
+)
+
+/** Ferramenta indicada primeiro ao abrir um arquivo deste tipo ("O que fazer com este arquivo?"). */
+export const RECOMMENDED_TOOL: Partial<Record<MediaKind, string>> = { video: 'video-edit' }
+
+/**
+ * Ferramentas oferecidas para um arquivo aberto, na ordem do painel "O que fazer com este arquivo?":
+ * no vídeo, o editor primeiro; com várias imagens, só as que trabalham em lote.
+ */
+export function toolsForOpened(kind: MediaKind, count: number): readonly ToolEntry[] {
+  if (kind === 'video') return pick('video-edit', 'video-compress', 'video-convert', 'video-audio', 'video-resize', 'video-crop', 'video-gif')
+  return IMAGE_TOOLS.filter((tool) => count === 1 || !tool.single)
+}
+

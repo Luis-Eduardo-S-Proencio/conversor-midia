@@ -18,32 +18,35 @@ const SUBJECT_TEXT: Record<CropSubject, { of: string; over: string }> = {
 export const nothingCroppedMessage = (subject: CropSubject) =>
   `Ajuste a área de recorte antes: arraste os cantos ${SUBJECT_TEXT[subject].over} ou digite as medidas.`
 
-export type AspectChoice = 'free' | 'square' | 'standard' | 'wide'
+/**
+ * Proporções prontas, sempre na orientação escrita (9:16 é em pé, 16:9 é deitada), como nos apps de
+ * edição: dá para tirar um Story 9:16 de um vídeo deitado. 4:5 é o post do Instagram; 3:2, a foto clássica.
+ */
+export type AspectChoice = 'free' | '1:1' | '4:5' | '9:16' | '16:9' | '3:2'
 
-export const ASPECT_CHOICES: readonly AspectChoice[] = ['free', 'square', 'standard', 'wide']
+export const ASPECT_CHOICES: readonly AspectChoice[] = ['free', '1:1', '4:5', '9:16', '16:9', '3:2']
 
-/** Lados de uma área deitada (largura : altura). Num quadro em pé, a área fica em pé também. */
+/** Largura : altura de cada proporção. */
 const RATIOS: Record<Exclude<AspectChoice, 'free'>, readonly [number, number]> = {
-  square: [1, 1],
-  standard: [4, 3],
-  wide: [16, 9],
-}
-
-function sides(choice: AspectChoice, size: Dimensions): readonly [number, number] | undefined {
-  if (choice === 'free') return undefined
-  const [long, short] = RATIOS[choice]
-  return size.height > size.width ? [short, long] : [long, short]
+  '1:1': [1, 1],
+  '4:5': [4, 5],
+  '9:16': [9, 16],
+  '16:9': [16, 9],
+  '3:2': [3, 2],
 }
 
 /** Largura ÷ altura da proporção escolhida; `undefined` em Livre. */
-export function aspectRatio(choice: AspectChoice, size: Dimensions): number | undefined {
-  const pair = sides(choice, size)
-  return pair ? pair[0] / pair[1] : undefined
+export function aspectRatio(choice: AspectChoice): number | undefined {
+  if (choice === 'free') return undefined
+  const [width, height] = RATIOS[choice]
+  return width / height
 }
 
-export function aspectLabel(choice: AspectChoice, size: Dimensions): string {
-  const pair = sides(choice, size)
-  return pair ? `${pair[0]}:${pair[1]}` : 'Livre'
+export const aspectLabel = (choice: AspectChoice): string => (choice === 'free' ? 'Livre' : choice)
+
+/** Proporção pedida no endereço (ex.: "?proporcao=9:16", vindo de um atalho); `undefined` se não for uma das prontas. */
+export function parseAspect(text: string | null): AspectChoice | undefined {
+  return ASPECT_CHOICES.find((choice) => choice !== 'free' && choice === text)
 }
 
 export type CropField = 'x' | 'y' | 'width' | 'height'

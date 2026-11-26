@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { compressedSize, compressedVideoBitrate, estimateCompressedBytes, keepsOriginal } from './compress'
+import { TARGET_MARGIN, compressedSize, compressedVideoBitrate, estimateCompressedBytes, keepsOriginal, planForTarget } from './compress'
 
 describe('compressedSize', () => {
   it('Leve mantém a resolução; Média limita a 1080p; Forte a 720p, deitado ou em pé', () => {
@@ -48,3 +48,73 @@ describe('estimateCompressedBytes', () => {
     expect(keepsOriginal(99, 100)).toBe(false)
   })
 })
+
+describe('planForTarget (comprimir até X MB)', () => {
+  const MB = 1024 * 1024
+  const fullHd = { width: 1920, height: 1080 }
+  /** Tamanho que o plano daria: vídeo na taxa escolhida + som, com a folga do arquivo. */
+  const bytesOf = (bitrate: number, audio: number, seconds: number) => ((bitrate + audio) * seconds * 1.02) / 8
+
+  it('WhatsApp (até 64 MB, 720p): 1 minuto de 1080p cabe em 720p, sem passar do limite', () => {
+    const plan = planForTarget(
+      { size: fullHd, duration: 60, originalBytes: 150 * MB, audioBitrate: 128_000 },
+      { maxBytes: 64 * MB, maxShortSide: 720 },
+      'mp4',
+    )
+    expect(plan.size).toEqual({ width: 1280, height: 720 })
+    expect(plan.fits).toBe(true)
+    expect(bytesOf(plan.bitrate, 128_000, 60)).toBeLessThanOrEqual(64 * MB * TARGET_MARGIN + 8_000)
+  })
+
+  it('a taxa sai da conta do prompt: (alvo × 8 ÷ duração) − som, com 5% de folga', () => {
+    const plan = planForTarget(
+      { size: fullHd, duration: 100, originalBytes: 500 * MB, audioBitrate: 128_000 },
+      { maxBytes: 20 * MB, maxShortSide: null },
+      'mp4',
+    )
+    const expected = (20 * MB * 8 * TARGET_MARGIN) / (100 * 1.02) - 128_000
+    expect(plan.bitrate).toBeCloseTo(expected, -3)
+  })
+
+  it('pouca taxa por segundo: desce a resolução em vez de borrar 1080p', () => {
+    const plan = planForTarget(
+      { size: fullHd, duration: 300, originalBytes: 800 * MB, audioBitrate: 96_000 },
+      { maxBytes: 20 * MB, maxShortSide: null },
+      'mp4',
+    )
+    expect(Math.min(plan.size.width, plan.size.height)).toBe(360)
+    expect(plan.fits).toBe(true)
+  })
+
+  it('vídeo longo demais para o limite: avisa que não cabe', () => {
+    const plan = planForTarget(
+      { size: fullHd, duration: 3600, originalBytes: 2000 * MB, audioBitrate: 128_000 },
+      { maxBytes: 10 * MB, maxShortSide: null },
+      'mp4',
+    )
+    expect(plan.fits).toBe(false)
+  })
+
+  it('nunca acima da taxa do original: um vídeo já leve não incha para "aproveitar" o limite', () => {
+    const source = { size: { width: 1280, height: 720 }, duration: 10, originalBytes: 2 * MB, audioBitrate: 64_000 }
+    const plan = planForTarget(source, { maxBytes: 64 * MB, maxShortSide: 720 }, 'mp4')
+    const originalVideo = (2 * MB * 8) / 10 - 64_000
+    expect(plan.bitrate).toBeLessThanOrEqual(originalVideo + 1000)
+  })
+
+  it('nunca aumenta a resolução nem passa do limite do destino', () => {
+    const small = planForTarget(
+      { size: { width: 640, height: 360 }, duration: 10, originalBytes: 5 * MB, audioBitrate: null },
+      { maxBytes: 64 * MB, maxShortSide: 720 },
+      'mp4',
+    )
+    expect(small.size).toEqual({ width: 640, height: 360 })
+    const portrait = planForTarget(
+      { size: { width: 1080, height: 1920 }, duration: 20, originalBytes: 60 * MB, audioBitrate: 128_000 },
+      { maxBytes: 64 * MB, maxShortSide: 720 },
+      'mp4',
+    )
+    expect(portrait.size).toEqual({ width: 720, height: 1280 })
+  })
+})
+

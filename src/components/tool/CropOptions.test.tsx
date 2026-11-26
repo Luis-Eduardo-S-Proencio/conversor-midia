@@ -24,21 +24,20 @@ function Harness() {
 }
 
 describe('CropOptions', () => {
-  it('proporções Livre, 1:1, 4:3 e 16:9; numa foto em pé, 3:4 e 9:16', async () => {
+  it('proporções Livre, 1:1, 4:5, 9:16, 16:9 e 3:2, em duas linhas de três', async () => {
     const screen = await render(<CropOptions {...base} />)
-    const names = () => screen.getByRole('radiogroup', { name: 'Proporção' }).getByRole('radio').elements().map((radio) => radio.textContent)
-    expect(names()).toEqual(['Livre', '1:1', '4:3', '16:9'])
+    const radios = () => screen.getByRole('radiogroup', { name: 'Proporção' }).getByRole('radio').elements()
+    expect(radios().map((radio) => radio.textContent)).toEqual(['Livre', '1:1', '4:5', '9:16', '16:9', '3:2'])
     await expect.element(screen.getByRole('radio', { name: 'Livre' })).toBeChecked()
-
-    await screen.rerender(<CropOptions {...base} size={{ width: 300, height: 400 }} />)
-    expect(names()).toEqual(['Livre', '1:1', '3:4', '9:16'])
+    const [first, , , fourth] = radios().map((radio) => radio.getBoundingClientRect())
+    expect(fourth?.left).toBe(first?.left) // a quarta opção começa a segunda linha
   })
 
   it('informa a proporção escolhida', async () => {
     const onAspectChange = vi.fn()
     const screen = await render(<CropOptions {...base} onAspectChange={onAspectChange} />)
     await screen.getByRole('radio', { name: '16:9' }).click()
-    expect(onAspectChange).toHaveBeenCalledWith('wide')
+    expect(onAspectChange).toHaveBeenCalledWith('16:9')
   })
 
   it('quatro campos em pixels: margens e tamanho da área', async () => {

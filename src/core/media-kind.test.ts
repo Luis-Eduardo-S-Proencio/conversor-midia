@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { concat, jpegBytes, pngBytes, webpLossy } from '../test/image-bytes'
 import { ebmlBytes, ftypBytes } from '../test/video-bytes'
-import { detectMediaKind, planOpening } from './media-kind'
+import { detectMedia, detectMediaKind, planOpening } from './media-kind'
 
 describe('detectMediaKind', () => {
   it.each([
@@ -29,6 +29,23 @@ describe('detectMediaKind', () => {
     ['vazio', new Uint8Array()],
   ])('recusa %s', (_, bytes) => {
     expect(detectMediaKind(bytes)).toBeNull()
+  })
+})
+
+describe('detectMedia', () => {
+  it.each([
+    ['JPG', jpegBytes({ width: 4, height: 3 }), 'image'],
+    ['PNG', pngBytes({ width: 4, height: 3 }), 'image'],
+    ['WEBP', webpLossy(4, 3), 'image'],
+    ['MP4', ftypBytes('isom'), 'video'],
+    ['MOV', ftypBytes('qt  '), 'video'],
+    ['WEBM', ebmlBytes('webm'), 'video'],
+  ])('dá o tipo e o nome do formato de %s, pelo conteúdo', (label, bytes, kind) => {
+    expect(detectMedia(bytes)).toEqual({ kind, formatLabel: label })
+  })
+
+  it('o que não abre fica de fora', () => {
+    expect(detectMedia(ftypBytes('heic'))).toBeNull()
   })
 })
 

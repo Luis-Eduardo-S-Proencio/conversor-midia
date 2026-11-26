@@ -94,12 +94,12 @@ export function CropOptions({
     inputs.current.width?.focus() // o botão some em seguida; o foco não se perde
   }
 
-  const aspectOptions = ASPECT_CHOICES.map((value) => ({ value, label: aspectLabel(value, size) }))
+  const aspectOptions = ASPECT_CHOICES.map((value) => ({ value, label: aspectLabel(value) }))
   const invalid = (field: CropField) => error?.fields.includes(field) ?? false
 
   return (
     <div className="grid gap-5">
-      <SegmentedControl label="Proporção" options={aspectOptions} value={aspect} onChange={onAspectChange} disabled={disabled} />
+      <SegmentedControl label="Proporção" options={aspectOptions} value={aspect} onChange={onAspectChange} disabled={disabled} columns={3} />
 
       <div className="grid gap-2">
         <div className="grid grid-cols-2 gap-x-2 gap-y-3">

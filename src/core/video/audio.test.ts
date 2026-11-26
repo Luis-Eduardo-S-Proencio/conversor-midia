@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AUDIO_FORMATS, audioChoices, audioOutputName, copyableAudioFormat, defaultAudioFormat, reencodedAudioBitrate, type AudioCapabilities } from './audio'
+import { AUDIO_FORMATS, audioChoices, audioOutputName, copyableAudioFormat, defaultAudioFormat, parseAudioFormat, reencodedAudioBitrate, type AudioCapabilities } from './audio'
 
 const capable = { canDecodeAudio: true, canEncodeAac: true, canEncodeMp3: true }
 const caps = (audioCodec: string | null, overrides: Partial<AudioCapabilities> = {}): AudioCapabilities => ({ audioCodec, ...capable, ...overrides })
@@ -110,3 +110,13 @@ describe('reencodedAudioBitrate', () => {
     expect(reencodedAudioBitrate(null)).toBe(192_000)
   })
 })
+
+describe('parseAudioFormat', () => {
+  it('aceita só os formatos de som que o app gera (atalho "Vídeo para MP3")', () => {
+    expect(parseAudioFormat('mp3')).toBe('mp3')
+    expect(parseAudioFormat('m4a')).toBe('m4a')
+    expect(parseAudioFormat('wav')).toBeUndefined()
+    expect(parseAudioFormat(null)).toBeUndefined()
+  })
+})
+

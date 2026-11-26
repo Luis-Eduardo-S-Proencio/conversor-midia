@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { IMAGE_TOOLS, TOOL_GROUPS, VIDEO_TOOLS, switcherTools, toolsFor } from './tool-catalog'
+import { IMAGE_TOOLS, RECOMMENDED_TOOL, TOOLS_BY_USAGE, VIDEO_TOOLS, switcherTools, toolByPath, toolsFor, toolsForOpened } from './tool-catalog'
 
 describe('catálogo de ferramentas', () => {
   it('GIF fica na aba Vídeos, com rota própria', () => {
@@ -11,7 +11,7 @@ describe('catálogo de ferramentas', () => {
   it('Redimensionar imagem está disponível, com rota própria', () => {
     const resize = IMAGE_TOOLS.find((tool) => tool.id === 'image-resize')
     expect(resize?.to).toBe('/imagens/redimensionar')
-    expect(resize?.description).toBe('Por porcentagem ou em pixels')
+    expect(resize?.description).toBe('Em porcentagem ou pixels')
   })
 
   it('Girar e espelhar está disponível, com rota própria', () => {
@@ -26,11 +26,47 @@ describe('catálogo de ferramentas', () => {
     expect(IMAGE_TOOLS.filter((tool) => !tool.to)).toEqual([])
   })
 
-  it('os grupos do início mostram cada ferramenta exatamente uma vez', () => {
-    const grouped = TOOL_GROUPS.flatMap((group) => group.tools.map((tool) => tool.id)).sort()
+  it('a grade do início mostra cada ferramenta exatamente uma vez, da mais usada para a menos usada', () => {
     const all = [...IMAGE_TOOLS, ...VIDEO_TOOLS].map((tool) => tool.id).sort()
-    expect(grouped).toEqual(all)
-    expect(TOOL_GROUPS.map((group) => group.title)).toEqual(['Editar', 'Converter', 'Deixar menor'])
+    expect(TOOLS_BY_USAGE.map((tool) => tool.id).sort()).toEqual(all)
+    expect(TOOLS_BY_USAGE.map((tool) => tool.title)).toEqual([
+      'Editar vídeo',
+      'Comprimir vídeo',
+      'Converter imagem',
+      'Extrair áudio',
+      'Comprimir imagem',
+      'Converter vídeo',
+      'Recortar imagem',
+      'Criar GIF',
+      'Redimensionar imagem',
+      'Mudar resolução',
+      'Recortar vídeo',
+      'Girar e espelhar',
+    ])
+  })
+
+  it('"O que fazer com este arquivo?": no vídeo, o editor primeiro; com várias imagens, só as de lote', () => {
+    expect(toolsForOpened('video', 1).map((tool) => tool.id)).toEqual([
+      'video-edit',
+      'video-compress',
+      'video-convert',
+      'video-audio',
+      'video-resize',
+      'video-crop',
+      'video-gif',
+    ])
+    expect(RECOMMENDED_TOOL.video).toBe('video-edit')
+    expect(toolsForOpened('image', 1)).toHaveLength(5)
+    expect(toolsForOpened('image', 3).map((tool) => tool.id)).not.toContain('image-crop')
+  })
+
+  it('a ferramenta de cada endereço, para o título e a barra lateral', () => {
+    expect(toolByPath('/videos/comprimir')?.title).toBe('Comprimir vídeo')
+    expect(toolByPath('/videos')).toBeUndefined()
+  })
+
+  it('a descrição cabe numa linha do cartão do computador', () => {
+    for (const tool of [...IMAGE_TOOLS, ...VIDEO_TOOLS]) expect(tool.description.length, tool.title).toBeLessThanOrEqual(26)
   })
 
   it('cada ferramenta diz o tipo de arquivo que abre, e o tipo leva às ferramentas certas', () => {

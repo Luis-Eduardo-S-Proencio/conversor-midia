@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import {
   aspectRatio,
   editField,
+  parseAspect,
   fieldsOf,
   nothingCroppedMessage,
   validateCropFields,
@@ -47,7 +49,9 @@ function visibleError({ validation, image }: CropEditor, attempted: boolean): Cr
 export function useCropTool() {
   const batch = useImageBatch(CROP_LABELS, { singleImage: true })
   const { items, webpSupported, invalidateResults, run } = batch
-  const [aspect, setAspect] = useState<AspectChoice>('free')
+  // Um atalho pode pedir a proporção (ex.: "Story 9:16" abre com ?proporcao=9:16).
+  const [searchParams] = useSearchParams()
+  const [aspect, setAspect] = useState<AspectChoice>(() => parseAspect(searchParams.get('proporcao')) ?? 'free')
   const [edit, setEdit] = useState<Edit>()
   const [attempted, setAttempted] = useState(false)
   const [focusRequest, setFocusRequest] = useState<FocusRequest>()
@@ -55,7 +59,7 @@ export function useCropTool() {
   const [item] = items
   // A área só começa com as medidas da prévia: as da imagem decodificada e orientada, como o Worker a verá.
   const image = item && item.status !== 'inspecting' && item.status !== 'rejected' ? item.image : undefined
-  const ratio = image ? aspectRatio(aspect, image) : undefined
+  const ratio = image ? aspectRatio(aspect) : undefined
 
   const editor = useMemo<CropEditor | undefined>(() => {
     if (!item || !image) return undefined
@@ -94,7 +98,7 @@ export function useCropTool() {
     (choice: AspectChoice) => {
       setAspect(choice)
       if (!editor) return
-      const next = aspectRatio(choice, editor.image)
+      const next = aspectRatio(choice)
       update(next ? centeredAspectCrop(editor.image, next) : editor.crop)
     },
     [editor, update],

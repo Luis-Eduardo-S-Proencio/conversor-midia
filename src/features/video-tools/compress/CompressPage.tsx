@@ -10,7 +10,7 @@ import { useCompressTool } from './useCompressTool'
 
 export function CompressPage() {
   const compress = useCompressTool()
-  const { tool, plan, level } = compress
+  const { tool, plan, level, destination } = compress
   const { state } = tool
   const { info } = state
   const busy = state.phase === 'processing'
@@ -29,7 +29,7 @@ export function CompressPage() {
       labels={COMPRESS_LABELS}
       actionIcon={Minimize2}
       tool={tool}
-      canStart={Boolean(plan) && !blocker}
+      canStart={Boolean(plan?.fits) && !blocker}
       onStart={compress.apply}
       preview={state.sourceUrl && <SourcePlayer key={state.fileId} src={state.sourceUrl} name={state.file?.name ?? ''} />}
       options={
@@ -44,6 +44,8 @@ export function CompressPage() {
             <CompressOptions
               level={level}
               onLevelChange={compress.changeLevel}
+              destination={destination}
+              onDestinationChange={compress.changeDestination}
               plan={plan}
               originalBytes={state.file.size}
               hasAudio={info.hasAudio}

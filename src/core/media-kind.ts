@@ -1,4 +1,6 @@
+import { IMAGE_FORMATS } from './image/formats'
 import { detectImageType } from './image/signature'
+import { VIDEO_FORMATS } from './video/formats'
 import { detectVideoType } from './video/signature'
 
 /** O que o Media Tools sabe abrir: foto (JPG, PNG, WEBP) ou vídeo (MP4, MOV, WEBM). */
@@ -14,6 +16,21 @@ export const MEDIA_SIGNATURE_BYTES = 4096
 export function detectMediaKind(bytes: Uint8Array): MediaKind | null {
   if (detectImageType(bytes).kind === 'supported') return 'image'
   if (detectVideoType(bytes).kind === 'supported') return 'video'
+  return null
+}
+
+export interface DetectedMedia {
+  kind: MediaKind
+  /** Nome do formato para mostrar ("JPG", "MP4"). */
+  formatLabel: string
+}
+
+/** Tipo e formato pelo conteúdo, como `detectMediaKind`, com o nome do formato para mostrar. */
+export function detectMedia(bytes: Uint8Array): DetectedMedia | null {
+  const image = detectImageType(bytes)
+  if (image.kind === 'supported') return { kind: 'image', formatLabel: IMAGE_FORMATS[image.format].label }
+  const video = detectVideoType(bytes)
+  if (video.kind === 'supported') return { kind: 'video', formatLabel: VIDEO_FORMATS[video.format].label }
   return null
 }
 

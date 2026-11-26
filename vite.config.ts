@@ -41,9 +41,13 @@ function preloadFonts(): Plugin {
   }
 }
 
+/** Versão mostrada no Sobre: a do package.json, num lugar só. */
+const APP_VERSION = (JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }).version
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), preloadFonts()],
+  define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   // Workers como módulos ES: permitem carregar bibliotecas sob demanda dentro deles (ex.: fflate).
   worker: { format: 'es' },
   build: {

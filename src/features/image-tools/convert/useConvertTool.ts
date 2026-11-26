@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
-import { OUTPUT_FORMAT_INFO, defaultTargetFormat } from '../../../core/image/formats'
+import { useSearchParams } from 'react-router'
+import { OUTPUT_FORMAT_INFO, defaultTargetFormat, parseOutputFormat } from '../../../core/image/formats'
 import { reencodeQuality } from '../../../core/image/jpeg-quality'
 import { outputFileName } from '../../../core/image/output-name'
 import { useImageBatch } from '../shared/useImageBatch'
@@ -9,7 +10,12 @@ import { BACKGROUND_COLORS, CONVERT_LABELS, DEFAULT_PREFERENCES, type ConvertPre
 export function useConvertTool() {
   const batch = useImageBatch(CONVERT_LABELS)
   const { summary, webpSupported, invalidateResults, run, reset: resetBatch } = batch
-  const [preferences, setPreferences] = useState<ConvertPreferences>(DEFAULT_PREFERENCES)
+  // Um atalho pode pedir o formato ("Imagem para PDF" abre com ?formato=pdf).
+  const [searchParams] = useSearchParams()
+  const [preferences, setPreferences] = useState<ConvertPreferences>(() => ({
+    ...DEFAULT_PREFERENCES,
+    target: parseOutputFormat(searchParams.get('formato')),
+  }))
 
   // Formato efetivo: a escolha da pessoa ou a sugestão pelos arquivos. Sem codificador WEBP
   // no navegador, a escolha por WEBP cai para a sugestão.

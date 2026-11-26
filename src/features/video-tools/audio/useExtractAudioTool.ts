@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
-import { audioChoices, audioOutputName, defaultAudioFormat, type AudioChoice, type AudioFormat } from '../../../core/video/audio'
+import { useSearchParams } from 'react-router'
+import { audioChoices, audioOutputName, defaultAudioFormat, parseAudioFormat, type AudioChoice, type AudioFormat } from '../../../core/video/audio'
 import { useVideoTool } from '../shared/useVideoTool'
 import { EXTRACT_AUDIO_LABELS } from './settings'
 
@@ -12,7 +13,9 @@ export function useExtractAudioTool() {
   const tool = useVideoTool(EXTRACT_AUDIO_LABELS)
   const { info } = tool.state
   const { invalidateResult, run } = tool
-  const [picked, setPicked] = useState<AudioFormat>()
+  // Um atalho pode pedir o formato ("Vídeo para MP3" abre com ?formato=mp3); vale se o vídeo permitir.
+  const [searchParams] = useSearchParams()
+  const [picked, setPicked] = useState<AudioFormat | undefined>(() => parseAudioFormat(searchParams.get('formato')))
 
   const choices = useMemo<AudioChoice[]>(() => (info ? audioChoices(info) : []), [info])
   const format = choices.some((choice) => choice.format === picked && choice.available) ? picked : defaultAudioFormat(choices)

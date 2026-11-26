@@ -19,6 +19,11 @@ export const AUDIO_FORMATS: Record<AudioFormat, AudioFormatInfo> = {
   mp3: { label: 'MP3', mimeType: 'audio/mpeg', extension: 'mp3' },
 }
 
+/** Formato pedido no endereço (ex.: "?formato=mp3", vindo do atalho "Vídeo para MP3"); `undefined` se não for um deles. */
+export function parseAudioFormat(text: string | null): AudioFormat | undefined {
+  return (Object.keys(AUDIO_FORMATS) as AudioFormat[]).find((format) => format === text)
+}
+
 /** Taxa do som refeito (M4A ou MP3), em bits por segundo: boa qualidade para música e voz. */
 export const REENCODED_AUDIO_BITRATE = 192_000
 

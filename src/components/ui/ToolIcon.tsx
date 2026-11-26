@@ -17,6 +17,7 @@ const TONES: Record<ToolTone, string> = {
 const SIZES = {
   sm: { box: 'size-8 rounded-sm', icon: 'sm', badge: 'size-4 -right-1 -bottom-1' },
   md: { box: 'size-10 rounded-md', icon: 'md', badge: 'size-4.5 -right-1 -bottom-1' },
+  list: { box: 'size-12 rounded-md', icon: 'lg', badge: 'size-5 -right-1 -bottom-1' },
   lg: { box: 'size-14 rounded-lg', icon: 'lg', badge: 'size-5.5 -right-1 -bottom-1' },
 } as const
 

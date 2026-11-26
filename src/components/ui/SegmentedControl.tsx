@@ -22,8 +22,12 @@ interface SegmentedControlProps<T extends string> {
   value: T
   onChange: (value: T) => void
   disabled?: boolean
-  /** Muitas opções: quebra em linhas de quatro, ocupando a largura toda. Sem isso, uma linha só. */
-  columns?: 4
+  /** Muitas opções: quebra em linhas de três ou quatro, ocupando a largura toda. Sem isso, uma linha só. */
+  columns?: 3 | 4
+  /** Rótulo só para o leitor de tela (quando o título ao lado já diz o que é, como um filtro). */
+  hideLabel?: boolean
+  /** Opções estreitas (só o texto e pouca margem), para caber ao lado de um título. */
+  compact?: boolean
   className?: string
 }
 
@@ -40,6 +44,8 @@ export function SegmentedControl<T extends string>({
   onChange,
   disabled = false,
   columns,
+  hideLabel = false,
+  compact = false,
   className,
 }: SegmentedControlProps<T>) {
   const labelId = useId()
@@ -102,7 +108,7 @@ export function SegmentedControl<T extends string>({
 
   return (
     <div className={cx('grid gap-2', className)}>
-      <span id={labelId} className="text-sm font-medium text-fg">
+      <span id={labelId} className={hideLabel ? 'sr-only' : 'text-sm font-medium text-fg'}>
         {label}
       </span>
       <div
@@ -111,8 +117,14 @@ export function SegmentedControl<T extends string>({
         aria-labelledby={labelId}
         aria-disabled={disabled || undefined}
         className={cx(
-          'relative grid w-full gap-1 rounded-md border border-border bg-surface-1 p-1',
-          columns === 4 ? 'grid-cols-4' : 'auto-cols-fr grid-flow-col sm:w-auto sm:justify-self-start',
+          'relative grid gap-1 rounded-md border border-border bg-surface-1 p-1',
+          columns === 4
+            ? 'w-full grid-cols-4'
+            : columns === 3
+              ? 'w-full grid-cols-3'
+              : compact
+                ? 'w-auto auto-cols-auto grid-flow-col justify-self-start'
+                : 'w-full auto-cols-fr grid-flow-col sm:w-auto sm:justify-self-start',
         )}
       >
         {/* Indicador que desliza até a opção marcada (só visual: o estado está no aria-checked). */}
@@ -143,7 +155,7 @@ export function SegmentedControl<T extends string>({
               className={cx(
                 'relative h-9 rounded-sm text-sm font-semibold tabular-nums transition-colors duration-(--dur-2) pointer-coarse:h-11',
                 // Em colunas, as opções encolhem para caber em telas de 320 px.
-                columns ? 'min-w-0 px-1' : 'min-w-16 px-3',
+                columns ? 'min-w-0 px-1' : compact ? 'min-w-0 px-2.5' : 'min-w-16 px-3',
                 'disabled:cursor-not-allowed disabled:opacity-40',
                 // No alto contraste do Windows o indicador some; o sublinhado mantém a seleção visível.
                 checked

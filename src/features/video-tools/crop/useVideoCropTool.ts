@@ -1,7 +1,9 @@
 import { useCallback, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 import {
   aspectRatio,
   editField,
+  parseAspect,
   fieldsOf,
   nothingCroppedMessage,
   validateCropFields,
@@ -53,14 +55,16 @@ export function useVideoCropTool() {
   const tool = useVideoTool(VIDEO_CROP_LABELS)
   const { info, fileId, file } = tool.state
   const { invalidateResult, run } = tool
-  const [aspect, setAspect] = useState<AspectChoice>('free')
+  // Um atalho pode pedir a proporção (ex.: "Story 9:16" abre com ?proporcao=9:16).
+  const [searchParams] = useSearchParams()
+  const [aspect, setAspect] = useState<AspectChoice>(() => parseAspect(searchParams.get('proporcao')) ?? 'free')
   const [edit, setEdit] = useState<Edit>()
   const [attempt, setAttempt] = useState<Attempt>()
 
   const width = info?.width
   const height = info?.height
   const size = useMemo(() => (width && height ? { width, height } : undefined), [width, height])
-  const ratio = size ? aspectRatio(aspect, size) : undefined
+  const ratio = size ? aspectRatio(aspect) : undefined
 
   const editor = useMemo<VideoCropEditor | undefined>(() => {
     if (!size) return undefined
@@ -96,7 +100,7 @@ export function useVideoCropTool() {
     (choice: AspectChoice) => {
       setAspect(choice)
       if (!editor) return
-      const next = aspectRatio(choice, editor.size)
+      const next = aspectRatio(choice)
       update(next ? centeredAspectCrop(editor.size, next) : editor.crop)
     },
     [editor, update],

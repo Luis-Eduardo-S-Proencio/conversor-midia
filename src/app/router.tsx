@@ -32,11 +32,26 @@ export const router = createBrowserRouter([
         },
       },
       {
-        // Licenças de código aberto: fora do Sobre, ligada pelo rodapé do menu (☰).
+        // Licenças de código aberto: fora do Sobre, ligada pelos Termos de uso.
         path: 'sobre/licencas',
         lazy: async () => {
           const { LicensesPage } = await import('../pages/LicensesPage')
           return { Component: LicensesPage }
+        },
+      },
+      {
+        // Documentos legais, ligados pelo rodapé do menu (☰).
+        path: 'termos',
+        lazy: async () => {
+          const { TermsPage } = await import('../pages/legal/TermsPage')
+          return { Component: TermsPage }
+        },
+      },
+      {
+        path: 'privacidade',
+        lazy: async () => {
+          const { PrivacyPage } = await import('../pages/legal/PrivacyPage')
+          return { Component: PrivacyPage }
         },
       },
       {

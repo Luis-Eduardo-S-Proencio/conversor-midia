@@ -49,7 +49,7 @@ describe('AppShell no celular', () => {
     expect(Math.round(nav.element().getBoundingClientRect().bottom)).toBe(844)
   })
 
-  it('o menu abre pela esquerda com o Sobre', async () => {
+  it('o menu abre pela esquerda, com Sobre, Termos e Privacidade no rodapé', async () => {
     await page.viewport(390, 844)
     const { screenPromise } = renderShell('/')
     const screen = await screenPromise
@@ -58,8 +58,10 @@ describe('AppShell no celular', () => {
     const menu = screen.getByRole('dialog', { name: 'Menu' })
     await expect.element(menu).toBeVisible()
     await expect.element(menu.getByRole('link', { name: 'Sobre o Media Tools' })).toHaveAttribute('href', '/sobre')
-    await expect.element(menu.getByRole('link', { name: 'Licenças de código aberto' })).toHaveAttribute('href', '/sobre/licencas')
-    await expect.element(menu.getByText(/^Versão \d+\.\d+\.\d+$/)).toBeVisible()
+    await expect.element(menu.getByRole('link', { name: 'Termos de uso' })).toHaveAttribute('href', '/termos')
+    await expect.element(menu.getByRole('link', { name: 'Política de privacidade' })).toHaveAttribute('href', '/privacidade')
+    expect(menu.getByRole('link', { name: 'Licenças de código aberto' }).elements()).toHaveLength(0)
+    expect(menu.getByText(/^Versão/).elements()).toHaveLength(0)
 
     await menu.getByRole('button', { name: 'Fechar menu' }).click()
     await expect.element(menu).not.toBeInTheDocument()

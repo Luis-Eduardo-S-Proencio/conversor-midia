@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Download, Info, X, type LucideIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, X, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Logo } from '../brand/Logo'
 import { Button, IconButton } from '../ui/Button'
@@ -22,14 +22,23 @@ function RowContent({ icon, children }: { icon: LucideIcon; children: ReactNode 
   )
 }
 
+const FOOTER_LINK =
+  '-mx-1 flex min-h-11 items-center rounded-sm px-1 text-secondary text-fg-muted underline-offset-4 hover:text-fg hover:underline'
+
+const FOOTER_LINKS = [
+  { to: '/sobre', label: 'Sobre o Media Tools' },
+  { to: '/termos', label: 'Termos de uso' },
+  { to: '/privacidade', label: 'Política de privacidade' },
+] as const
+
 interface MenuDrawerProps {
   open: boolean
   onClose: () => void
 }
 
 /**
- * Menu (☰): gaveta que entra pela esquerda com "Instalar app" (enquanto o app não está instalado) e
- * "Sobre o Media Tools"; no rodapé, as licenças de código aberto e a versão. Sem o pedido de instalação
+ * Menu (☰): gaveta que entra pela esquerda com "Instalar app" (enquanto o app não está instalado); no rodapé,
+ * Sobre o Media Tools, Termos de uso e Política de privacidade. Sem o pedido de instalação
  * do navegador, "Instalar app" mostra o passo a passo do aparelho dentro da própria gaveta.
  * Os links substituem a entrada do menu no histórico: voltar da página aberta leva de volta à tela de antes.
  */
@@ -101,32 +110,24 @@ export function MenuDrawer({ open, onClose }: MenuDrawerProps) {
 
               <IconButton icon={X} label="Fechar menu" onClick={onClose} />
             </div>
-            <nav aria-label="Menu" className="px-3 pt-2">
-              <ul className="overflow-hidden rounded-lg bg-surface-2">
-                {installMode !== 'installed' && (
-                  <li className="border-b border-border">
-                    <button ref={installRow} type="button" onClick={install} className={ROW}>
-                      <RowContent icon={Download}>Instalar app</RowContent>
-                    </button>
+            {installMode !== 'installed' && (
+              <div className="px-3 pt-2">
+                <button ref={installRow} type="button" onClick={install} className={`${ROW} rounded-lg bg-surface-2`}>
+                  <RowContent icon={Download}>Instalar app</RowContent>
+                </button>
+              </div>
+            )}
+            <nav aria-label="Sobre e documentos" className="mt-auto px-5 pt-6 pb-5">
+              <ul className="grid justify-items-start gap-0.5">
+                {FOOTER_LINKS.map((link) => (
+                  <li key={link.to}>
+                    <TransitionLink to={link.to} replace className={FOOTER_LINK}>
+                      {link.label}
+                    </TransitionLink>
                   </li>
-                )}
-                <li>
-                  <TransitionLink to="/sobre" replace className={ROW}>
-                    <RowContent icon={Info}>Sobre o Media Tools</RowContent>
-                  </TransitionLink>
-                </li>
+                ))}
               </ul>
             </nav>
-            <div className="mt-auto grid justify-items-start gap-1 px-5 pt-6 pb-5">
-              <TransitionLink
-                to="/sobre/licencas"
-                replace
-                className="-mx-1 flex min-h-11 items-center rounded-sm px-1 text-secondary text-fg-muted underline-offset-4 hover:text-fg hover:underline"
-              >
-                Licenças de código aberto
-              </TransitionLink>
-              <p className="text-caption font-normal text-fg-subtle tabular-nums">{`Versão ${__APP_VERSION__}`}</p>
-            </div>
           </>
         ) : (
           <>

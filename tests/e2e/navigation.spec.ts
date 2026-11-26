@@ -76,11 +76,40 @@ test.describe('navegação', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Vídeos' })).toBeVisible()
   })
 
-  test('as licenças de código aberto ficam no rodapé do menu, fora do Sobre', async ({ page }) => {
-    await page.goto('/')
-    const menu = await openMenu(page)
-    await expect(menu.getByText(/^Versão \d+\.\d+\.\d+$/)).toBeVisible()
-    await menu.getByRole('link', { name: 'Licenças de código aberto' }).click()
+  test('Termos de uso e Política de privacidade ficam no rodapé do menu', async ({ page }) => {
+    await page.goto('/imagens')
+    let menu = await openMenu(page)
+    await menu.getByRole('link', { name: 'Política de privacidade' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Política de privacidade' })).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    // Tomou o lugar do menu no histórico: voltar leva à tela de antes.
+    await page.goBack()
+    await expect(page.getByRole('heading', { level: 1, name: 'Imagens' })).toBeVisible()
+
+    menu = await openMenu(page)
+    await menu.getByRole('link', { name: 'Termos de uso' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Termos de uso' })).toBeVisible()
+  })
+
+  test('documento legal: o índice leva à seção, e o contato é um e-mail', async ({ page }) => {
+    await page.goto('/termos')
+    const toc = page.getByRole('navigation', { name: 'Neste documento' })
+    await expect(toc.getByRole('listitem')).toHaveCount(13)
+    await toc.getByRole('link', { name: /Contato/ }).click()
+    await expect(page).toHaveURL(/\/termos#contato$/)
+    const contact = page.getByRole('region', { name: /Contato/ })
+    await expect(contact).toBeInViewport()
+    // O link de contato abre o e-mail mostrado no texto.
+    const mail = contact.getByRole('link', { name: /@/ })
+    await expect(mail).toHaveAttribute('href', `mailto:${await mail.textContent()}`)
+    await page.getByRole('main').getByRole('link', { name: 'Política de privacidade' }).first().click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Política de privacidade' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 2, name: /Seus direitos pela LGPD/ })).toBeVisible()
+  })
+
+  test('as licenças de código aberto ficam ligadas pelos Termos de uso', async ({ page }) => {
+    await page.goto('/termos')
+    await page.getByRole('link', { name: 'Licenças de código aberto' }).click()
     await expect(page.getByRole('heading', { level: 1, name: 'Licenças de código aberto' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'licença LGPL' })).toHaveAttribute('href', '/licencas/lame-lgpl.txt')
     await expectNoAxeViolations(page)

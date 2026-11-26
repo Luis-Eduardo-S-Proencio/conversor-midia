@@ -5,6 +5,8 @@ export const PUBLIC_ROUTES = [
   { path: '/videos', heading: 'Vídeos' },
   { path: '/sobre', heading: 'Sobre' },
   { path: '/sobre/licencas', heading: 'Licenças de código aberto' },
+  { path: '/termos', heading: 'Termos de uso' },
+  { path: '/privacidade', heading: 'Política de privacidade' },
   { path: '/imagens/converter', heading: 'Converter imagem' },
   { path: '/imagens/comprimir', heading: 'Comprimir imagem' },
   { path: '/imagens/redimensionar', heading: 'Redimensionar imagem' },

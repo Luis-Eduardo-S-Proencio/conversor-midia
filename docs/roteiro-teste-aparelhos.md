@@ -120,6 +120,14 @@ Marque ✔ ou ✘ e anote o que estranhar.
 53. Numa ferramenta de vídeo com um vídeo aberto, troque de ferramenta (por exemplo, Editar, depois GIF, depois Converter): o vídeo continua aberto em cada uma.
 54. Gire o celular (paisagem) e, se tiver, abra num tablet ou computador: a barra lateral aparece à esquerda e nada fica cortado para os lados.
 
+### Criar colagem (Imagens)
+
+55. Em Imagens, abra "Criar colagem" e escolha 4 fotos da galeria: a colagem aparece já montada em grade, com as 4 na ordem escolhida. Em Layout, troque de modelo e de proporção (1:1, 4:5, 9:16...): a prévia muda na hora.
+56. Toque numa foto: ela ganha contorno rosa e o símbolo de troca no meio. Toque em outra: as duas trocam de lugar na hora. Arraste uma foto dentro do espaço dela: o enquadramento acompanha o dedo.
+57. Em Borda, mude a espessura, os cantos e a cor (inclusive "Outra cor", que abre o seletor do aparelho). Crie a colagem, confira em "Como ficou" e baixe: a foto na galeria é igual à prévia. Anote o tempo e o tamanho do arquivo.
+58. Em Estilo, escolha "Livre": as fotos aparecem espalhadas, com moldura branca e sombra. Arraste uma foto, use a alça do canto para girar e aumentar e, se der, dois dedos na foto. Crie e baixe: o arquivo é igual à prévia.
+59. Com uma foto só, aparece "Falta pelo menos mais uma foto" e o botão de criar fica desligado. Com 10 fotos, a 10ª fica de fora com aviso.
+
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.
@@ -136,6 +144,7 @@ Confirme se acontecem; não precisam ser tratados como erro.
 - O limite é de 1 GB por vídeo. Num celular com pouca memória, vídeos bem menores que isso podem falhar com a mensagem de memória. **Anote o tamanho e a duração se acontecer.**
 - Extrair áudio: o M4A copiado é instantâneo; o MP3 é refeito e leva mais tempo (no computador, cerca de 10 s para cada 3 minutos de som). O som de vídeos WEBM sai em WEBM, que iPhones mais antigos podem não tocar: para eles, existem M4A e MP3.
 - Converter vídeo: entre MP4 e MOV, um vídeo H.264 só é copiado (instantâneo). Para WEBM, ou de WEBM para MP4 e MOV, o vídeo é refeito e demora em vídeos longos. Um vídeo pequeno e já bem comprimido pode sair um pouco maior ao ser refeito. No Firefox, MP4 e MOV ficam indisponíveis quando o som precisa ser refeito (o Firefox não gera AAC).
+- Criar colagem: o arquivo sai em JPG, com até 2048 px no lado maior (menos, se as fotos forem pequenas). Sobre a prévia, arrastar move a foto e não rola a página: para rolar, toque fora da colagem.
 - Criar GIF: o GIF não tem som e usa no máximo 256 cores (degradês podem aparecer em faixas). Com fundo parado ele fica leve; com a câmera em movimento, pesa vários MB (no computador, cerca de 2 MB para 5 s em 480 px).
 
 ## 5. Resultado

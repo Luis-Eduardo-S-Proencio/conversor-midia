@@ -40,10 +40,14 @@ function finishedAnnouncement(succeeded: number, total: number, labels: BatchLab
  * e entrega os resultados. Arquivos, resultados e URLs temporárias ficam em referências (fora do
  * estado do React) e são liberados ao remover, recomeçar ou sair da tela.
  * `labels` deve ser uma constante do módulo da ferramenta. Com `singleImage`, a ferramenta trabalha
- * com uma imagem por vez (ex.: recortar): a imagem nova substitui a atual.
+ * com uma imagem por vez (ex.: recortar): a imagem nova substitui a atual. `maxFiles` limita quantas imagens
+ * a ferramenta aceita (ex.: a colagem, até 9).
  */
-export function useImageBatch(labels: BatchLabels, { singleImage = false }: { singleImage?: boolean } = {}) {
-  const limit = singleImage ? 1 : IMAGE_LIMITS.maxFiles
+export function useImageBatch(
+  labels: BatchLabels,
+  { singleImage = false, maxFiles = IMAGE_LIMITS.maxFiles }: { singleImage?: boolean; maxFiles?: number } = {},
+) {
+  const limit = singleImage ? 1 : maxFiles
   const [state, dispatch] = useReducer(batchReducer, INITIAL_BATCH_STATE)
   const [webpSupported, setWebpSupported] = useState<boolean>()
   const [announcement, setAnnouncement] = useState('')
@@ -248,6 +252,9 @@ export function useImageBatch(labels: BatchLabels, { singleImage = false }: { si
 
   const getResultFile = useCallback((id: string) => results.current.get(id), [])
 
+  /** O arquivo original de um item (ex.: para a colagem montar o arquivo na ordem escolhida). */
+  const getFile = useCallback((id: string) => files.current.get(id), [])
+
   /** Os arquivos originais abertos, na ordem da lista (os recusados já saíram): para levar a outra ferramenta. */
   const getOriginalFiles = useCallback(
     () => items.current.flatMap((item) => {
@@ -288,6 +295,7 @@ export function useImageBatch(labels: BatchLabels, { singleImage = false }: { si
     cancel,
     invalidateResults,
     getResultFile,
+    getFile,
     getResultFiles,
     getOriginalFiles,
     createZip,

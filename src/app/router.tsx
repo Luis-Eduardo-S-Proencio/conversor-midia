@@ -56,6 +56,14 @@ export const router = createBrowserRouter([
       },
       {
         // Ferramentas carregam sob demanda: o código e o Worker não pesam na página inicial.
+        path: 'imagens/colagem',
+        handle: TOOL,
+        lazy: async () => {
+          const { CollagePage } = await import('../features/image-tools/collage/CollagePage')
+          return { Component: CollagePage }
+        },
+      },
+      {
         path: 'imagens/converter',
         handle: TOOL,
         lazy: async () => {

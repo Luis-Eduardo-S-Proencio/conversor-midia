@@ -37,7 +37,7 @@ export default defineConfig({
     {
       name: 'firefox',
       // Só arquivos de teste: o auxiliar video-tool.ts também tem "video" no nome.
-      testMatch: /(convert|compress|resize|rotate|crop|video-edit|video-crop|video-compress|video-audio|video-resize|video-convert|video-gif|compare-result)\.spec\.ts$/,
+      testMatch: /(convert|compress|resize|rotate|crop|collage|video-edit|video-crop|video-compress|video-audio|video-resize|video-convert|video-gif|compare-result)\.spec\.ts$/,
       timeout: 60_000, // o Firefox abre páginas mais devagar neste ambiente, sobretudo em paralelo
       // Com muitos Firefox ao mesmo tempo, a suíte completa travava de vez em quando fora do código do app
       // (envio de arquivos, download, abertura da página) e nunca isolada. Dois por vez evitam a disputa.
@@ -46,7 +46,7 @@ export default defineConfig({
     },
     {
       name: 'webkit',
-      testMatch: /(convert|compress|resize|rotate|crop|video-edit|video-crop|video-compress|video-audio|video-resize|video-convert|video-gif|compare-result)\.spec\.ts$/,
+      testMatch: /(convert|compress|resize|rotate|crop|collage|video-edit|video-crop|video-compress|video-audio|video-resize|video-convert|video-gif|compare-result)\.spec\.ts$/,
       use: { ...devices['Desktop Safari'], viewport: { width: 1280, height: 800 }, baseURL: PREVIEW_URL },
     },
     {

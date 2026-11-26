@@ -1,3 +1,4 @@
+import type { CollageShadow, PixelRect } from '../core/image/collage'
 import type { CropRect } from '../core/image/crop'
 import type { OutputFormat } from '../core/image/formats'
 import type { ProcessingErrorCode } from '../core/image/messages'
@@ -59,7 +60,31 @@ export interface ZipJob {
   entries: Array<{ name: string; blob: Blob }>
 }
 
-export type ImageJob = ConvertJob | PreviewJob | ProbeJob | ZipJob
+/** Uma foto da colagem: o arquivo, onde ela entra no quadro e que parte dela aparece (do plano em core/image/collage). */
+export interface CollageJobPiece {
+  file: Blob
+  /** Retângulo da foto no quadro, em pixels, girado em torno do centro (graus, sentido horário). */
+  box: { cx: number; cy: number; width: number; height: number; rotation: number }
+  radius: number
+  /** Moldura em volta da foto, em pixels (0 = sem moldura). */
+  border: number
+  borderColor: string
+  /** Parte da foto que aparece, em pixels da foto já orientada. */
+  source: PixelRect
+}
+
+/** Várias fotos num quadro só, desenhadas na ordem (a última fica por cima), gravado em JPG. */
+export interface CollageJob {
+  kind: 'collage'
+  width: number
+  height: number
+  background: string
+  quality: number
+  shadow?: CollageShadow
+  pieces: CollageJobPiece[]
+}
+
+export type ImageJob = ConvertJob | PreviewJob | ProbeJob | ZipJob | CollageJob
 
 /* Resultados, um por tipo de tarefa. */
 
@@ -89,7 +114,14 @@ export interface ZipOutput {
   blob: Blob
 }
 
-export type JobOutput = ConvertOutput | PreviewOutput | ProbeOutput | ZipOutput
+export interface CollageOutput {
+  kind: 'collage'
+  blob: Blob
+  width: number
+  height: number
+}
+
+export type JobOutput = ConvertOutput | PreviewOutput | ProbeOutput | ZipOutput | CollageOutput
 
 export type OutputFor<J extends ImageJob> = Extract<JobOutput, { kind: J['kind'] }>
 

@@ -158,7 +158,7 @@ test.describe('Início: ferramentas', () => {
     const video = page.getByRole('region', { name: 'Vídeo', exact: true })
     const image = page.getByRole('region', { name: 'Imagem', exact: true })
     await expect(video.getByRole('link')).toHaveCount(7)
-    await expect(image.getByRole('link')).toHaveCount(5)
+    await expect(image.getByRole('link')).toHaveCount(6)
     await expect(video.getByRole('link').first()).toHaveText(/^Editar vídeo/)
     await expect(page.getByText('Atalhos rápidos')).toHaveCount(0)
     await expectNoAxeViolations(page)

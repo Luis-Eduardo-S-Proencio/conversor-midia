@@ -39,6 +39,9 @@ describe('catálogo de ferramentas', () => {
     expect(RECOMMENDED_TOOL.video).toBe('video-edit')
     expect(toolsForOpened('image', 1)).toHaveLength(5)
     expect(toolsForOpened('image', 3).map((tool) => tool.id)).not.toContain('image-crop')
+    // A colagem só aparece com pelo menos 2 fotos abertas.
+    expect(toolsForOpened('image', 1).map((tool) => tool.id)).not.toContain('image-collage')
+    expect(toolsForOpened('image', 2).map((tool) => tool.id)).toContain('image-collage')
   })
 
   it('a ferramenta de cada endereço, para o título e a troca de ferramenta', () => {

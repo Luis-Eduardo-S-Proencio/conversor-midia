@@ -13,6 +13,9 @@ import { OUTPUT_FORMAT_INFO, type OutputFormat } from '../core/image/formats'
 import type { ProcessingErrorCode } from '../core/image/messages'
 import { orientationMatrix, orientedDimensions, type Orientation } from '../core/image/orientation'
 import type {
+  CollageJob,
+  CollageJobPiece,
+  CollageOutput,
   ConvertJob,
   ConvertOutput,
   ImageJob,
@@ -391,6 +394,81 @@ async function zip(job: ZipJob): Promise<ZipOutput> {
   return { kind: 'zip', blob: new Blob(parts, { type: 'application/zip' }) }
 }
 
+/** Contorno de retângulo com cantos arredondados (centrado na origem), para recortar ou preencher. */
+function roundedRect(context: OffscreenCanvasRenderingContext2D, width: number, height: number, radius: number) {
+  context.beginPath()
+  context.roundRect(-width / 2, -height / 2, width, height, Math.max(0, Math.min(radius, width / 2, height / 2)))
+}
+
+/**
+ * Uma foto da colagem: decodifica, separa a parte que aparece e a reduz para o tamanho do espaço antes de
+ * desenhar. Uma foto por vez: nove fotos de 12 MP decodificadas juntas passariam de 400 MB.
+ */
+async function drawCollagePiece(context: OffscreenCanvasRenderingContext2D, piece: CollageJobPiece, shadow: CollageJob['shadow']) {
+  const bitmap = await decode(piece.file)
+  let region: ImageBitmap | undefined
+  let tile: Surface | undefined
+  try {
+    // A parte pedida, em pixels inteiros e sempre dentro da foto (o plano veio das medidas desta mesma decodificação).
+    const x = Math.min(bitmap.width - 1, Math.max(0, Math.floor(piece.source.x)))
+    const y = Math.min(bitmap.height - 1, Math.max(0, Math.floor(piece.source.y)))
+    const width = Math.max(1, Math.min(bitmap.width - x, Math.round(piece.source.width)))
+    const height = Math.max(1, Math.min(bitmap.height - y, Math.round(piece.source.height)))
+    try {
+      region = await createImageBitmap(bitmap, x, y, width, height)
+    } catch {
+      throw new JobError('canvas-unavailable')
+    }
+    bitmap.close()
+    const tileWidth = Math.max(1, Math.round(piece.box.width))
+    const tileHeight = Math.max(1, Math.round(piece.box.height))
+    tile = createSurface(tileWidth, tileHeight)
+    drawResized(region, tile.context, { x: 0, y: 0, width: tileWidth, height: tileHeight })
+    region.close()
+
+    context.save()
+    context.translate(piece.box.cx, piece.box.cy)
+    context.rotate((piece.box.rotation * Math.PI) / 180)
+    if (piece.border > 0 || shadow) {
+      // Moldura (ou só a forma da foto, quando não há moldura) com a sombra; a foto vem por cima, sem sombra.
+      const outer = piece.border > 0 && piece.radius > 0 ? piece.radius + piece.border : piece.radius
+      if (shadow) {
+        context.shadowColor = shadow.color
+        context.shadowBlur = shadow.blur
+        context.shadowOffsetY = shadow.offsetY
+      }
+      context.fillStyle = piece.borderColor
+      roundedRect(context, tileWidth + 2 * piece.border, tileHeight + 2 * piece.border, outer)
+      context.fill()
+      context.shadowColor = 'transparent'
+      context.shadowBlur = 0
+      context.shadowOffsetY = 0
+    }
+    roundedRect(context, tileWidth, tileHeight, piece.radius)
+    context.clip()
+    context.drawImage(tile.canvas, -tileWidth / 2, -tileHeight / 2)
+    context.restore()
+  } finally {
+    bitmap.close()
+    region?.close()
+    if (tile) release(tile.canvas)
+  }
+}
+
+async function collage(job: CollageJob): Promise<CollageOutput> {
+  const surface = createSurface(job.width, job.height)
+  try {
+    surface.context.fillStyle = job.background
+    surface.context.fillRect(0, 0, job.width, job.height)
+    surface.context.imageSmoothingQuality = 'high'
+    for (const piece of job.pieces) await drawCollagePiece(surface.context, piece, job.shadow)
+    const blob = await encode(surface.canvas, 'image/jpeg', job.quality)
+    return { kind: 'collage', blob, width: job.width, height: job.height }
+  } finally {
+    release(surface.canvas)
+  }
+}
+
 async function run(job: ImageJob): Promise<JobOutput> {
   switch (job.kind) {
     case 'convert':
@@ -401,6 +479,8 @@ async function run(job: ImageJob): Promise<JobOutput> {
       return { kind: 'probe', webpEncoding: await canEncodeWebp() }
     case 'zip':
       return zip(job)
+    case 'collage':
+      return collage(job)
   }
 }
 

@@ -165,6 +165,15 @@
   }
 
   /* Carregando sem tempo conhecido (skeleton, progresso indeterminado) */
+  /* Algo que acabou de mudar de lugar (foto trocada na colagem): cresce de leve até o tamanho certo */
+  --animate-pop: pop 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  @keyframes pop {
+    from {
+      opacity: 0.35;
+      transform: scale(0.94);
+    }
+  }
+
   --animate-shimmer: shimmer 1.4s linear infinite;
   @keyframes shimmer {
     from {

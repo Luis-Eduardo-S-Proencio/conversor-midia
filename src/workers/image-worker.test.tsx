@@ -1,9 +1,11 @@
 import { unzipSync } from 'fflate'
 import { afterAll, describe, expect, it } from 'vitest'
+import { DEFAULT_FRAMING, FREE_FRAME_COLOR, planCollage, type CollagePhoto, type CollagePlan } from '../core/image/collage'
 import { detectImageType } from '../core/image/signature'
 import { readIco, readPdf, readTiff } from '../test/format-readers'
 import { withExifOrientation } from '../test/image-bytes'
 import { createImageWorkerClient } from './image-client'
+import type { CollageJob } from './image-protocol'
 
 // Worker real, no Chromium: confere bytes, dimensões e pixels do resultado, não só "gerou algo".
 const client = createImageWorkerClient()
@@ -454,5 +456,139 @@ describe('Formatos escritos pelo app (Chromium real)', () => {
     const embedded = await inspect(new Blob([pdf.image.bytes.slice()]))
     expectColor(embedded.pixel(16, 16), [255, 0, 0])
     expectColor(embedded.pixel(48, 48), [255, 255, 255])
+  })
+})
+
+describe('Colagem no Worker (Chromium real)', () => {
+  const solid =
+    (color: string): Draw =>
+    (context, width, height) => {
+      context.fillStyle = color
+      context.fillRect(0, 0, width, height)
+    }
+
+  const collagePhoto = (width: number, height: number, placement = { x: 0.5, y: 0.5, width: 0.4, rotation: 0 }): CollagePhoto => ({
+    width,
+    height,
+    framing: DEFAULT_FRAMING,
+    placement,
+  })
+
+  function jobFor(plan: CollagePlan, files: Blob[]): CollageJob {
+    return {
+      kind: 'collage',
+      width: plan.width,
+      height: plan.height,
+      background: plan.background,
+      quality: 0.9,
+      shadow: plan.shadow,
+      pieces: plan.pieces.map((piece) => ({
+        file: files[piece.index] ?? new Blob(),
+        box: piece.box,
+        radius: piece.radius,
+        border: piece.border,
+        borderColor: FREE_FRAME_COLOR,
+        source: piece.source,
+      })),
+    }
+  }
+
+  it('grade: cada foto no seu espaço, a borda na cor escolhida e um JPG com as medidas do plano', async () => {
+    const red = await makeImage(300, 300, solid('#ff0000'))
+    const blue = await makeImage(400, 200, solid('#0000ff'))
+    const plan = planCollage(
+      {
+        mode: 'grid',
+        ratio: '16:9',
+        layoutId: '2-lado',
+        photos: [collagePhoto(300, 300), collagePhoto(400, 200)],
+        style: { spacing: 50, radius: 0, color: '#00ff00', shadow: false },
+      },
+      1080,
+    )
+    const result = await client.run(jobFor(plan, [red, blue]))
+
+    expect(result.blob.type).toBe('image/jpeg')
+    expect(await formatOf(result.blob)).toEqual({ kind: 'supported', format: 'jpeg' })
+    const output = await inspect(result.blob)
+    expect([output.width, output.height]).toEqual([1080, 608])
+    const [left, right] = plan.pieces
+    if (!left || !right) throw new Error('plano incompleto')
+    expectColor(output.pixel(Math.round(left.box.cx), Math.round(left.box.cy)), [255, 0, 0])
+    expectColor(output.pixel(Math.round(right.box.cx), Math.round(right.box.cy)), [0, 0, 255])
+    expectColor(output.pixel(4, 4), [0, 255, 0]) // borda de fora
+    expectColor(output.pixel(540, 304), [0, 255, 0]) // borda entre as fotos
+  })
+
+  it('grade: só a parte enquadrada da foto aparece no espaço', async () => {
+    // Metade esquerda vermelha, direita azul; enquadrada à direita num espaço quadrado, só o azul aparece.
+    const halves = await makeImage(400, 200, (context) => {
+      context.fillStyle = '#ff0000'
+      context.fillRect(0, 0, 200, 200)
+      context.fillStyle = '#0000ff'
+      context.fillRect(200, 0, 200, 200)
+    })
+    const photos = [{ ...collagePhoto(400, 200), framing: { focusX: 1, focusY: 0.5, zoom: 1 } }, collagePhoto(400, 200)]
+    const plan = planCollage(
+      { mode: 'grid', ratio: '16:9', layoutId: '2-lado', photos, style: { spacing: 0, radius: 0, color: '#ffffff', shadow: false } },
+      1080,
+    )
+    const output = await inspect((await client.run(jobFor(plan, [halves, halves]))).blob)
+    // O espaço da esquerda (540 × 608, quase quadrado) mostra a metade azul inteira.
+    expectColor(output.pixel(40, 300), [0, 0, 255])
+    expectColor(output.pixel(500, 300), [0, 0, 255])
+  })
+
+  it('livre: moldura branca em volta da foto, a de cima cobre a de baixo, e o fundo fica com a cor escolhida', async () => {
+    const red = await makeImage(400, 400, solid('#ff0000'))
+    const blue = await makeImage(400, 400, solid('#0000ff'))
+    const plan = planCollage(
+      {
+        mode: 'free',
+        ratio: '1:1',
+        photos: [collagePhoto(400, 400, { x: 0.4, y: 0.5, width: 0.4, rotation: 0 }), collagePhoto(400, 400, { x: 0.6, y: 0.5, width: 0.4, rotation: 0 })],
+        style: { spacing: 100, radius: 0, color: '#000000', shadow: false },
+      },
+      1080,
+    )
+    const output = await inspect((await client.run(jobFor(plan, [red, blue]))).blob)
+    expect([output.width, output.height]).toEqual([1080, 1080])
+    expectColor(output.pixel(540, 540), [0, 0, 255]) // onde as duas se cruzam, a de cima (azul)
+    expectColor(output.pixel(260, 540), [255, 0, 0]) // só a de baixo
+    const border = plan.pieces[0]?.border ?? 0
+    expect(border).toBeGreaterThan(20)
+    expectColor(output.pixel(Math.round(0.4 * 1080 - 0.2 * 1080 - border / 2), 540), [255, 255, 255]) // moldura
+    expectColor(output.pixel(20, 20), [0, 0, 0]) // fundo
+  })
+
+  it('livre: foto girada fica girada no arquivo', async () => {
+    // Faixa vermelha horizontal sobre fundo azul; girada 90°, a faixa fica em pé.
+    const stripe = await makeImage(400, 400, (context) => {
+      context.fillStyle = '#0000ff'
+      context.fillRect(0, 0, 400, 400)
+      context.fillStyle = '#ff0000'
+      context.fillRect(0, 160, 400, 80)
+    })
+    const plan = planCollage(
+      {
+        mode: 'free',
+        ratio: '1:1',
+        photos: [collagePhoto(400, 400, { x: 0.5, y: 0.5, width: 0.8, rotation: 90 }), collagePhoto(10, 10, { x: 0.02, y: 0.02, width: 0.01, rotation: 0 })],
+        style: { spacing: 0, radius: 0, color: '#ffffff', shadow: false },
+      },
+      1080,
+    )
+    const output = await inspect((await client.run(jobFor(plan, [stripe, stripe]))).blob)
+    expectColor(output.pixel(540, 300), [255, 0, 0]) // acima do centro, na faixa em pé
+    expectColor(output.pixel(300, 540), [0, 0, 255]) // à esquerda do centro, fora da faixa
+  })
+
+  it('uma foto ilegível faz a colagem falhar com erro de leitura, sem resposta pendente', async () => {
+    const red = await makeImage(100, 100, solid('#ff0000'))
+    const plan = planCollage(
+      { mode: 'grid', ratio: '1:1', photos: [collagePhoto(100, 100), collagePhoto(100, 100)], style: { spacing: 0, radius: 0, color: '#ffffff', shadow: false } },
+      1080,
+    )
+    await expect(client.run(jobFor(plan, [red, new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' })]))).rejects.toMatchObject({ code: 'decode-failed' })
   })
 })

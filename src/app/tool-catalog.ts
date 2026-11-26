@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Crop, ImagePlay, Minimize2, Monitor, Music, RotateCw, Scaling, Scissors, type LucideIcon } from 'lucide-react'
+import { ArrowLeftRight, Crop, ImagePlay, LayoutDashboard, Minimize2, Monitor, Music, RotateCw, Scaling, Scissors, type LucideIcon } from 'lucide-react'
 import type { MediaKind } from '../core/media-kind'
 
 /** Uma ferramenta do catálogo: destino, ícone e o tipo de arquivo que ela abre. */
@@ -12,6 +12,8 @@ export interface ToolEntry {
   media: MediaKind
   /** Trabalha com um arquivo por vez (Recortar imagem): fica fora das opções quando há várias imagens abertas. */
   single?: boolean
+  /** Só faz sentido a partir de tantos arquivos (Criar colagem: 2): com menos, fica fora das opções do arquivo aberto. */
+  minFiles?: number
 }
 
 export const IMAGE_TOOLS: readonly ToolEntry[] = [
@@ -55,6 +57,15 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
     icon: RotateCw,
     media: 'image',
     to: '/imagens/girar',
+  },
+  {
+    id: 'image-collage',
+    title: 'Criar colagem',
+    description: 'Junte várias fotos numa só',
+    icon: LayoutDashboard,
+    minFiles: 2,
+    media: 'image',
+    to: '/imagens/colagem',
   },
 ]
 
@@ -146,10 +157,10 @@ export const RECOMMENDED_TOOL: Partial<Record<MediaKind, string>> = { video: 'vi
 
 /**
  * Ferramentas oferecidas para um arquivo aberto, na ordem do painel "O que fazer com este arquivo?":
- * no vídeo, o editor primeiro; com várias imagens, só as que trabalham em lote.
+ * no vídeo, o editor primeiro; com várias imagens, só as que trabalham com várias (e a colagem só a partir de 2).
  */
 export function toolsForOpened(kind: MediaKind, count: number): readonly ToolEntry[] {
   if (kind === 'video') return pick('video-edit', 'video-compress', 'video-convert', 'video-audio', 'video-resize', 'video-crop', 'video-gif')
-  return IMAGE_TOOLS.filter((tool) => count === 1 || !tool.single)
+  return IMAGE_TOOLS.filter((tool) => (count === 1 || !tool.single) && count >= (tool.minFiles ?? 1))
 }
 

@@ -65,6 +65,7 @@ describe('"O que fazer com este arquivo?"', () => {
     await expect.element(sheet).toBeVisible()
     await expect.element(sheet.getByText('2 imagens')).toBeVisible()
     expect(sheet.getByRole('link', { name: /Recortar imagem/ }).elements()).toHaveLength(0)
+    await expect.element(sheet.getByRole('link', { name: /Criar colagem/ })).toBeVisible()
     await expect.element(sheet.getByText('Para recortar, abra uma imagem de cada vez.')).toBeVisible()
   })
 

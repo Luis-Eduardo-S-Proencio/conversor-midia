@@ -27,6 +27,7 @@ import { MetaChips } from '../components/ui/MetaChips'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import { ProgressRing } from '../components/ui/ProgressRing'
 import { SegmentedControl } from '../components/ui/SegmentedControl'
+import { Tabs } from '../components/ui/Tabs'
 import { Skeleton } from '../components/ui/Skeleton'
 import { Slider } from '../components/ui/Slider'
 import { useToast } from '../components/ui/toast-context'
@@ -236,6 +237,7 @@ function OverlayDemos() {
  * Regras de uso em docs/design-system.md.
  */
 export function DesignPage() {
+  const [tab, setTab] = useState<'layout' | 'border' | 'photos'>('layout')
   const [format, setFormat] = useState<OutputFormat>('webp')
   const [quality, setQuality] = useState(82)
   const [keepRatio, setKeepRatio] = useState(true)
@@ -446,6 +448,16 @@ export function DesignPage() {
 
         <Section title="Controles de opção">
           <Card className="grid gap-5">
+            <Tabs
+              label="Opções de exemplo"
+              value={tab}
+              onChange={setTab}
+              items={[
+                { value: 'layout', label: 'Layout', content: <p className="text-secondary text-fg-muted">Abas: o texto e um traço do acento embaixo da aberta. As setas trocam de aba.</p> },
+                { value: 'border', label: 'Borda', content: <p className="text-secondary text-fg-muted">Cada aba mostra só o próprio painel.</p> },
+                { value: 'photos', label: 'Fotos', content: <p className="text-secondary text-fg-muted">Use para agrupar opções de uma mesma tela.</p> },
+              ]}
+            />
             <SegmentedControl label="Converter para" options={FORMAT_OPTIONS} value={format} onChange={setFormat} />
             <Slider
               label="Qualidade"

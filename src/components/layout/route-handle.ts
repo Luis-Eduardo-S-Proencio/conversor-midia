@@ -1,8 +1,8 @@
 /**
  * Como o shell trata a tela:
- * - `root`: Início, Imagens e Vídeos. No celular, cabeçalho com a marca e abas embaixo.
- * - `page`: tela interna comum (Sobre, página não encontrada). Barra superior com voltar; as abas continuam.
- * - `tool`: ferramenta. Barra superior com voltar e, no celular, sem as abas (modo foco).
+ * - `root`: Início, Imagens e Vídeos. Cabeçalho com o menu (☰) e a marca; no celular, abas embaixo.
+ * - `page`: tela interna comum (Sobre, licenças, página não encontrada). Só a barra superior com voltar.
+ * - `tool`: ferramenta. Só a barra superior com voltar (modo foco).
  * - `editor`: tela cheia, sem nenhuma barra do site (a própria tela traz o que precisa).
  */
 export type ShellLayout = 'root' | 'page' | 'tool' | 'editor'

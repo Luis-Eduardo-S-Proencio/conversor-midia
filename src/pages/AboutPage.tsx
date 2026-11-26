@@ -1,14 +1,10 @@
-import { ArchiveX, AudioLines, Film, Image as ImageIcon, MonitorSmartphone, Share2, UserRoundX, type LucideIcon } from 'lucide-react'
+import { ArchiveX, MonitorSmartphone, Share2, UserRoundX, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { LogoMark } from '../components/brand/Logo'
 import { Container } from '../components/layout/Container'
-import { InstallButton } from '../components/layout/InstallButton'
-import { SiteNote } from '../components/layout/SiteNote'
 import { TopAppBar } from '../components/layout/TopAppBar'
 import { Accordion, type AccordionItem } from '../components/ui/Accordion'
 import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
-import { cx } from '../components/ui/cx'
 import { Icon } from '../components/ui/Icon'
 import { useToast } from '../components/ui/toast-context'
 import { formatBytes } from '../core/format'
@@ -19,33 +15,18 @@ import { VIDEO_FORMATS } from '../core/video/formats'
 import { MAX_GIF_SECONDS } from '../core/video/gif'
 import { VIDEO_LIMITS } from '../core/video/inspect'
 
-const LINK = 'text-accent underline underline-offset-4 transition-colors hover:text-fg'
+/** "JPG, PNG e WEBP": lista em português, para ler como frase. */
+function joinList(items: readonly string[]): string {
+  if (items.length <= 1) return items.join('')
+  return `${items.slice(0, -1).join(', ')} e ${items.at(-1)}`
+}
 
 const labels = (formats: Record<string, { label: string }>) => Object.values(formats).map((format) => format.label)
-
-// Formatos e limites vêm do núcleo: a página acompanha o que as ferramentas realmente aceitam.
-const FORMAT_ROWS: ReadonlyArray<{ media: string; icon: LucideIcon; opens?: readonly string[]; saves: readonly string[] }> = [
-  {
-    media: 'Imagens',
-    icon: ImageIcon,
-    opens: labels(IMAGE_FORMATS),
-    saves: OUTPUT_FORMATS.map((format) => OUTPUT_FORMAT_INFO[format].label),
-  },
-  { media: 'Vídeos', icon: Film, opens: labels(VIDEO_FORMATS), saves: [...labels(VIDEO_FORMATS), 'GIF'] },
-  { media: 'Som do vídeo', icon: AudioLines, saves: labels(AUDIO_FORMATS) },
-]
-
-const LIMITS = [
-  { subject: 'Vídeo', limit: `até ${formatBytes(VIDEO_LIMITS.maxFileBytes)}, um por vez` },
-  { subject: 'Imagem', limit: `até ${formatBytes(IMAGE_LIMITS.maxFileBytes)} e ${IMAGE_LIMITS.maxPixels / 1_000_000} megapixels` },
-  { subject: 'Várias imagens', limit: `até ${IMAGE_LIMITS.maxFiles} de uma vez` },
-  { subject: 'GIF', limit: `até ${MAX_GIF_SECONDS} segundos de vídeo` },
-] as const
 
 const PRIVACY: ReadonlyArray<{ icon: LucideIcon; title: string; text: string }> = [
   {
     icon: MonitorSmartphone,
-    title: 'Processado no seu aparelho',
+    title: 'Feito no seu aparelho',
     text: 'As fotos e os vídeos são abertos e processados pelo próprio navegador. Nenhum arquivo é enviado para servidor.',
   },
   {
@@ -54,6 +35,22 @@ const PRIVACY: ReadonlyArray<{ icon: LucideIcon; title: string; text: string }> 
     text: 'Ao fechar a página, as cópias usadas no processamento somem. Fica só o que você baixou.',
   },
   { icon: UserRoundX, title: 'Sem conta', text: 'Não precisa de cadastro nem de login.' },
+]
+
+// Formatos e limites vêm do núcleo: a página acompanha o que as ferramentas realmente aceitam.
+const FORMATS: ReadonlyArray<{ subject: string; value: string }> = [
+  { subject: 'Fotos abertas', value: joinList(labels(IMAGE_FORMATS)) },
+  { subject: 'Fotos salvas', value: joinList(OUTPUT_FORMATS.map((format) => OUTPUT_FORMAT_INFO[format].label)) },
+  { subject: 'Vídeos abertos', value: joinList(labels(VIDEO_FORMATS)) },
+  { subject: 'Vídeos salvos', value: joinList([...labels(VIDEO_FORMATS), 'GIF']) },
+  { subject: 'Som do vídeo', value: joinList(labels(AUDIO_FORMATS)) },
+]
+
+const LIMITS: ReadonlyArray<{ subject: string; value: string }> = [
+  { subject: 'Vídeo', value: `até ${formatBytes(VIDEO_LIMITS.maxFileBytes)}, um por vez` },
+  { subject: 'Foto', value: `até ${formatBytes(IMAGE_LIMITS.maxFileBytes)} e ${IMAGE_LIMITS.maxPixels / 1_000_000} megapixels` },
+  { subject: 'Várias fotos', value: `até ${IMAGE_LIMITS.maxFiles} de uma vez` },
+  { subject: 'GIF', value: `até ${MAX_GIF_SECONDS} segundos de vídeo` },
 ]
 
 const FAQ: readonly AccordionItem[] = [
@@ -90,49 +87,42 @@ const FAQ: readonly AccordionItem[] = [
   },
   {
     id: 'instalar',
-    title: 'Como instalar no Android e no iPhone?',
+    title: 'Como instalar no celular ou no computador?',
     content: (
-      <ul className="grid gap-2">
-        <li>
-          <strong className="font-semibold text-fg">Android (Chrome):</strong> toque em Instalar, no alto do Início, ou no menu
-          do navegador e em Instalar app.
-        </li>
-        <li>
-          <strong className="font-semibold text-fg">iPhone e iPad (Safari):</strong> toque em Compartilhar e depois em Adicionar à
-          Tela de Início.
-        </li>
-      </ul>
+      <p>
+        Toque no menu, no canto de cima do Início, e depois em Instalar app. Quando o navegador não abre a instalação sozinho, o
+        próprio menu mostra o passo a passo do seu aparelho.
+      </p>
     ),
   },
 ]
 
-/** Seção em cartão; o título aceita âncora (ex.: o selo "Processamento local" leva a #privacidade). */
-function Section({ id, title, className, children }: { id: string; title: string; className?: string; children: ReactNode }) {
+/** Seção com título e o conteúdo num grupo; o título aceita âncora (ex.: /sobre#privacidade). */
+function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <Card as="section" aria-labelledby={id} className={cx('grid content-start gap-4', className)}>
+    <section aria-labelledby={id} className="grid gap-3">
       {/* tabIndex -1: links com âncora levam o foco até aqui, e o leitor de tela começa pela seção pedida. */}
-      <h2 id={id} tabIndex={-1} className="font-sans text-section focus:outline-none">
+      <h2 id={id} tabIndex={-1} className="text-section text-fg focus:outline-none">
         {title}
       </h2>
       {children}
-    </Card>
+    </section>
   )
 }
 
-function FormatList({ label, formats }: { label: string; formats: readonly string[] }) {
+const GROUP = 'overflow-hidden rounded-lg border border-border bg-surface-1'
+
+/** Linhas de nome e valor (formatos, limites), com divisores. */
+function FactList({ rows }: { rows: ReadonlyArray<{ subject: string; value: string }> }) {
   return (
-    <div className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-baseline gap-2">
-      <dt className="text-caption font-normal text-fg-muted">{label}</dt>
-      <dd>
-        <ul className="flex flex-wrap gap-1.5">
-          {formats.map((format) => (
-            <li key={format} className="rounded-sm border border-border bg-surface-3 px-2 py-0.5 text-xs font-semibold text-fg">
-              {format}
-            </li>
-          ))}
-        </ul>
-      </dd>
-    </div>
+    <dl className={`${GROUP} divide-y divide-border`}>
+      {rows.map((row) => (
+        <div key={row.subject} className="grid gap-0.5 px-4 py-3 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-4">
+          <dt className="text-secondary text-fg-muted">{row.subject}</dt>
+          <dd className="text-secondary font-medium text-fg tabular-nums">{row.value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
@@ -166,116 +156,59 @@ function ShareButton() {
 }
 
 /**
- * Sobre: o app (ícone, nome, versão, instalar e compartilhar), privacidade, formatos, limites, perguntas
- * frequentes e créditos, em cartões. Carregada sob demanda (os formatos e os limites vêm de `core/`).
+ * Sobre: o app (ícone, nome, versão e compartilhar), privacidade, formatos, limites e perguntas
+ * frequentes, numa coluna. Carregada sob demanda (os formatos e os limites vêm de `core/`).
  */
 export function AboutPage() {
   return (
     <>
       <title>Sobre · Media Tools</title>
       <TopAppBar title="Sobre" backTo="/" />
-      <Container className="pt-4 pb-10 md:pt-6 md:pb-14">
-        <div className="mx-auto grid max-w-240 grid-cols-1 gap-4 md:gap-5">
-          <header className="grid gap-4 pb-2 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center sm:gap-5">
-            <LogoMark className="size-16" />
-            <div className="grid gap-1">
-              <p className="font-display text-title text-fg">Media Tools</p>
-              <p className="text-caption font-normal text-fg-subtle tabular-nums">{`Versão ${__APP_VERSION__}`}</p>
-              <p className="max-w-text text-body text-fg-muted">Converta, comprima e edite fotos e vídeos no seu aparelho, sem enviar nada.</p>
+      <Container className="pt-4 pb-14 md:pt-8">
+        <div className="mx-auto grid max-w-2xl gap-10">
+          <header className="grid justify-items-start gap-4">
+            <div className="flex items-center gap-4">
+              <LogoMark className="size-16" />
+              <div className="grid gap-0.5">
+                <p className="text-title text-fg">Media Tools</p>
+                <p className="text-secondary text-fg-subtle tabular-nums">{`Versão ${__APP_VERSION__}`}</p>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2 sm:col-span-2">
-              <InstallButton variant="button" />
-              <ShareButton />
-            </div>
+            <p className="max-w-text text-body text-fg-muted">
+              Converta, comprima e edite fotos e vídeos no seu aparelho, sem enviar nada e sem criar conta.
+            </p>
+            <ShareButton />
           </header>
 
-          <div className="grid gap-4 md:grid-cols-2 md:gap-5">
-            <Section id="privacidade" title="Privacidade">
-              <ul className="grid gap-4">
-                {PRIVACY.map((item) => (
-                  <li key={item.title} className="flex gap-3">
-                    <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-md bg-surface-3 text-fg-muted">
-                      <Icon icon={item.icon} />
-                    </span>
-                    <div className="grid gap-0.5">
-                      <h3 className="text-label text-fg">{item.title}</h3>
-                      <p className="text-secondary text-fg-muted">{item.text}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </Section>
-
-            <Section id="limites" title="Limites">
-              <dl className="grid divide-y divide-border text-secondary">
-                {LIMITS.map((row) => (
-                  <div key={row.subject} className="grid gap-0.5 py-2.5 first:pt-0 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-3">
-                    <dt className="text-fg-muted">{row.subject}</dt>
-                    <dd className="font-medium text-fg tabular-nums">{row.limit}</dd>
+          <Section id="privacidade" title="Privacidade">
+            <ul className={`${GROUP} divide-y divide-border`}>
+              {PRIVACY.map((item) => (
+                <li key={item.title} className="flex gap-3.5 px-4 py-4">
+                  <Icon icon={item.icon} className="mt-0.5 text-fg-muted" />
+                  <div className="grid gap-0.5">
+                    <h3 className="text-label text-fg">{item.title}</h3>
+                    <p className="text-secondary text-fg-muted">{item.text}</p>
                   </div>
-                ))}
-              </dl>
-              <p className="text-caption font-normal text-fg-subtle">
-                Como o trabalho acontece no seu aparelho, arquivos muito grandes podem demorar mais ou não caber na memória,
-                principalmente em celulares.
-              </p>
-            </Section>
-          </div>
-
-          <Section id="formatos" title="Formatos">
-            <ul className="grid gap-4 md:grid-cols-3">
-              {FORMAT_ROWS.map((row) => (
-                <li key={row.media} className="grid content-start gap-2.5">
-                  <h3 className="flex items-center gap-2 text-label text-fg">
-                    <Icon icon={row.icon} size="sm" className="text-fg-muted" />
-                    {row.media}
-                  </h3>
-                  <dl className="grid gap-2">
-                    {row.opens && <FormatList label="Abre" formats={row.opens} />}
-                    <FormatList label="Salva" formats={row.saves} />
-                  </dl>
                 </li>
               ))}
             </ul>
           </Section>
 
+          <Section id="formatos" title="Formatos">
+            <FactList rows={FORMATS} />
+          </Section>
+
+          <Section id="limites" title="Limites">
+            <FactList rows={LIMITS} />
+            <p className="text-secondary text-fg-subtle">
+              Como o trabalho acontece no seu aparelho, arquivos muito grandes podem demorar mais ou não caber na memória,
+              principalmente em celulares.
+            </p>
+          </Section>
+
           <Section id="perguntas" title="Perguntas frequentes">
-            {/* As perguntas vão de borda a borda do cartão, como uma lista. */}
-            <Accordion items={FAQ} className="-mx-4 -mb-4 border-t border-border md:-mx-5 md:-mb-5" />
+            <Accordion items={FAQ} className={`${GROUP} divide-y divide-border`} />
           </Section>
-
-          <Section id="creditos" title="Créditos e licenças">
-            <ul className="grid gap-3 text-secondary text-fg-muted">
-              {/* Frases com links no meio: a exceção de alvo pequeno da WCAG 2.5.8 vale para texto corrido. */}
-              <li>
-                <p>
-                  Os vídeos são lidos e gerados com o{' '}
-                  <a href="https://github.com/Vanilagy/mediabunny" rel="noopener noreferrer" className={LINK}>
-                    Mediabunny
-                  </a>{' '}
-                  (licença MPL-2.0, código-fonte no link).
-                </p>
-              </li>
-              <li>
-                <p>
-                  O MP3 é gerado pelo LAME, distribuído sob a{' '}
-                  <a href="/licencas/lame-lgpl.txt" className={LINK}>
-                    licença LGPL
-                  </a>
-                  , com o código-fonte em{' '}
-                  <a href="https://lame.sourceforge.io" rel="noopener noreferrer" className={LINK}>
-                    lame.sourceforge.io
-                  </a>
-                  .
-                </p>
-              </li>
-              <li>
-                <p>Fontes Inter e Bricolage Grotesque (licença OFL) e ícones Lucide (licença ISC).</p>
-              </li>
-            </ul>
-          </Section>
-
-          <SiteNote className="mt-6" />
         </div>
       </Container>
     </>

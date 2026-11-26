@@ -114,15 +114,13 @@ describe('Slider com valor padrão', () => {
 })
 
 describe('ToolIcon', () => {
-  it('mostra o selo de vídeo ou imagem no canto', async () => {
+  it('é decorativo: o nome fica no texto ao lado', async () => {
     const screen = await render(
       <div data-testid="icons">
-        <ToolIcon icon={Film} tone="edit" media="video" />
-        <ToolIcon icon={Film} tone="edit" media="image" />
+        <ToolIcon icon={Film} />
       </div>,
     )
-    const container = screen.getByTestId('icons').element()
-    expect(container.querySelector('[data-media="video"]')).not.toBeNull()
-    expect(container.querySelector('[data-media="image"]')).not.toBeNull()
+    const tile = screen.getByTestId('icons').element().firstElementChild
+    expect(tile?.getAttribute('aria-hidden')).toBe('true')
   })
 })

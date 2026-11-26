@@ -30,8 +30,7 @@ export function ExtractAudioPage() {
   return (
     <VideoToolPage
       title="Extrair áudio"
-      adjustables={['Formato do áudio']}
-      description="Salve só o som do vídeo, em M4A, MP3 ou WEBM. Vídeos MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
+      description="Salve só o som do vídeo, em M4A, MP3 ou WEBM."
       labels={EXTRACT_AUDIO_LABELS}
       actionIcon={Music}
       tool={tool}

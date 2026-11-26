@@ -3,15 +3,15 @@ import { expect, test, type Page } from '@playwright/test'
 import { button, expectNoAxeViolations, fileInput, fixture } from './image-tool.ts'
 import { OPEN_TIMEOUT, canDecodeVideo, horizontalOverflow, trackOutgoingRequests, videoFixture } from './video-tool.ts'
 
-// O Início: escolher a foto ou o vídeo (blocos no celular, área de abrir no computador, soltar ou colar),
-// o painel "O que fazer com este arquivo?" e a ferramenta escolhida já aberta com o arquivo.
+// O Início: "Abrir foto ou vídeo" (e, no computador, a área de soltar e o Colar), o painel "O que fazer
+// com este arquivo?", a ferramenta escolhida já aberta com o arquivo e as listas de ferramentas.
 
 const ONE_FILE = 'O que fazer com este arquivo?'
 const MANY_FILES = 'O que fazer com estas imagens?'
-const HOME_TITLE = 'Edite fotos e vídeos direto no navegador'
+const HOME_TITLE = 'Edite fotos e vídeos'
 
 const sheet = (page: Page, name = ONE_FILE) => page.getByRole('dialog', { name })
-/** Seletor que aceita vários arquivos (o bloco "Imagem" no celular, "Abrir arquivo" no computador). */
+/** Seletor de "Abrir foto ou vídeo", que aceita várias fotos de uma vez. */
 const multipleInput = (page: Page) => page.locator('input[type="file"][multiple]').first()
 const sheetInput = (page: Page) => page.getByRole('dialog').locator('input[type="file"]')
 
@@ -152,27 +152,41 @@ test.describe('Início: abrir foto ou vídeo', () => {
   })
 })
 
-test.describe('Início: ferramentas e atalhos', () => {
-  test('a grade filtra por tipo, e as linhas fecham sem buraco', async ({ page }) => {
+test.describe('Início: ferramentas', () => {
+  test('todas as ferramentas em duas listas, Vídeo e Imagem, sem atalhos rápidos', async ({ page }, testInfo) => {
     await page.goto('/')
-    const grid = page.getByRole('region', { name: 'Ferramentas' })
-    const fullRows = () =>
-      grid.locator('ul').evaluate((list) => Math.abs(list.getBoundingClientRect().right - (list.lastElementChild?.getBoundingClientRect().right ?? 0)) < 2)
+    const video = page.getByRole('region', { name: 'Vídeo', exact: true })
+    const image = page.getByRole('region', { name: 'Imagem', exact: true })
+    await expect(video.getByRole('link')).toHaveCount(7)
+    await expect(image.getByRole('link')).toHaveCount(5)
+    await expect(video.getByRole('link').first()).toHaveText(/^Editar vídeo/)
+    await expect(page.getByText('Atalhos rápidos')).toHaveCount(0)
+    await expectNoAxeViolations(page)
+    expect(await horizontalOverflow(page)).toBe(0)
 
-    await expect(grid.getByRole('link')).toHaveCount(12)
-    expect(await fullRows()).toBe(true)
-    await grid.getByRole('radio', { name: 'Vídeo' }).click()
-    await expect(grid.getByRole('link')).toHaveCount(7)
-    expect(await fullRows()).toBe(true)
-    await grid.getByRole('radio', { name: 'Imagem' }).click()
-    await expect(grid.getByRole('link')).toHaveCount(5)
-    expect(await fullRows()).toBe(true)
+    const videoBox = await video.boundingBox()
+    const imageBox = await image.boundingBox()
+    if (!videoBox || !imageBox) throw new Error('listas ausentes')
+    if (testInfo.project.name === 'desktop') {
+      // Lado a lado no computador.
+      expect(Math.round(imageBox.y)).toBe(Math.round(videoBox.y))
+    } else {
+      expect(imageBox.y).toBeGreaterThan(videoBox.y + videoBox.height - 1)
+    }
   })
 
-  test('WhatsApp abre o Comprimir vídeo ajustado para até 64 MB', async ({ page }) => {
+  test('cada item leva à ferramenta', async ({ page }) => {
     await page.goto('/')
-    await page.getByRole('link', { name: /^WhatsApp/ }).click()
-    await expect(page).toHaveURL(/\/videos\/comprimir\?destino=whatsapp$/)
+    await page.getByRole('region', { name: 'Imagem', exact: true }).getByRole('link', { name: /^Comprimir imagem/ }).click()
+    await expect(page).toHaveURL(/\/imagens\/comprimir$/)
+    await expect(page.getByRole('heading', { level: 1, name: 'Comprimir imagem' })).toBeVisible()
+  })
+})
+
+// Endereços com a ferramenta já ajustada continuam valendo (links salvos ou compartilhados).
+test.describe('ferramenta já ajustada pelo endereço', () => {
+  test('?destino=whatsapp abre o Comprimir vídeo ajustado para até 64 MB', async ({ page }) => {
+    await page.goto('/videos/comprimir?destino=whatsapp')
     await expect(page.getByRole('heading', { level: 1, name: 'Comprimir vídeo' })).toBeVisible()
     test.skip(!(await canDecodeVideo(page)), 'o navegador de teste não lê vídeo')
     await fileInput(page).setInputFiles(videoFixture('segundos.mp4'))
@@ -180,19 +194,15 @@ test.describe('Início: ferramentas e atalhos', () => {
     await expect(page.getByText('64 MB', { exact: true })).toBeVisible()
   })
 
-  test('Imagem para PDF abre o Converter com PDF escolhido', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('link', { name: /^Imagem para PDF/ }).click()
-    await expect(page).toHaveURL(/\/imagens\/converter\?formato=pdf$/)
+  test('?formato=pdf abre o Converter com PDF escolhido', async ({ page }) => {
+    await page.goto('/imagens/converter?formato=pdf')
     await expect(page.getByRole('heading', { level: 1, name: 'Converter imagem' })).toBeVisible()
     await fileInput(page).setInputFiles(fixture('foto.jpg'))
     await expect(page.getByRole('radio', { name: 'PDF' })).toBeChecked()
   })
 
-  test('Vídeo para MP3 abre o Extrair áudio com MP3 escolhido', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('link', { name: /^Vídeo para MP3/ }).click()
-    await expect(page).toHaveURL(/\/videos\/extrair-audio\?formato=mp3$/)
+  test('?formato=mp3 abre o Extrair áudio com MP3 escolhido', async ({ page }) => {
+    await page.goto('/videos/extrair-audio?formato=mp3')
     await expect(page.getByRole('heading', { level: 1, name: 'Extrair áudio' })).toBeVisible()
     await fileInput(page).setInputFiles(videoFixture('segundos.mp4'))
     const mp3 = page.getByRole('radio', { name: 'MP3' })
@@ -201,10 +211,8 @@ test.describe('Início: ferramentas e atalhos', () => {
     await expect(mp3).toBeChecked()
   })
 
-  test('Story 9:16 abre o Recortar vídeo em 9:16, mesmo com o vídeo deitado', async ({ page }) => {
-    await page.goto('/')
-    await page.getByRole('link', { name: /^Story 9:16/ }).click()
-    await expect(page).toHaveURL(/\/videos\/recortar\?proporcao=9:16$/)
+  test('?proporcao=9:16 abre o Recortar vídeo em 9:16, mesmo com o vídeo deitado', async ({ page }) => {
+    await page.goto('/videos/recortar?proporcao=9:16')
     await expect(page.getByRole('heading', { level: 1, name: 'Recortar vídeo' })).toBeVisible()
     test.skip(!(await canDecodeVideo(page)), 'o navegador de teste não lê vídeo')
     await fileInput(page).setInputFiles(videoFixture('quadrantes.mov'))

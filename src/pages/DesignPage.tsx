@@ -1,6 +1,6 @@
-import { ArrowLeftRight, Check, Download, FolderOpen, Lock, LockOpen, Plus, Scissors, Share2, Trash2, Upload } from 'lucide-react'
+import { ArrowLeftRight, Check, Download, FolderOpen, Lock, LockOpen, Plus, Scissors, Trash2, Upload } from 'lucide-react'
 import { useId, useState, type ReactNode } from 'react'
-import { IMAGE_TOOLS, VIDEO_TOOLS, switcherTools } from '../app/tool-catalog'
+import { VIDEO_TOOLS } from '../app/tool-catalog'
 import { Logo, LogoMark } from '../components/brand/Logo'
 import { ActionBar } from '../components/layout/ActionBar'
 import { Container } from '../components/layout/Container'
@@ -10,7 +10,7 @@ import { Dropzone } from '../components/tool/Dropzone'
 import { FileInfo } from '../components/tool/FileInfo'
 import { FilePreview } from '../components/tool/FilePreview'
 import { ResultSummary } from '../components/tool/ResultSummary'
-import { ToolSwitcher } from '../components/tool/ToolSwitcher'
+import { ToolList } from '../components/tool/ToolList'
 import { Alert } from '../components/ui/Alert'
 import { Badge } from '../components/ui/Badge'
 import { BottomSheet } from '../components/ui/BottomSheet'
@@ -30,7 +30,6 @@ import { SegmentedControl } from '../components/ui/SegmentedControl'
 import { Skeleton } from '../components/ui/Skeleton'
 import { Slider } from '../components/ui/Slider'
 import { useToast } from '../components/ui/toast-context'
-import { ToolIcon, type ToolTone } from '../components/ui/ToolIcon'
 
 interface ColorToken {
   name: string
@@ -43,55 +42,43 @@ const COLOR_GROUPS: Array<{ title: string; tokens: ColorToken[] }> = [
   {
     title: 'Superfícies',
     tokens: [
-      { name: 'bg', value: '#0A0A0D' },
-      { name: 'surface-1', value: '#111116' },
-      { name: 'surface-2', value: '#17171D' },
-      { name: 'surface-3', value: '#1F1F27' },
-      { name: 'surface-hover', value: '#25252E' },
-      { name: 'stage', value: '#000000' },
-      { name: 'border', value: 'branco 7%' },
-      { name: 'border-strong', value: 'branco 12%' },
-      { name: 'stroke', value: '#6B6B78' },
+      { name: 'bg', value: '#000000' },
+      { name: 'surface-1', value: '#161618' },
+      { name: 'surface-2', value: '#1F1F22' },
+      { name: 'surface-3', value: '#29292D' },
+      { name: 'surface-hover', value: '#333338' },
+      { name: 'border', value: 'branco 8%' },
+      { name: 'border-strong', value: 'branco 14%' },
+      { name: 'stroke', value: '#76767F' },
     ],
   },
   {
     title: 'Texto',
     tokens: [
       { name: 'fg', alias: 'text-1', value: '#F5F5F7' },
-      { name: 'fg-muted', alias: 'text-2', value: '#A6A6B0' },
-      { name: 'fg-subtle', alias: 'text-3', value: '#8A8A94' },
+      { name: 'fg-muted', alias: 'text-2', value: '#A8A8B0' },
+      { name: 'fg-subtle', alias: 'text-3', value: '#9B9BA3' },
     ],
   },
   {
     title: 'Acento e marca',
     tokens: [
-      { name: 'accent', value: '#FF4F8B' },
+      { name: 'accent', value: '#FF6699' },
       { name: 'accent-solid', value: '#D62466' },
-      { name: 'accent-soft', value: 'acento 14%' },
+      { name: 'accent-soft', value: 'acento 10%' },
       { name: 'brand-start', value: '#8B5CF6' },
       { name: 'brand-end', value: '#EC4899' },
     ],
   },
   {
-    title: 'Estados e categorias',
+    title: 'Estados',
     tokens: [
       { name: 'success', value: '#3DD68C' },
       { name: 'warning', value: '#F5B841' },
       { name: 'danger', value: '#FF5C5C' },
-      { name: 'cat-edit', alias: 'cat-editar', value: '#A495FF' },
-      { name: 'cat-convert', alias: 'cat-converter', value: '#6AA7FF' },
-      { name: 'cat-compress', alias: 'cat-comprimir', value: '#4FD1A1' },
-      { name: 'cat-audio', value: '#FFA06B' },
     ],
   },
 ]
-
-const CATEGORY_LABELS: Record<ToolTone, string> = {
-  edit: 'Editar: editar vídeo, recortar, girar, GIF',
-  convert: 'Converter: imagem e vídeo',
-  compress: 'Deixar menor: comprimir, redimensionar, resolução',
-  audio: 'Áudio: extrair áudio',
-}
 
 const FORMAT_OPTIONS = [
   { value: 'jpg', label: 'JPG' },
@@ -101,19 +88,11 @@ const FORMAT_OPTIONS = [
 
 type OutputFormat = (typeof FORMAT_OPTIONS)[number]['value']
 
-const QUALITY_OPTIONS = [
-  { value: 'high', label: 'Alta' },
-  { value: 'balanced', label: 'Equilibrada' },
-  { value: 'small', label: 'Menor' },
-] as const
-
-type QualityLevel = (typeof QUALITY_OPTIONS)[number]['value']
-
 const RADII = [
   { name: 'sm', value: '8 px', className: 'rounded-sm' },
   { name: 'md', value: '12 px', className: 'rounded-md' },
   { name: 'lg', value: '16 px', className: 'rounded-lg' },
-  { name: 'xl', value: '24 px', className: 'rounded-xl' },
+  { name: 'xl', value: '20 px', className: 'rounded-xl' },
   { name: 'full', value: 'pílula', className: 'rounded-full' },
 ]
 
@@ -123,13 +102,6 @@ const DURATIONS = [
   { name: 'dur-3', value: '320 ms', use: 'painéis' },
   { name: 'dur-4', value: '480 ms', use: 'máximo' },
 ]
-
-const SHORTCUTS = ['WhatsApp', 'Vídeo para MP3', 'Imagem para PDF', 'Criar GIF', 'Story 9:16', 'E-mail', 'Discord']
-
-/** Uma ferramenta de cada categoria, com o selo de imagem ou vídeo. */
-const CATEGORY_SAMPLES = [...VIDEO_TOOLS, ...IMAGE_TOOLS].filter(
-  (tool, index, all) => all.findIndex((other) => other.tone === tool.tone) === index,
-)
 
 const SAMPLE_FILE = new File(['Arquivo de exemplo da vitrine do Media Tools.'], 'exemplo.txt', { type: 'text/plain' })
 
@@ -148,46 +120,8 @@ function Section({ title, description, children }: { title: string; description?
   )
 }
 
-/** Os mesmos controles com um acento, para comparar lado a lado. */
-function AccentSample({ name, short, accent, note }: { name: string; short: string; accent?: 'violet'; note: string }) {
-  const [quality, setQuality] = useState<QualityLevel>('balanced')
-  const [level, setLevel] = useState(70)
-  const [filter, setFilter] = useState('video')
-  return (
-    <Card data-accent={accent} className="grid min-w-0 content-start gap-5">
-      <div className="grid gap-1">
-        <h3 className="font-display text-lg font-semibold">{name}</h3>
-        <p className="text-secondary text-fg-muted">{note}</p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button variant="primary" icon={Download}>
-          Baixar
-        </Button>
-        <Button icon={Share2}>Compartilhar</Button>
-      </div>
-      <div className="flex flex-wrap gap-2" role="group" aria-label={`Filtro de exemplo, ${short}`}>
-        {['todas', 'video', 'imagem'].map((value) => (
-          <Chip key={value} selected={filter === value} onClick={() => setFilter(value)}>
-            {value === 'todas' ? 'Todas' : value === 'video' ? 'Vídeo' : 'Imagem'}
-          </Chip>
-        ))}
-      </div>
-      <SegmentedControl label={`Qualidade · ${short}`} options={QUALITY_OPTIONS} value={quality} onChange={setQuality} />
-      <Slider label={`Intensidade · ${short}`} value={level} onChange={setLevel} resetTo={50} formatValue={(value) => `${value}%`} />
-      <div className="flex items-center gap-4">
-        <ProgressRing label={`Exportando · ${short}`} value={42} size={56} />
-        <ProgressBar label="Codificando vídeo…" value={42} className="flex-1" />
-      </div>
-      <p className="text-secondary text-fg-muted">
-        Texto com <a href="#acento" className="font-medium text-accent underline underline-offset-4">link no acento</a> e{' '}
-        <span className="rounded-sm bg-accent-soft px-1.5 py-0.5 text-accent">seleção</span>.
-      </p>
-    </Card>
-  )
-}
-
-/** Visor de câmera: as cantoneiras se fecham quando há um arquivo por cima. */
-function ViewfinderDemo() {
+/** Área de soltar: o contorno fica no acento quando há um arquivo por cima. */
+function DropTargetDemo() {
   const [over, setOver] = useState(false)
   return (
     <div
@@ -199,14 +133,14 @@ function ViewfinderDemo() {
         setOver(false)
       }}
       onDragOver={(event) => event.preventDefault()}
-      className="viewfinder grid min-h-56 place-items-center rounded-xl px-6 py-10 text-center"
+      className="drop-target grid min-h-56 place-items-center rounded-xl px-6 py-10 text-center"
     >
       <div className="grid justify-items-center gap-3">
         <span
           aria-hidden="true"
           className={cx(
-            'grid size-12 place-items-center rounded-lg bg-surface-3 text-fg transition-[translate] duration-(--dur-2)',
-            over && '-translate-y-1 text-accent',
+            'grid size-14 place-items-center rounded-full transition-colors duration-(--dur-2)',
+            over ? 'bg-accent-solid text-on-accent' : 'bg-surface-3 text-fg',
           )}
         >
           <Icon icon={Upload} size="lg" />
@@ -298,8 +232,8 @@ function OverlayDemos() {
 }
 
 /**
- * Vitrine interna (/_design, fora da navegação): tokens e componentes num só lugar, e a escolha
- * do acento lado a lado. Regras de uso em docs/design-system.md.
+ * Vitrine interna (/_design, fora da navegação): tokens e componentes num só lugar.
+ * Regras de uso em docs/design-system.md.
  */
 export function DesignPage() {
   const [format, setFormat] = useState<OutputFormat>('webp')
@@ -320,16 +254,6 @@ export function DesignPage() {
           </p>
         </header>
 
-        <Section
-          title="Acento: rosa ou violeta"
-          description="Os mesmos controles com cada acento. O degradê da marca fica só no logo; todo o resto usa um acento só. Escolha um dos dois."
-        >
-          <div id="acento" className="grid gap-4 md:grid-cols-2">
-            <AccentSample name="Rosa (padrão)" short="rosa" note="--accent #FF4F8B · --accent-solid #D62466" />
-            <AccentSample name="Violeta" short="violeta" accent="violet" note="--accent #9D8CFF · --accent-solid #6D4AFF" />
-          </div>
-        </Section>
-
         <Section title="Marca">
           <Card className="flex flex-wrap items-end gap-6">
             <LogoMark className="size-24" />
@@ -340,7 +264,7 @@ export function DesignPage() {
           </Card>
         </Section>
 
-        <Section title="Cores" description="Superfícies de grafite em camadas, bordas hairline e só quatro cores de categoria.">
+        <Section title="Cores" description="Preto de verdade no fundo, cinzas neutros em camadas e o rosa da marca só na ação principal, na seleção e no foco.">
           <div className="grid gap-6">
             {COLOR_GROUPS.map((group) => (
               <div key={group.title} className="grid gap-2">
@@ -361,37 +285,34 @@ export function DesignPage() {
           </div>
         </Section>
 
-        <Section
-          title="Tipografia"
-          description="Títulos em Bricolage Grotesque (uma grotesca com personalidade); texto em Inter; números sempre tabulares. Mínimo de 12 px."
-        >
+        <Section title="Tipografia" description="Uma família só (Inter): a hierarquia vem do tamanho e do peso. Números sempre tabulares. Mínimo de 12 px.">
           <Card className="grid gap-5">
             <div className="grid gap-1">
-              <p className="font-display text-display">Edite fotos e vídeos direto no navegador</p>
-              <p className="text-caption text-fg-subtle">Display · Bricolage 700 · 30 → 44 px</p>
+              <p className="text-display">Edite fotos e vídeos</p>
+              <p className="text-caption text-fg-subtle">Título do Início, Inter 700, de 28 a 38 px</p>
             </div>
             <div className="grid gap-1">
-              <p className="font-display text-title">Comprimir vídeo</p>
-              <p className="text-caption text-fg-subtle">Título de página · Bricolage 650 · 24 → 32 px</p>
+              <p className="text-title">Vídeos</p>
+              <p className="text-caption text-fg-subtle">Título de página, Inter 700, de 26 a 32 px</p>
             </div>
             <div className="grid gap-1">
-              <p className="text-section">Ferramentas</p>
-              <p className="text-caption text-fg-subtle">Título de seção · Inter 600 · 18 → 20 px</p>
+              <p className="text-section">Ferramentas de vídeo</p>
+              <p className="text-caption text-fg-subtle">Título de seção, Inter 600, 18 px</p>
             </div>
             <div className="grid gap-1">
-              <p className="max-w-text text-body">Escolha um vídeo para começar. Tudo acontece no seu aparelho: nada é enviado.</p>
-              <p className="text-caption text-fg-subtle">Corpo · Inter 400 · 15 → 16 px</p>
+              <p className="max-w-text text-body">Escolha um vídeo para começar. Tudo é feito no seu aparelho.</p>
+              <p className="text-caption text-fg-subtle">Corpo, Inter 400, 16 px</p>
             </div>
             <div className="grid gap-1">
-              <p className="text-secondary text-fg-muted">Arquivo menor, mesma cara. Por porcentagem ou em pixels.</p>
-              <p className="text-caption text-fg-subtle">Secundário · 14 px</p>
+              <p className="text-secondary text-fg-muted">Arquivo menor, mesma aparência.</p>
+              <p className="text-caption text-fg-subtle">Secundário, 14 px</p>
             </div>
             <div className="grid gap-1">
-              <p className="text-caption">Legenda e rótulo · 13 px · 500</p>
+              <p className="text-caption">Legenda e rótulo, 13 px, 500</p>
             </div>
             <div className="grid gap-1">
               <p className="text-body font-medium tabular-nums">00:06,2 / 00:13,4 · 1080 × 1920 · 22,4 MB · −58%</p>
-              <p className="text-caption text-fg-subtle">Números e timecodes · algarismos tabulares</p>
+              <p className="text-caption text-fg-subtle">Números e tempos com algarismos tabulares</p>
             </div>
           </Card>
         </Section>
@@ -513,29 +434,12 @@ export function DesignPage() {
           </Card>
         </Section>
 
-        <Section
-          title="Cartões e ícones de ferramenta"
-          description="Quatro cores de categoria; o selo no canto diferencia a versão de imagem da de vídeo."
-        >
+        <Section title="Lista de ferramentas" description="Lista agrupada, como nos apps do sistema: ícone num ladrilho neutro, nome, o que faz e a seta.">
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="grid content-start gap-3">
-              <ul className="grid gap-3">
-                {CATEGORY_SAMPLES.map((tool) => (
-                  <li key={tool.tone} className="flex items-center gap-3 text-secondary text-fg-muted">
-                    <ToolIcon icon={tool.icon} tone={tool.tone} media={tool.media} />
-                    {CATEGORY_LABELS[tool.tone]}
-                  </li>
-                ))}
-              </ul>
-              <div className="flex gap-4 pt-2">
-                <ToolIcon icon={IMAGE_TOOLS[3]?.icon ?? Scissors} tone="edit" size="lg" media="image" />
-                <ToolIcon icon={VIDEO_TOOLS[1]?.icon ?? Scissors} tone="edit" size="lg" media="video" />
-              </div>
-            </Card>
-            <Card as="a" href="#acento" interactive className="grid content-start gap-2 no-underline">
-              <ToolIcon icon={ArrowLeftRight} tone="convert" media="video" />
-              <span className="text-body font-semibold text-fg">Cartão clicável</span>
-              <span className="text-secondary text-fg-muted">Com mouse, sobe 2 px e a borda clareia. Ao tocar, afunda.</span>
+            <ToolList tools={VIDEO_TOOLS.slice(0, 3)} label="Exemplo de lista de ferramentas" />
+            <Card className="grid content-start gap-2">
+              <span className="text-label text-fg">Cartão</span>
+              <span className="text-secondary text-fg-muted">Superfície plana com borda hairline, sem sombra nem degradê.</span>
             </Card>
           </div>
         </Section>
@@ -570,20 +474,8 @@ export function DesignPage() {
           </Card>
         </Section>
 
-        <Section title="Abrir arquivo" description="Cantos de visor de câmera no lugar da borda tracejada.">
-          <ViewfinderDemo />
-        </Section>
-
-        <Section title="Carrossel" description="Sem barra de rolagem visível, com encaixe e fade nas bordas.">
-          <div className="-mx-(--gutter)">
-            <ul className="scroller-x" aria-label="Atalhos rápidos (exemplo)">
-              {SHORTCUTS.map((shortcut) => (
-                <li key={shortcut}>
-                  <Chip>{shortcut}</Chip>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <Section title="Abrir arquivo" description="Superfície com borda; com o arquivo por cima, o contorno fica no acento.">
+          <DropTargetDemo />
         </Section>
 
         <Section title="Progresso e carregamento">
@@ -632,14 +524,14 @@ export function DesignPage() {
           <OverlayDemos />
         </Section>
 
-        <Section title="Componentes de ferramenta (atuais)" description="Ainda no visual antigo de layout: mudam nas fases de telas e ferramentas.">
+        <Section title="Componentes de ferramenta">
           <div className="grid gap-4 lg:grid-cols-2">
             <div className="grid gap-2">
               <Dropzone
                 accept="image/jpeg,image/png,image/webp"
                 buttonLabel="Selecionar imagens"
                 dragLabel="Arraste imagens para cá"
-                hint="JPG, PNG ou WEBP · até 50 MB por arquivo"
+                hint="JPG, PNG ou WEBP, até 50 MB cada"
                 onFiles={(files) =>
                   setSelection(`${files.length} ${files.length === 1 ? 'arquivo selecionado' : 'arquivos selecionados'}.`)
                 }
@@ -656,10 +548,6 @@ export function DesignPage() {
               <ResultSummary beforeBytes={9_017_753} afterBytes={1_992_294} />
               <ResultSummary beforeBytes={1_000_000} afterBytes={1_120_000} />
               <DownloadActions getFiles={() => [SAMPLE_FILE]} downloadLabel="Baixar exemplo" />
-            </Card>
-            <Card className="grid content-start gap-4">
-              <ToolSwitcher label="Troca de ferramenta (exemplo)" tools={switcherTools('image')} onSwitch={() => {}} />
-
             </Card>
           </div>
           <ActionBar>

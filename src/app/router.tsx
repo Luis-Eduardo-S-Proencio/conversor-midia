@@ -32,6 +32,14 @@ export const router = createBrowserRouter([
         },
       },
       {
+        // Licenças de código aberto: fora do Sobre, ligada pelo rodapé do menu (☰).
+        path: 'sobre/licencas',
+        lazy: async () => {
+          const { LicensesPage } = await import('../pages/LicensesPage')
+          return { Component: LicensesPage }
+        },
+      },
+      {
         // Ferramentas carregam sob demanda: o código e o Worker não pesam na página inicial.
         path: 'imagens/converter',
         handle: TOOL,

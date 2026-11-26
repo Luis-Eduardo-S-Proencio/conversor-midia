@@ -19,7 +19,6 @@
     "fixtures": "node scripts/generate-fixtures.ts && node scripts/generate-video-fixtures.ts"
   },
   "dependencies": {
-    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@fontsource-variable/inter": "^5.3.0",
     "@mediabunny/mp3-encoder": "^1.65.2",
     "fflate": "^0.8.3",

@@ -29,8 +29,7 @@ export function VideoCropPage() {
   return (
     <VideoToolPage
       title="Recortar vídeo"
-      adjustables={['Proporção', 'Área de recorte']}
-      description="Mantenha só a parte do quadro que importa, arrastando a área ou digitando as medidas. MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
+      description="Mantenha só a parte do quadro que importa, arrastando a área ou digitando as medidas."
       labels={VIDEO_CROP_LABELS}
       actionIcon={Crop}
       tool={tool}

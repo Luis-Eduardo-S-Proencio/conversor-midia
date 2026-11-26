@@ -1,12 +1,9 @@
-import { ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 import { RECOMMENDED_TOOL, toolsForOpened } from '../../app/tool-catalog'
-import { TransitionLink } from '../../components/layout/TransitionLink'
 import { FilePickerButton } from '../../components/tool/FilePickerButton'
+import { ToolList } from '../../components/tool/ToolList'
 import { Badge } from '../../components/ui/Badge'
 import { BottomSheet } from '../../components/ui/BottomSheet'
-import { Icon } from '../../components/ui/Icon'
-import { ToolIcon } from '../../components/ui/ToolIcon'
 import { handOffFiles } from '../shared/file-handoff'
 import { OPEN_ACCEPT } from './accept'
 import { OpenedSummary } from './OpenedSummary'
@@ -51,29 +48,15 @@ export function FileActionSheet({ opened, onClose, onChooseAnother }: FileAction
     >
       <div className="grid gap-4">
         <OpenedSummary opened={shown} />
-        <ul aria-label={title} className="grid gap-1.5 md:grid-cols-2">
-          {tools.map((tool) => (
-            <li key={tool.id} className={tool.id === recommended ? 'md:col-span-2' : undefined}>
-              <TransitionLink
-                to={tool.to}
-                // A ferramenta toma o lugar do passo do painel no histórico: voltar dela leva ao início, não ao painel.
-                replace
-                onClick={() => handOffFiles(shown.kind, shown.files)}
-                className="pressable group flex min-h-15 items-center gap-3 rounded-md border border-border bg-surface-3 px-3 py-2 hover:pointer-fine:border-border-strong hover:pointer-fine:bg-surface-hover"
-              >
-                <ToolIcon icon={tool.icon} tone={tool.tone} />
-                <span className="grid min-w-0 flex-1 gap-0.5">
-                  <span className="flex flex-wrap items-center gap-2 text-sm font-semibold text-fg">
-                    {tool.title}
-                    {tool.id === recommended && <Badge variant="accent">Recomendado</Badge>}
-                  </span>
-                  <span className="truncate text-secondary text-fg-muted">{tool.description}</span>
-                </span>
-                <Icon icon={ChevronRight} size="sm" className="text-fg-subtle" />
-              </TransitionLink>
-            </li>
-          ))}
-        </ul>
+        {/* A ferramenta toma o lugar do passo do painel no histórico: voltar dela leva ao início, não ao painel. */}
+        <ToolList
+          tools={tools}
+          label={title}
+          replace
+          raised
+          onNavigate={() => handOffFiles(shown.kind, shown.files)}
+          badgeFor={(tool) => tool.id === recommended && <Badge variant="accent">Recomendado</Badge>}
+        />
         {count > 1 && <p className="text-caption font-normal text-fg-subtle">Para recortar, abra uma imagem de cada vez.</p>}
       </div>
     </BottomSheet>

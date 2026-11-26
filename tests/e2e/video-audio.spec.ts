@@ -108,9 +108,9 @@ test.describe('Extrair áudio', () => {
     expect(requests).toEqual([])
   })
 
-  test('o aviso de licença do LAME (gerador de MP3) está na página Sobre e o texto da licença abre', async ({ page, request }, testInfo) => {
+  test('o aviso de licença do LAME (gerador de MP3) está em Licenças de código aberto e o texto da licença abre', async ({ page, request }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'página estática: conferida uma vez')
-    await page.goto('/sobre')
+    await page.goto('/sobre/licencas')
     const license = page.getByRole('link', { name: 'licença LGPL' })
     await expect(license).toHaveAttribute('href', '/licencas/lame-lgpl.txt')
     await expect(page.getByRole('link', { name: 'lame.sourceforge.io' })).toHaveAttribute('href', 'https://lame.sourceforge.io')

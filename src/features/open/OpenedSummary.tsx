@@ -86,7 +86,7 @@ export function OpenedSummary({ opened }: { opened: OpenedMedia }) {
         {count > 1 && (
           <span
             aria-hidden="true"
-            className="absolute -right-1.5 -bottom-1.5 grid h-6 min-w-6 place-items-center rounded-full border-2 border-surface-2 bg-surface-3 px-1 text-xs font-semibold text-fg tabular-nums"
+            className="absolute -right-1.5 -bottom-1.5 grid h-6 min-w-6 place-items-center rounded-full border-2 border-surface-1 bg-surface-3 px-1 text-xs font-semibold text-fg tabular-nums"
           >
             {count}
           </span>

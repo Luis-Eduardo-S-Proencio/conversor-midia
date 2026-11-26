@@ -83,14 +83,14 @@ export function Dropzone({
       onDrop={handleDrop}
       data-dragover={dragging || undefined}
       className={cx(
-        // Visor de câmera: cantoneiras no lugar da borda tracejada; com o arquivo por cima, fecham no acento.
-        'viewfinder group grid min-h-52 content-center justify-items-center gap-3 rounded-xl px-5 py-8 text-center',
+        // Superfície plana com borda; com o arquivo por cima, o contorno fica no acento.
+        'drop-target group grid min-h-56 content-center justify-items-center gap-4 rounded-xl px-5 py-10 text-center',
         className,
       )}
     >
       <span
         aria-hidden="true"
-        className="grid size-12 place-items-center rounded-lg bg-surface-3 text-fg transition-[translate,color] duration-(--dur-2) group-data-dragover:-translate-y-1 group-data-dragover:text-accent"
+        className="grid size-14 place-items-center rounded-full bg-surface-3 text-fg transition-colors duration-(--dur-2) group-data-dragover:bg-accent-solid group-data-dragover:text-on-accent"
       >
         <Icon icon={Upload} size="lg" />
       </span>

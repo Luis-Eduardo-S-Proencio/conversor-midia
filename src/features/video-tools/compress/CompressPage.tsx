@@ -27,8 +27,7 @@ export function CompressPage() {
   return (
     <VideoToolPage
       title="Comprimir vídeo"
-      adjustables={['Nível', 'Ou ajuste para enviar por']}
-      description="Diminua o tamanho do vídeo para enviar ou guardar. MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
+      description="Diminua o tamanho do vídeo para enviar ou guardar."
       labels={COMPRESS_LABELS}
       actionIcon={Minimize2}
       tool={tool}

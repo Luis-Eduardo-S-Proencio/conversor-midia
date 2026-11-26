@@ -1,13 +1,22 @@
-import type { Locator, Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
+
+const SHEET_TITLE = { image: 'Ferramentas de imagem', video: 'Ferramentas de vídeo' } as const
 
 /**
- * Link de troca de ferramenta: abaixo de 1024 px, a fileira de chips da própria ferramenta (nome curto);
- * a partir de 1024 px, a lista de ferramentas da barra lateral (nome completo, que diferencia
- * "Converter imagem" de "Converter vídeo").
+ * Troca de ferramenta: abre "Outras ferramentas" (na barra da ferramenta, em qualquer largura) e devolve
+ * o link da ferramenta pelo nome completo, que diferencia "Converter imagem" de "Converter vídeo".
  */
-export function toolLink(page: Page, media: 'image' | 'video', chip: string, title: string): Locator {
-  const wide = (page.viewportSize()?.width ?? 0) >= 1024
-  if (wide) return page.getByRole('navigation', { name: 'Ferramentas' }).getByRole('link', { name: title, exact: true })
-  const row = media === 'image' ? 'Ferramentas de imagem' : 'Ferramentas de vídeo'
-  return page.getByRole('navigation', { name: row }).getByRole('link', { name: chip, exact: true })
+export async function toolLink(page: Page, media: 'image' | 'video', title: string): Promise<Locator> {
+  const name = SHEET_TITLE[media]
+  const sheet = page.getByRole('dialog', { name })
+  if (!(await sheet.isVisible())) await page.getByRole('button', { name: 'Outras ferramentas' }).click()
+  await expect(sheet).toBeVisible()
+  return sheet.getByRole('navigation', { name }).getByRole('link', { name: new RegExp(`^${title}`) })
+}
+
+/** Fecha o painel "Outras ferramentas" sem trocar de ferramenta. */
+export async function closeToolSheet(page: Page, media: 'image' | 'video'): Promise<void> {
+  const sheet = page.getByRole('dialog', { name: SHEET_TITLE[media] })
+  await sheet.getByRole('button', { name: 'Fechar' }).click()
+  await expect(sheet).toBeHidden()
 }

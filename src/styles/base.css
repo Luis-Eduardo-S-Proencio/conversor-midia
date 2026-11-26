@@ -6,33 +6,25 @@
   html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    /*
-     * Grão sutilíssimo só no fundo da página, nunca por cima da mídia. É um arquivo do próprio
-     * site: a CSP (img-src 'self' blob:) não permite imagens em data:.
-     */
     background-color: var(--color-bg);
-    background-image: url("/grain.svg");
-    background-size: 160px 160px;
     /* Âncoras e foco não ficam escondidos sob o cabeçalho fixo */
     scroll-padding-top: calc(var(--header-h) + env(safe-area-inset-top) + 8px);
   }
 
   body {
-    /* Sem fundo próprio: o do html (com o grão) aparece por trás de tudo. */
+    background-color: var(--color-bg);
     color: var(--color-fg);
     font-family: var(--font-sans);
+    /* Inter: "a" e "l" mais legíveis em tamanhos pequenos (cv05, cv11) */
+    font-feature-settings: "cv05", "cv11";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Títulos com a fonte de personalidade; parágrafos sem viúvas. */
+  /* Títulos sem palavra sozinha na última linha; parágrafos sem viúvas. */
   h1,
-  h2 {
-    font-family: var(--font-display);
-    text-wrap: balance;
-  }
-
+  h2,
   h3 {
     text-wrap: balance;
   }
@@ -75,39 +67,22 @@
   background: repeating-conic-gradient(var(--color-checker-a) 0 25%, var(--color-checker-b) 0 50%) 0 0 / 16px 16px;
 }
 
-/* Degradê da marca (violeta → rosa): só o logo e, no máximo, o botão de exportar. */
+/* Degradê da marca (violeta → rosa): só no símbolo do logo. */
 @utility bg-brand {
   background-image: linear-gradient(135deg, var(--color-brand-start), var(--color-brand-end));
 }
 
-/*
- * Texto em degradê. Proibido no redesenho: sai do Início na fase das telas.
- * No alto contraste do Windows o fundo some, então o texto volta a ter cor própria.
- */
-@utility text-brand {
-  background-image: linear-gradient(90deg, var(--color-brand-start), var(--color-brand-end));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-
-  @media (forced-colors: active) {
-    background-image: none;
-    color: CanvasText;
-  }
-}
-
-/* Cartão: grafite em camadas, borda hairline e luz vindo de cima. */
+/* Superfície plana: cinza sobre o preto, com uma borda hairline para definir o contorno. */
 @utility surface-card {
-  background: linear-gradient(180deg, var(--color-surface-2), var(--color-surface-1));
+  background: var(--color-surface-1);
   border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-1);
 }
 
-/* Cabeçalho que ganha vidro ao rolar (o componente liga com data-scrolled). */
+/* Cabeçalho que ganha fundo translúcido ao rolar (o componente liga com data-scrolled). */
 @utility glass-header {
-  background: color-mix(in srgb, var(--color-bg) 72%, transparent);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  backdrop-filter: blur(16px) saturate(140%);
+  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
 }
 
 /* Toque físico: o elemento afunda um pouco. */
@@ -157,42 +132,21 @@
 }
 
 /*
- * Visor de câmera: 4 cantoneiras em L no lugar da borda tracejada. Com data-dragover
- * (arquivo por cima), elas se fecham para o centro na cor do acento, como um foco.
+ * Área de soltar arquivo: superfície plana com borda; com o arquivo por cima (data-dragover),
+ * contorno no acento e um leve fundo rosado.
  */
-@utility viewfinder {
-  position: relative;
+@utility drop-target {
   background: var(--color-surface-1);
-  transition: background-color var(--dur-2) var(--ease-out);
-
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 12px;
-    pointer-events: none;
-    --c: var(--color-border-strong);
-    --l: 22px;
-    --w: 2px;
-    background:
-      linear-gradient(var(--c) 0 0) top left / var(--l) var(--w),
-      linear-gradient(var(--c) 0 0) top left / var(--w) var(--l),
-      linear-gradient(var(--c) 0 0) top right / var(--l) var(--w),
-      linear-gradient(var(--c) 0 0) top right / var(--w) var(--l),
-      linear-gradient(var(--c) 0 0) bottom left / var(--l) var(--w),
-      linear-gradient(var(--c) 0 0) bottom left / var(--w) var(--l),
-      linear-gradient(var(--c) 0 0) bottom right / var(--l) var(--w),
-      linear-gradient(var(--c) 0 0) bottom right / var(--w) var(--l);
-    background-repeat: no-repeat;
-    transition: inset var(--dur-2) var(--ease-out);
-  }
+  border: 1px solid var(--color-border-strong);
+  transition:
+    background-color var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out);
 
   &[data-dragover] {
-    background: color-mix(in oklab, var(--color-accent) 8%, var(--color-surface-1));
-  }
-
-  &[data-dragover]::before {
-    --c: var(--color-accent);
-    inset: 20px;
+    background: color-mix(in oklab, var(--color-accent) 7%, var(--color-surface-1));
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
   }
 
   @media (forced-colors: active) {
@@ -290,7 +244,8 @@
  */
 @layer components {
   .sheet-dialog,
-  .modal-dialog {
+  .modal-dialog,
+  .drawer-dialog {
     max-width: 100%;
     max-height: 100%;
     padding: 0;
@@ -301,19 +256,22 @@
   }
 
   .sheet-dialog::backdrop,
-  .modal-dialog::backdrop {
+  .modal-dialog::backdrop,
+  .drawer-dialog::backdrop {
     background: var(--color-scrim);
     transition: opacity var(--dur-2) var(--ease-out);
   }
 
   .sheet-dialog[data-closing]::backdrop,
-  .modal-dialog[data-closing]::backdrop {
+  .modal-dialog[data-closing]::backdrop,
+  .drawer-dialog[data-closing]::backdrop {
     opacity: 0;
   }
 
   @starting-style {
     .sheet-dialog[open]::backdrop,
-    .modal-dialog[open]::backdrop {
+    .modal-dialog[open]::backdrop,
+    .drawer-dialog[open]::backdrop {
       opacity: 0;
     }
   }
@@ -371,6 +329,30 @@
       scale: 0.96;
     }
   }
+
+  /* Menu (☰): gaveta que entra pela esquerda, na altura toda da tela. */
+  .drawer-dialog {
+    inset: 0 auto 0 0;
+    width: min(20rem, 100% - 3.5rem);
+    height: 100%;
+    max-height: 100%;
+    margin: 0;
+  }
+
+  .drawer-panel {
+    transition: translate var(--dur-3) var(--ease-emph);
+  }
+
+  .drawer-dialog[data-closing] .drawer-panel {
+    translate: -100% 0;
+    transition: translate var(--dur-2) var(--ease-in);
+  }
+
+  @starting-style {
+    .drawer-dialog[open] .drawer-panel {
+      translate: -100% 0;
+    }
+  }
 }
 
 /* Dica de botão: aparece com um pequeno atraso ao passar o ponteiro (não pisca ao cruzar a barra). */
@@ -389,7 +371,7 @@
  * Troca de página com View Transitions (o roteador chama document.startViewTransition; sem suporte,
  * a troca é instantânea). A direção vem de data-nav no <html> (src/app/nav-direction.ts):
  * entrar mais fundo desliza da direita, voltar desliza da esquerda, trocar de aba só esmaece.
- * Cabeçalho, barra inferior, trilho e barra lateral têm nome próprio: ficam parados.
+ * Cabeçalho e barra inferior têm nome próprio: ficam parados.
  */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root) {
@@ -416,7 +398,6 @@
     animation-name: fade-in;
   }
 
-  /* O ícone da ferramenta "voa" do cartão até o título, com a curva de ênfase. */
   ::view-transition-group(*) {
     animation-duration: var(--dur-3);
     animation-timing-function: var(--ease-emph);

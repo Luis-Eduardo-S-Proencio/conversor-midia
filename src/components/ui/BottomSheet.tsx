@@ -100,7 +100,7 @@ export function BottomSheet({
       <div
         ref={panel}
         className={cx(
-          'sheet-panel flex max-h-[85dvh] w-full flex-col rounded-t-xl border border-b-0 border-border-strong bg-surface-2 text-fg shadow-sheet',
+          'sheet-panel flex max-h-[85dvh] w-full flex-col rounded-t-xl border border-b-0 border-border-strong bg-surface-1 text-fg shadow-sheet',
           'pb-[env(safe-area-inset-bottom)] md:mb-4 md:rounded-xl md:border-b md:pb-0',
           className,
         )}

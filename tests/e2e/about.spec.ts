@@ -2,16 +2,16 @@ import { expect, test } from '@playwright/test'
 import { expectNoAxeViolations } from './image-tool.ts'
 import { horizontalOverflow } from './video-tool.ts'
 
-// Sobre: app (versão, compartilhar), privacidade, limites, formatos, perguntas e créditos.
+// Sobre: app (versão, compartilhar), privacidade, formatos, limites e perguntas. Sem créditos e licenças,
+// que ficam numa página própria, ligada pelo rodapé do menu.
 
 test.describe('Sobre', () => {
   test('mostra o app com a versão, e as perguntas abrem e fecham', async ({ page }) => {
     await page.goto('/sobre')
     await expect(page.getByRole('heading', { level: 1, name: 'Sobre' })).toBeVisible()
     await expect(page.getByText(/^Versão \d+\.\d+\.\d+$/)).toBeVisible()
-    for (const section of ['Privacidade', 'Limites', 'Formatos', 'Perguntas frequentes', 'Créditos e licenças']) {
-      await expect(page.getByRole('heading', { level: 2, name: section })).toBeVisible()
-    }
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText(['Privacidade', 'Formatos', 'Limites', 'Perguntas frequentes'])
+    await expect(page.getByText(/Créditos|licença/i)).toHaveCount(0)
 
     const question = page.getByRole('button', { name: 'Meus arquivos vão para algum servidor?' })
     await expect(question).toHaveAttribute('aria-expanded', 'false')
@@ -34,13 +34,10 @@ test.describe('Sobre', () => {
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(new URL('/', page.url()).href)
   })
 
-  test('no computador, Privacidade e Limites ficam lado a lado', async ({ page }, testInfo) => {
-    test.skip(testInfo.project.name !== 'desktop', 'duas colunas só no computador')
+  test('formatos e limites vêm do que as ferramentas aceitam', async ({ page }) => {
     await page.goto('/sobre')
-    const privacy = await page.getByRole('region', { name: 'Privacidade' }).boundingBox()
-    const limits = await page.getByRole('region', { name: 'Limites' }).boundingBox()
-    if (!privacy || !limits) throw new Error('seções ausentes')
-    expect(Math.round(privacy.y)).toBe(Math.round(limits.y))
-    expect(limits.x).toBeGreaterThan(privacy.x + privacy.width - 1)
+    const formats = page.getByRole('region', { name: 'Formatos' })
+    await expect(formats.getByRole('definition').first()).toHaveText('JPG, PNG e WEBP')
+    await expect(page.getByRole('region', { name: 'Limites' }).getByText('até 1 GB, um por vez')).toBeVisible()
   })
 })

@@ -32,8 +32,7 @@ export function ResizePage() {
   return (
     <VideoToolPage
       title="Mudar resolução"
-      adjustables={['Resolução']}
-      description="Diminua a resolução do vídeo para 1080p, 720p, 480p ou 360p. MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
+      description="Diminua a resolução do vídeo para 1080p, 720p, 480p ou 360p."
       labels={RESIZE_LABELS}
       actionIcon={Scaling}
       tool={tool}

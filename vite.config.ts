@@ -19,12 +19,12 @@ function productionHeaders(): Record<string, string> {
   return Object.fromEntries((rule?.headers ?? []).map(({ key, value }) => [key, value]))
 }
 
-/** Arquivos das fontes usadas logo na primeira tela (texto e títulos), só o subconjunto latino. */
-const PRELOADED_FONTS = [/inter-latin-wght-normal-[\w-]+\.woff2$/, /bricolage-grotesque-latin-wght-normal-[\w-]+\.woff2$/]
+/** Arquivo da fonte usada logo na primeira tela, só o subconjunto latino. */
+const PRELOADED_FONTS = [/inter-latin-wght-normal-[\w-]+\.woff2$/]
 
 /**
- * Preload das duas fontes principais no index.html do build: o navegador as baixa junto com o
- * CSS, em vez de só descobrir que precisa delas depois de montar a página (o texto não "pula").
+ * Preload da fonte no index.html do build: o navegador a baixa junto com o CSS, em vez de só
+ * descobrir que precisa dela depois de montar a página (o texto não "pula").
  */
 function preloadFonts(): Plugin {
   return {

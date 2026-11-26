@@ -17,8 +17,7 @@ export function EditPage() {
   return (
     <VideoToolPage
       title="Editar vídeo"
-      adjustables={['Partes a tirar', 'Desfazer e refazer']}
-      description="Marque na barra as partes que não quer, exclua e veja na hora como fica. MP4, MOV ou WEBM; o vídeo não sai do seu dispositivo."
+      description="Marque na barra as partes que não quer, exclua e veja na hora como fica."
       labels={EDIT_LABELS}
       actionIcon={Save}
       tool={tool}

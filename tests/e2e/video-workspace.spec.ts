@@ -1,10 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
-import { toolLink } from './tool-nav.ts'
+import { closeToolSheet, toolLink } from './tool-nav.ts'
 import { fileInput } from './image-tool.ts'
 import { OPEN_TIMEOUT, UNSUPPORTED_DECODING, canDecodeVideo, videoFixture } from './video-tool.ts'
 
-// O editor de vídeo: trocar de ferramenta leva o vídeo aberto, sem escolher de novo.
-
+// O editor de vídeo: trocar de ferramenta ("Outras ferramentas") leva o vídeo aberto, sem escolher de novo.
 
 async function open(page: Page, path: string, heading: string) {
   await page.goto(path)
@@ -14,13 +13,13 @@ async function open(page: Page, path: string, heading: string) {
 test.describe('Editor de vídeo', () => {
   test('trocar de ferramenta leva o vídeo aberto, e a atual fica marcada', async ({ page }) => {
     await open(page, '/videos/converter', 'Converter vídeo')
-    await expect(toolLink(page, 'video', 'Converter', 'Converter vídeo')).toHaveAttribute('aria-current', 'page')
+    await expect(await toolLink(page, 'video', 'Converter vídeo')).toHaveAttribute('aria-current', 'page')
+    await closeToolSheet(page, 'video')
     await fileInput(page).setInputFiles(videoFixture('segundos.mp4'))
     await expect(page.getByRole('radiogroup', { name: 'Formato final' })).toBeVisible({ timeout: OPEN_TIMEOUT })
 
-    await toolLink(page, 'video', 'Áudio', 'Extrair áudio').click()
+    await (await toolLink(page, 'video', 'Extrair áudio')).click()
     await expect(page.getByRole('heading', { level: 1, name: 'Extrair áudio' })).toBeVisible()
-    await expect(toolLink(page, 'video', 'Áudio', 'Extrair áudio')).toHaveAttribute('aria-current', 'page')
     await expect(page.getByText('segundos.mp4', { exact: true }).first()).toBeVisible({ timeout: OPEN_TIMEOUT })
     await expect(page.getByRole('radiogroup', { name: 'Formato do áudio' })).toBeVisible({ timeout: OPEN_TIMEOUT })
   })
@@ -31,17 +30,17 @@ test.describe('Editor de vídeo', () => {
     await fileInput(page).setInputFiles(videoFixture('segundos.mp4'))
     await expect(page.getByLabel('Vídeo segundos.mp4, como está ficando')).toBeVisible({ timeout: OPEN_TIMEOUT })
 
-    await toolLink(page, 'video', 'GIF', 'Criar GIF').click()
+    await (await toolLink(page, 'video', 'Criar GIF')).click()
     await expect(page.getByRole('heading', { level: 1, name: 'Criar GIF' })).toBeVisible()
     await expect(page.getByText('segundos.mp4', { exact: true }).first()).toBeVisible({ timeout: OPEN_TIMEOUT })
 
-    await toolLink(page, 'video', 'Editar', 'Editar vídeo').click()
+    await (await toolLink(page, 'video', 'Editar vídeo')).click()
     await expect(page.getByLabel('Vídeo segundos.mp4, como está ficando')).toBeVisible({ timeout: OPEN_TIMEOUT })
   })
 
   test('sem vídeo aberto, trocar de ferramenta só muda de tela', async ({ page }) => {
     await open(page, '/videos/comprimir', 'Comprimir vídeo')
-    await toolLink(page, 'video', 'Recortar', 'Recortar vídeo').click()
+    await (await toolLink(page, 'video', 'Recortar vídeo')).click()
     await expect(page.getByRole('heading', { level: 1, name: 'Recortar vídeo' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'Selecionar vídeo' })).toBeVisible()
   })

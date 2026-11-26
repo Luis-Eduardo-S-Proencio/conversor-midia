@@ -1,4 +1,4 @@
-import { Film, House, Image as ImageIcon, Info, type LucideIcon } from 'lucide-react'
+import { Film, House, Image as ImageIcon, type LucideIcon } from 'lucide-react'
 
 export interface NavItem {
   to: string
@@ -8,16 +8,15 @@ export interface NavItem {
   end?: boolean
 }
 
-export const HOME_ITEM: NavItem = { to: '/', label: 'Início', icon: House, end: true }
-export const IMAGES_ITEM: NavItem = { to: '/imagens', label: 'Imagens', icon: ImageIcon }
-export const VIDEOS_ITEM: NavItem = { to: '/videos', label: 'Vídeos', icon: Film }
-export const ABOUT_ITEM: NavItem = { to: '/sobre', label: 'Sobre', icon: Info }
-
-/** Abas do celular e trilho do tablet: as mesmas quatro no navegador e no app instalado. */
-export const TAB_ITEMS: readonly NavItem[] = [HOME_ITEM, IMAGES_ITEM, VIDEOS_ITEM, ABOUT_ITEM]
-
-/** Topo da barra lateral do computador (o Sobre fica no rodapé dela, junto de "Instalar app"). */
-export const SIDEBAR_ITEMS: readonly NavItem[] = [HOME_ITEM, IMAGES_ITEM, VIDEOS_ITEM]
+/**
+ * Navegação principal, igual no navegador e no app instalado: abas embaixo no celular e links no
+ * cabeçalho a partir de 768 px. Sobre e Instalar ficam no menu (☰).
+ */
+export const TAB_ITEMS: readonly NavItem[] = [
+  { to: '/', label: 'Início', icon: House, end: true },
+  { to: '/imagens', label: 'Imagens', icon: ImageIcon },
+  { to: '/videos', label: 'Vídeos', icon: Film },
+]
 
 /**
  * Qual aba está ativa para um endereço: a de mesmo começo (as ferramentas ficam dentro de

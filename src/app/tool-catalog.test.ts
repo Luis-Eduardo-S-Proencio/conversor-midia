@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { IMAGE_TOOLS, RECOMMENDED_TOOL, TOOLS_BY_USAGE, VIDEO_TOOLS, switcherTools, toolByPath, toolsFor, toolsForOpened } from './tool-catalog'
+import { IMAGE_TOOLS, RECOMMENDED_TOOL, VIDEO_TOOLS, toolByPath, toolsFor, toolsForOpened } from './tool-catalog'
 
 describe('catálogo de ferramentas', () => {
   it('GIF fica na aba Vídeos, com rota própria', () => {
@@ -11,7 +11,7 @@ describe('catálogo de ferramentas', () => {
   it('Redimensionar imagem está disponível, com rota própria', () => {
     const resize = IMAGE_TOOLS.find((tool) => tool.id === 'image-resize')
     expect(resize?.to).toBe('/imagens/redimensionar')
-    expect(resize?.description).toBe('Em porcentagem ou pixels')
+    expect(resize?.description).toBe('Em porcentagem ou em pixels')
   })
 
   it('Girar e espelhar está disponível, com rota própria', () => {
@@ -24,25 +24,6 @@ describe('catálogo de ferramentas', () => {
 
   it('todas as ferramentas de imagem da primeira versão estão disponíveis', () => {
     expect(IMAGE_TOOLS.filter((tool) => !tool.to)).toEqual([])
-  })
-
-  it('a grade do início mostra cada ferramenta exatamente uma vez, da mais usada para a menos usada', () => {
-    const all = [...IMAGE_TOOLS, ...VIDEO_TOOLS].map((tool) => tool.id).sort()
-    expect(TOOLS_BY_USAGE.map((tool) => tool.id).sort()).toEqual(all)
-    expect(TOOLS_BY_USAGE.map((tool) => tool.title)).toEqual([
-      'Editar vídeo',
-      'Comprimir vídeo',
-      'Converter imagem',
-      'Extrair áudio',
-      'Comprimir imagem',
-      'Converter vídeo',
-      'Recortar imagem',
-      'Criar GIF',
-      'Redimensionar imagem',
-      'Mudar resolução',
-      'Recortar vídeo',
-      'Girar e espelhar',
-    ])
   })
 
   it('"O que fazer com este arquivo?": no vídeo, o editor primeiro; com várias imagens, só as de lote', () => {
@@ -60,13 +41,13 @@ describe('catálogo de ferramentas', () => {
     expect(toolsForOpened('image', 3).map((tool) => tool.id)).not.toContain('image-crop')
   })
 
-  it('a ferramenta de cada endereço, para o título e a barra lateral', () => {
+  it('a ferramenta de cada endereço, para o título e a troca de ferramenta', () => {
     expect(toolByPath('/videos/comprimir')?.title).toBe('Comprimir vídeo')
     expect(toolByPath('/videos')).toBeUndefined()
   })
 
-  it('a descrição cabe numa linha do cartão do computador', () => {
-    for (const tool of [...IMAGE_TOOLS, ...VIDEO_TOOLS]) expect(tool.description.length, tool.title).toBeLessThanOrEqual(26)
+  it('a descrição cabe numa linha da lista no celular de 360 px', () => {
+    for (const tool of [...IMAGE_TOOLS, ...VIDEO_TOOLS]) expect(tool.description.length, tool.title).toBeLessThanOrEqual(32)
   })
 
   it('cada ferramenta diz o tipo de arquivo que abre, e o tipo leva às ferramentas certas', () => {
@@ -74,18 +55,6 @@ describe('catálogo de ferramentas', () => {
     expect(VIDEO_TOOLS.every((tool) => tool.media === 'video' && tool.to.startsWith('/videos/'))).toBe(true)
     expect(toolsFor('image')).toBe(IMAGE_TOOLS)
     expect(toolsFor('video')).toBe(VIDEO_TOOLS)
-  })
-
-  it('a troca de ferramenta do editor usa uma palavra por ferramenta, na ordem do catálogo', () => {
-    expect(switcherTools('image').map((tool) => tool.label)).toEqual(['Converter', 'Comprimir', 'Tamanho', 'Recortar', 'Girar'])
-    expect(switcherTools('video').map((tool) => tool.label)).toEqual(['Editar', 'Recortar', 'Comprimir', 'Áudio', 'Resolução', 'Converter', 'GIF'])
-    expect(switcherTools('video').every((tool) => tool.to.startsWith('/videos/'))).toBe(true)
-  })
-
-  it('o nome curto do celular cabe em duas linhas da grade', () => {
-    for (const tool of [...IMAGE_TOOLS, ...VIDEO_TOOLS]) {
-      expect(tool.shortTitle.split(' ').every((word) => word.length <= 13), tool.shortTitle).toBe(true)
-    }
   })
 
   it('todas as ferramentas de vídeo planejadas estão disponíveis', () => {

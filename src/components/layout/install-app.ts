@@ -67,21 +67,16 @@ export function isAppleMobile(userAgent = navigator.userAgent, maxTouchPoints = 
 }
 
 /**
- * O que o botão "Instalar" faz aqui, ou `null` quando ele não deve aparecer:
- * - `prompt`: abre o pedido de instalação do navegador (Chrome, Edge, Samsung Internet);
- * - `guide`: no iPhone e no iPad, abre o passo a passo (Compartilhar → Adicionar à Tela de Início).
- * Em navegadores que não instalam (Firefox no computador) e no app já instalado, o botão some.
+ * Onde a pessoa está, para o passo a passo de instalar quando o navegador não abre o pedido sozinho:
+ * - `apple`: iPhone e iPad (Safari → Compartilhar → Adicionar à Tela de Início);
+ * - `android`: menu do navegador → Instalar app;
+ * - `desktop`: ícone de instalar na barra de endereço (Chrome, Edge) ou Adicionar ao Dock (Safari do Mac).
  */
-export type InstallOffer = 'prompt' | 'guide' | null
+export type InstallPlatform = 'apple' | 'android' | 'desktop'
 
-export function installOfferFor(mode: InstallMode, appleMobile: boolean): InstallOffer {
-  if (mode === 'installed') return null
-  if (mode === 'prompt') return 'prompt'
-  return appleMobile ? 'guide' : null
-}
-
-export function useInstallOffer(): InstallOffer {
-  return installOfferFor(useInstallMode(), isAppleMobile())
+export function installPlatform(userAgent = navigator.userAgent, maxTouchPoints = navigator.maxTouchPoints): InstallPlatform {
+  if (isAppleMobile(userAgent, maxTouchPoints)) return 'apple'
+  return /Android/i.test(userAgent) ? 'android' : 'desktop'
 }
 
 /**

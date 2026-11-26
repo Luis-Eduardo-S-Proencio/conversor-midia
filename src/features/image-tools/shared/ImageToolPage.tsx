@@ -1,15 +1,12 @@
 import { Eye, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
-import { useLocation } from 'react-router'
-import { switcherTools, toolByPath } from '../../../app/tool-catalog'
 import { ActionBar } from '../../../components/layout/ActionBar'
 import { TopAppBar } from '../../../components/layout/TopAppBar'
 import { saveBlob } from '../../../components/tool/download'
 import { Dropzone } from '../../../components/tool/Dropzone'
-import { ToolSwitcher } from '../../../components/tool/ToolSwitcher'
 import { LeaveGuard } from '../../../components/tool/LeaveGuard'
-import { OptionsPreview } from '../../../components/tool/OptionsPreview'
 import { PageDropOverlay } from '../../../components/tool/PageDropOverlay'
+import { ToolMenuButton } from '../../../components/tool/ToolMenuButton'
 import { useRemainingTime, useWakeLock } from '../../../components/tool/processing'
 import { usePageFileDrop } from '../../../components/tool/usePageFileDrop'
 import { Alert } from '../../../components/ui/Alert'
@@ -17,15 +14,13 @@ import { Button } from '../../../components/ui/Button'
 import type { Orientation } from '../../../core/image/orientation'
 import { supportsImageWorker } from '../../../workers/image-client'
 import { canReuse } from '../../open/reuse'
-import { handOffOpenFiles, useOpenFilesSource } from '../../shared/file-handoff'
+import { useOpenFilesSource } from '../../shared/file-handoff'
 import { BatchActions } from './BatchActions'
 import { BatchFiles } from './BatchFiles'
 import { BatchResult } from './BatchResult'
 import type { BatchItem } from './batch-state'
 import { ACCEPTED_TYPES, type BatchLabels } from './constants'
 import type { ImageBatch } from './useImageBatch'
-
-const IMAGE_SWITCHER = switcherTools('image')
 
 
 interface ImageToolPageProps {
@@ -46,8 +41,6 @@ interface ImageToolPageProps {
   singleImage?: boolean
   /** Prévia própria da ferramenta para o arquivo único (ex.: a área de recorte). */
   renderPreview?: (item: BatchItem) => ReactNode
-  /** O que vai dar para ajustar, mostrado no painel desligado antes de abrir a imagem (computador). */
-  adjustables: readonly string[]
   /** Atalhos da própria ferramenta, embaixo da área de abrir (ex.: formatos do Converter). */
   shortcuts?: ReactNode
   /**
@@ -74,7 +67,6 @@ export function ImageToolPage({
   orientation,
   singleImage = false,
   renderPreview,
-  adjustables,
   shortcuts,
   overlayCompare = true,
 }: ImageToolPageProps) {
@@ -86,7 +78,6 @@ export function ImageToolPage({
   const compareRef = useRef<HTMLDivElement>(null)
   const focusPickerWhenEmpty = useRef(false)
   const supported = supportsImageWorker()
-  const currentTool = toolByPath(useLocation().pathname)
   const [onlyItem] = items
   const singleResult = items.length === 1 && onlyItem?.status === 'done' && Boolean(onlyItem.output?.url)
 
@@ -96,7 +87,7 @@ export function ImageToolPage({
   useWakeLock(busy)
   const progressShare = batch.progress ? batch.progress.completed / batch.progress.total : undefined
   const remaining = useRemainingTime(progressShare, busy)
-  // Indo para outra ferramenta de imagem (fileira de troca ou barra lateral), as imagens abertas vão junto.
+  // Indo para outra ferramenta de imagem ("Outras ferramentas"), as imagens abertas vão junto.
   useOpenFilesSource('image', batch.getOriginalFiles)
 
   // Ao terminar, leva o foco ao resultado, onde estão os botões de download.
@@ -159,17 +150,10 @@ export function ImageToolPage({
   return (
     <>
       <title>{`${title} · Media Tools`}</title>
-      <TopAppBar title={title} backTo="/imagens" tool={currentTool} />
-      {/* Prévia e painel de opções lado a lado a partir de 1024 px; a troca de ferramenta (chips) fica no celular e no tablet. */}
+      <TopAppBar title={title} backTo="/imagens" actions={<ToolMenuButton media="image" />} />
+      {/* Prévia e painel de opções lado a lado a partir de 1024 px. */}
       <div className="mx-auto grid w-full max-w-editor gap-4 px-(--gutter) pt-2 pb-6 lg:grid-cols-[minmax(0,1fr)_var(--panel-w)] lg:gap-x-6">
         <p className="max-w-text text-secondary text-fg-muted lg:col-span-2">{description}</p>
-
-        <ToolSwitcher
-          label="Ferramentas de imagem"
-          tools={IMAGE_SWITCHER}
-          onSwitch={() => handOffOpenFiles('image')}
-          className="lg:hidden"
-        />
 
         {!supported ? (
           <div className="lg:col-span-2">
@@ -179,29 +163,20 @@ export function ImageToolPage({
             </Alert>
           </div>
         ) : items.length === 0 ? (
-          <>
-            {/* Vazio: área de abrir do tamanho do conteúdo e, no computador, o painel de opções já visível (desligado). */}
-            <div className="grid min-w-0 content-start gap-4">
-              <Dropzone
-                buttonRef={pickerButton}
-                accept={ACCEPTED_TYPES}
-                onFiles={batch.addFiles}
-                multiple={!singleImage}
-                buttonLabel={singleImage ? 'Selecionar imagem' : 'Selecionar imagens'}
-                dragLabel={singleImage ? 'Arraste uma imagem para cá' : 'Arraste imagens para cá'}
-                hint={singleImage ? 'JPG, PNG ou WEBP · até 50 MB' : 'JPG, PNG ou WEBP · até 50 MB por arquivo · até 20 arquivos'}
-                className="lg:min-h-96"
-              />
-              {shortcuts}
-            </div>
-            <OptionsPreview
-              adjustables={adjustables}
-              subject={singleImage ? 'uma imagem' : 'as imagens'}
-              actionLabel={labels.action}
-              actionIcon={actionIcon}
-              className="hidden lg:grid"
+          // Vazio: só a área de abrir (a largura toda) e, embaixo, os atalhos da ferramenta.
+          <div className="grid min-w-0 content-start gap-5 lg:col-span-2">
+            <Dropzone
+              buttonRef={pickerButton}
+              accept={ACCEPTED_TYPES}
+              onFiles={batch.addFiles}
+              multiple={!singleImage}
+              buttonLabel={singleImage ? 'Selecionar imagem' : 'Selecionar imagens'}
+              dragLabel={singleImage ? 'Arraste uma imagem para cá' : 'Arraste imagens para cá'}
+              hint={singleImage ? 'JPG, PNG ou WEBP, até 50 MB' : 'JPG, PNG ou WEBP, até 50 MB cada e até 20 de uma vez'}
+              className="lg:min-h-80"
             />
-          </>
+            {shortcuts}
+          </div>
         ) : (
           <>
             <div className="min-w-0 rounded-xl bg-stage p-3 sm:p-4">

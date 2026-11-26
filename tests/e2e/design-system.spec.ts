@@ -42,13 +42,11 @@ test.describe('vitrine de componentes', () => {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex')
   })
 
-  test('mostra as duas variantes de acento lado a lado', async ({ page }) => {
+  test('um acento só: o botão principal no rosa da marca', async ({ page }) => {
     await page.goto('/_design')
-    const pink = page.getByRole('button', { name: 'Baixar' }).first()
-    const violet = page.locator('[data-accent="violet"]').getByRole('button', { name: 'Baixar' })
-    const background = (locator: typeof pink) => locator.evaluate((element) => getComputedStyle(element).backgroundColor)
-    expect(await background(pink)).toBe('rgb(214, 36, 102)') // #D62466
-    expect(await background(violet)).toBe('rgb(109, 74, 255)') // #6D4AFF
+    const primary = page.getByRole('button', { name: 'Converter' }).first()
+    expect(await primary.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgb(214, 36, 102)') // #D62466
+    await expect(page.locator('[data-accent]')).toHaveCount(0)
   })
 
   test('painel de baixo abre, aplica e fecha com o voltar do navegador', async ({ page }) => {

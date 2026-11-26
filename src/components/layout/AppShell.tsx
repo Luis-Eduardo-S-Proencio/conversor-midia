@@ -2,11 +2,9 @@ import { useEffect, useRef } from 'react'
 import { Outlet, ScrollRestoration, useLocation, useMatches } from 'react-router'
 import { cx } from '../ui/cx'
 import { ToastProvider } from '../ui/Toast'
+import { AppHeader } from './AppHeader'
 import { BottomNav } from './BottomNav'
-import { NavRail } from './NavRail'
-import { RootHeader } from './RootHeader'
 import { layoutOf } from './route-handle'
-import { Sidebar } from './Sidebar'
 
 function SkipLink() {
   return (
@@ -21,12 +19,10 @@ function SkipLink() {
 
 /**
  * Estrutura comum a todas as telas, conforme o layout da rota (`handle.layout`):
- * - celular: cabeçalho com a marca nas telas raiz, abas embaixo (Início, Imagens, Vídeos, Sobre),
- *   escondidas nas ferramentas (modo foco);
- * - tablet: trilho de 72 px com as mesmas abas;
- * - computador: barra lateral com as ferramentas agrupadas;
+ * - telas raiz (Início, Imagens, Vídeos): cabeçalho com o menu (☰) e a marca; no celular, abas embaixo;
+ *   a partir de 768 px, a navegação fica no próprio cabeçalho;
+ * - telas internas (ferramentas, Sobre): só a barra superior da própria tela (TopAppBar), com voltar;
  * - editor: tela cheia, sem nenhuma barra do site.
- * As telas internas trazem a própria barra superior (TopAppBar), com voltar.
  * Ao trocar de página, o foco vai para o conteúdo principal, para o leitor de tela não ficar no menu.
  */
 export function AppShell() {
@@ -50,33 +46,29 @@ export function AppShell() {
     }
   }, [pathname, hash])
 
-  const chrome = layout !== 'editor'
-  const tabs = layout === 'root' || layout === 'page'
+  const root = layout === 'root'
   return (
     <div
       className={cx(
-        'min-h-dvh md:flex',
+        'min-h-dvh',
         // Avisos acima da barra inferior do celular, quando ela aparece.
-        tabs && 'max-md:[--toast-lift:var(--bottomnav-h)]',
+        root && 'max-md:[--toast-lift:var(--bottomnav-h)]',
       )}
     >
       <ToastProvider>
         <SkipLink />
-        {chrome && <NavRail />}
-        {chrome && <Sidebar />}
         <div
           className={cx(
-            'flex min-h-dvh min-w-0 flex-1 flex-col pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]',
-            chrome && 'md:pl-0',
-            tabs && 'max-md:pb-[calc(var(--bottomnav-h)+env(safe-area-inset-bottom))]',
+            'flex min-h-dvh min-w-0 flex-col pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]',
+            root && 'max-md:pb-[calc(var(--bottomnav-h)+env(safe-area-inset-bottom))]',
           )}
         >
-          {layout === 'root' && <RootHeader />}
+          {root && <AppHeader />}
           <main id="conteudo" ref={mainRef} tabIndex={-1} className="flex-1 focus:outline-none">
             <Outlet />
           </main>
         </div>
-        {tabs && <BottomNav />}
+        {root && <BottomNav />}
         <ScrollRestoration />
       </ToastProvider>
     </div>

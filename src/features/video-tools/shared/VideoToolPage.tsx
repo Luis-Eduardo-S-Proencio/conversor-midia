@@ -1,7 +1,5 @@
 import { CircleCheck, Download, Eye, Headphones, RefreshCw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
-import { useLocation } from 'react-router'
-import { switcherTools, toolByPath } from '../../../app/tool-catalog'
 import { ActionBar } from '../../../components/layout/ActionBar'
 import { TopAppBar } from '../../../components/layout/TopAppBar'
 import { CompareView } from '../../../components/tool/CompareView'
@@ -10,11 +8,10 @@ import { saveBlob } from '../../../components/tool/download'
 import { Dropzone } from '../../../components/tool/Dropzone'
 import { FileListItem, type FileItemState, type MessageTone } from '../../../components/tool/FileListItem'
 import { FilePickerButton } from '../../../components/tool/FilePickerButton'
-import { ToolSwitcher } from '../../../components/tool/ToolSwitcher'
 import { ResultSummary } from '../../../components/tool/ResultSummary'
 import { LeaveGuard } from '../../../components/tool/LeaveGuard'
-import { OptionsPreview } from '../../../components/tool/OptionsPreview'
 import { PageDropOverlay } from '../../../components/tool/PageDropOverlay'
+import { ToolMenuButton } from '../../../components/tool/ToolMenuButton'
 import { useRemainingTime, useWakeLock } from '../../../components/tool/processing'
 import { usePageFileDrop } from '../../../components/tool/usePageFileDrop'
 import { Alert } from '../../../components/ui/Alert'
@@ -23,12 +20,10 @@ import { Icon } from '../../../components/ui/Icon'
 import { formatBytes } from '../../../core/format'
 import { ACCEPTED_VIDEO_TYPES } from '../../../core/video/formats'
 import { supportsVideoWorker } from '../../../workers/video-client'
-import { handOffOpenFiles, useOpenFilesSource } from '../../shared/file-handoff'
+import { useOpenFilesSource } from '../../shared/file-handoff'
 import { VideoActions } from './VideoActions'
 import { outputTexts, purposeOf, type VideoTool, type VideoToolLabels, type VideoToolState } from './useVideoTool'
 import { videoMetaItems } from './video-meta'
-
-const VIDEO_SWITCHER = switcherTools('video')
 
 
 interface ItemView {
@@ -69,8 +64,6 @@ interface VideoToolPageProps {
   /** A ferramenta consegue processar este vídeo neste navegador e com estas opções disponíveis. */
   canStart: boolean
   onStart: () => void
-  /** O que vai dar para ajustar, mostrado no painel desligado antes de abrir o vídeo (computador). */
-  adjustables: readonly string[]
   /** Atalhos da própria ferramenta, embaixo da área de abrir (ex.: destinos do Comprimir). */
   shortcuts?: ReactNode
 }
@@ -90,7 +83,6 @@ export function VideoToolPage({
   resultDetails,
   canStart,
   onStart,
-  adjustables,
   shortcuts,
 }: VideoToolPageProps) {
   const { state } = tool
@@ -101,7 +93,6 @@ export function VideoToolPage({
   const compareRef = useRef<HTMLDivElement>(null)
   const focusPickerWhenEmpty = useRef(false)
   const supported = supportsVideoWorker()
-  const currentTool = toolByPath(useLocation().pathname)
   const texts = outputTexts(labels)
   const ResultMedia = labels.output === 'audio' ? ResultAudio : labels.output === 'gif' ? ResultGif : ResultVideo
   const busy = state.phase === 'processing'
@@ -111,7 +102,7 @@ export function VideoToolPage({
   // Processando: a tela fica acesa, o tempo que falta aparece e sair pede confirmação.
   useWakeLock(busy)
   const remaining = useRemainingTime(busy ? state.progress : undefined, busy)
-  // Indo para outra ferramenta de vídeo (fileira de troca ou barra lateral), o vídeo aberto vai junto.
+  // Indo para outra ferramenta de vídeo ("Outras ferramentas"), o vídeo aberto vai junto.
   useOpenFilesSource('video', () => {
     const source = tool.getSourceFile()
     return source ? [source] : []
@@ -167,17 +158,10 @@ export function VideoToolPage({
   return (
     <>
       <title>{`${title} · Media Tools`}</title>
-      <TopAppBar title={title} backTo="/videos" tool={currentTool} />
-      {/* Prévia e painel de opções lado a lado a partir de 1024 px; a troca de ferramenta (chips) fica no celular e no tablet. */}
+      <TopAppBar title={title} backTo="/videos" actions={<ToolMenuButton media="video" />} />
+      {/* Prévia e painel de opções lado a lado a partir de 1024 px. */}
       <div className="mx-auto grid w-full max-w-editor gap-4 px-(--gutter) pt-2 pb-6 lg:grid-cols-[minmax(0,1fr)_var(--panel-w)] lg:gap-x-6">
         <p className="max-w-text text-secondary text-fg-muted lg:col-span-2">{description}</p>
-
-        <ToolSwitcher
-          label="Ferramentas de vídeo"
-          tools={VIDEO_SWITCHER}
-          onSwitch={() => handOffOpenFiles('video')}
-          className="lg:hidden"
-        />
 
         {!supported ? (
           <div className="lg:col-span-2">
@@ -187,23 +171,20 @@ export function VideoToolPage({
             </Alert>
           </div>
         ) : state.phase === 'empty' ? (
-          <>
-            {/* Vazio: área de abrir do tamanho do conteúdo e, no computador, o painel de opções já visível (desligado). */}
-            <div className="grid min-w-0 content-start gap-4">
-              <Dropzone
-                buttonRef={pickerButton}
-                accept={ACCEPTED_VIDEO_TYPES}
-                onFiles={tool.selectFiles}
-                multiple={false}
-                buttonLabel="Selecionar vídeo"
-                dragLabel="Arraste um vídeo para cá"
-                hint="MP4, MOV ou WEBM · até 1 GB"
-                className="lg:min-h-96"
-              />
-              {shortcuts}
-            </div>
-            <OptionsPreview adjustables={adjustables} subject="um vídeo" actionLabel={labels.action} actionIcon={actionIcon} className="hidden lg:grid" />
-          </>
+          // Vazio: só a área de abrir (a largura toda) e, embaixo, os atalhos da ferramenta.
+          <div className="grid min-w-0 content-start gap-5 lg:col-span-2">
+            <Dropzone
+              buttonRef={pickerButton}
+              accept={ACCEPTED_VIDEO_TYPES}
+              onFiles={tool.selectFiles}
+              multiple={false}
+              buttonLabel="Selecionar vídeo"
+              dragLabel="Arraste um vídeo para cá"
+              hint="MP4, MOV ou WEBM, até 1 GB"
+              className="lg:min-h-80"
+            />
+            {shortcuts}
+          </div>
         ) : (
           <>
             <div className="min-w-0 rounded-xl bg-stage p-3 sm:p-4">

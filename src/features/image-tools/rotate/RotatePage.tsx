@@ -11,9 +11,8 @@ export function RotatePage() {
   return (
     <ImageToolPage
       title="Girar e espelhar"
-      adjustables={['Girar 90°', 'Espelhar']}
       overlayCompare={false}
-      description="Gire em 90° e espelhe imagens JPG, PNG e WEBP, uma ou várias de uma vez. As imagens não saem do seu dispositivo."
+      description="Gire em 90° e espelhe fotos, uma ou várias de uma vez."
       labels={ROTATE_LABELS}
       actionIcon={RotateCw}
       batch={tool.batch}

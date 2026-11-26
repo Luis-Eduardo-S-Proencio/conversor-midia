@@ -3,8 +3,8 @@ import { useId, useState, type ReactNode } from 'react'
 import { IMAGE_TOOLS, VIDEO_TOOLS, switcherTools } from '../app/tool-catalog'
 import { Logo, LogoMark } from '../components/brand/Logo'
 import { ActionBar } from '../components/layout/ActionBar'
-import { AppMenu } from '../components/layout/AppMenu'
 import { Container } from '../components/layout/Container'
+import { TopAppBar } from '../components/layout/TopAppBar'
 import { DownloadActions } from '../components/tool/DownloadActions'
 import { Dropzone } from '../components/tool/Dropzone'
 import { FileInfo } from '../components/tool/FileInfo'
@@ -312,9 +312,9 @@ export function DesignPage() {
     <>
       <title>Design System · Media Tools</title>
       <meta name="robots" content="noindex" />
-      <Container className="grid grid-cols-1 gap-12 py-10 md:gap-14 md:py-14">
+      <TopAppBar title="Design System" backTo="/" />
+      <Container className="grid grid-cols-1 gap-12 pt-4 pb-10 md:gap-14 md:pb-14">
         <header className="grid gap-2">
-          <h1 className="text-title">Design System</h1>
           <p className="max-w-text text-body text-fg-muted">
             Vitrine interna dos tokens e componentes do Media Tools, fora da navegação. Regras de uso em docs/design-system.md.
           </p>
@@ -659,10 +659,7 @@ export function DesignPage() {
             </Card>
             <Card className="grid content-start gap-4">
               <ToolSwitcher label="Troca de ferramenta (exemplo)" tools={switcherTools('image')} onSwitch={() => {}} />
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-secondary text-fg-muted">Menu do cabeçalho do celular (sai na fase de navegação).</p>
-                <AppMenu />
-              </div>
+
             </Card>
           </div>
           <ActionBar>

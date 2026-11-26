@@ -28,6 +28,40 @@ export function clearHandOff(files: readonly File[]): void {
   if (pending?.files === files) pending = null
 }
 
+interface OpenFilesSource {
+  kind: MediaKind
+  getFiles: () => readonly File[]
+}
+
+/** A ferramenta aberta agora e como obter os arquivos (originais) que estão nela. */
+let openSource: OpenFilesSource | null = null
+
+/**
+ * A ferramenta informa enquanto está aberta como obter os arquivos que estão nela, para que
+ * qualquer caminho até outra ferramenta (troca de ferramenta, barra lateral) os leve junto.
+ */
+export function useOpenFilesSource(kind: MediaKind, getFiles: () => readonly File[]): void {
+  const getFilesRef = useRef(getFiles)
+  useLayoutEffect(() => {
+    getFilesRef.current = getFiles
+  })
+
+  useEffect(() => {
+    const source: OpenFilesSource = { kind, getFiles: () => getFilesRef.current() }
+    openSource = source
+    return () => {
+      if (openSource === source) openSource = null
+    }
+  }, [kind])
+}
+
+/** Indo para outra ferramenta: leva os arquivos abertos, se ela abre o mesmo tipo de arquivo. */
+export function handOffOpenFiles(targetKind: MediaKind): void {
+  if (openSource?.kind !== targetKind) return
+  const files = openSource.getFiles()
+  if (files.length > 0) handOffFiles(targetKind, files)
+}
+
 /**
  * Recebe na ferramenta os arquivos entregues por outra tela.
  * No modo estrito do React a montagem se repete (monta, desmonta, monta): por isso os arquivos só

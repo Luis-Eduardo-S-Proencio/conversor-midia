@@ -3,19 +3,35 @@ import { Outlet, ScrollRestoration, useLocation, useMatches } from 'react-router
 import { cx } from '../ui/cx'
 import { ToastProvider } from '../ui/Toast'
 import { BottomNav } from './BottomNav'
-import { Footer } from './Footer'
-import { MobileHeader } from './MobileHeader'
-import { isRouteHandle } from './route-handle'
-import { SideNav } from './SideNav'
+import { NavRail } from './NavRail'
+import { RootHeader } from './RootHeader'
+import { layoutOf } from './route-handle'
+import { Sidebar } from './Sidebar'
+
+function SkipLink() {
+  return (
+    <a
+      href="#conteudo"
+      className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-surface-2 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-fg"
+    >
+      Pular para o conteúdo
+    </a>
+  )
+}
 
 /**
- * Estrutura comum a todas as páginas: barra lateral a partir de 768 px; no celular, cabeçalho
- * com a marca e abas embaixo. Ao trocar de página, o foco vai para o conteúdo principal,
- * para o leitor de tela não ficar no menu.
+ * Estrutura comum a todas as telas, conforme o layout da rota (`handle.layout`):
+ * - celular: cabeçalho com a marca nas telas raiz, abas embaixo (Início, Imagens, Vídeos, Sobre),
+ *   escondidas nas ferramentas (modo foco);
+ * - tablet: trilho de 72 px com as mesmas abas;
+ * - computador: barra lateral com as ferramentas agrupadas;
+ * - editor: tela cheia, sem nenhuma barra do site.
+ * As telas internas trazem a própria barra superior (TopAppBar), com voltar.
+ * Ao trocar de página, o foco vai para o conteúdo principal, para o leitor de tela não ficar no menu.
  */
 export function AppShell() {
   const { pathname, hash } = useLocation()
-  const editor = useMatches().some((match) => isRouteHandle(match.handle) && match.handle.editor)
+  const layout = layoutOf(useMatches().map((match) => match.handle))
   const mainRef = useRef<HTMLElement>(null)
   const previousLocation = useRef(pathname + hash)
 
@@ -34,37 +50,34 @@ export function AppShell() {
     }
   }, [pathname, hash])
 
+  const chrome = layout !== 'editor'
+  const tabs = layout === 'root' || layout === 'page'
   return (
     <div
       className={cx(
-        'min-h-dvh pr-[env(safe-area-inset-right)] md:flex',
+        'min-h-dvh md:flex',
         // Avisos acima da barra inferior do celular, quando ela aparece.
-        !editor && 'max-md:[--toast-lift:var(--bottomnav-h)]',
+        tabs && 'max-md:[--toast-lift:var(--bottomnav-h)]',
       )}
     >
       <ToastProvider>
-      <a
-        href="#conteudo"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-surface-2 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-fg"
-      >
-        Pular para o conteúdo
-      </a>
-      <SideNav compact={editor} />
-      <div
-        className={cx(
-          'flex min-h-dvh min-w-0 flex-1 flex-col pl-[env(safe-area-inset-left)] md:pl-0',
-          !editor && 'pb-[calc(var(--bottomnav-h)+env(safe-area-inset-bottom))] md:pb-0',
-        )}
-      >
-        <MobileHeader />
-        <main id="conteudo" ref={mainRef} tabIndex={-1} className="flex-1 focus:outline-none">
-          <Outlet />
-        </main>
-        {/* Nos editores, a tela é da ferramenta (como num app); o caminho de volta fica no alto. */}
-        {!editor && <Footer />}
-      </div>
-      {!editor && <BottomNav />}
-      <ScrollRestoration />
+        <SkipLink />
+        {chrome && <NavRail />}
+        {chrome && <Sidebar />}
+        <div
+          className={cx(
+            'flex min-h-dvh min-w-0 flex-1 flex-col pr-[env(safe-area-inset-right)] pl-[env(safe-area-inset-left)]',
+            chrome && 'md:pl-0',
+            tabs && 'max-md:pb-[calc(var(--bottomnav-h)+env(safe-area-inset-bottom))]',
+          )}
+        >
+          {layout === 'root' && <RootHeader />}
+          <main id="conteudo" ref={mainRef} tabIndex={-1} className="flex-1 focus:outline-none">
+            <Outlet />
+          </main>
+        </div>
+        {tabs && <BottomNav />}
+        <ScrollRestoration />
       </ToastProvider>
     </div>
   )

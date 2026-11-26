@@ -389,3 +389,89 @@
     translate: 0 -2px;
   }
 }
+
+/*
+ * Troca de página com View Transitions (o roteador chama document.startViewTransition; sem suporte,
+ * a troca é instantânea). A direção vem de data-nav no <html> (src/app/nav-direction.ts):
+ * entrar mais fundo desliza da direita, voltar desliza da esquerda, trocar de aba só esmaece.
+ * Cabeçalho, barra inferior, trilho e barra lateral têm nome próprio: ficam parados.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: var(--dur-2) var(--ease-in) both page-out;
+  }
+
+  ::view-transition-new(root) {
+    animation: var(--dur-3) var(--ease-out) both page-in;
+  }
+
+  html[data-nav="back"]::view-transition-old(root) {
+    animation-name: page-out-back;
+  }
+
+  html[data-nav="back"]::view-transition-new(root) {
+    animation-name: page-in-back;
+  }
+
+  html[data-nav="tab"]::view-transition-old(root) {
+    animation-name: fade-out;
+  }
+
+  html[data-nav="tab"]::view-transition-new(root) {
+    animation-name: fade-in;
+  }
+
+  /* O ícone da ferramenta "voa" do cartão até o título, com a curva de ênfase. */
+  ::view-transition-group(*) {
+    animation-duration: var(--dur-3);
+    animation-timing-function: var(--ease-emph);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes page-out-back {
+  to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@keyframes page-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}

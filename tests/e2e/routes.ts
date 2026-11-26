@@ -3,7 +3,7 @@ export const PUBLIC_ROUTES = [
   { path: '/', heading: 'Edite fotos e vídeos direto no navegador' },
   { path: '/imagens', heading: 'Ferramentas de imagem' },
   { path: '/videos', heading: 'Ferramentas de vídeo' },
-  { path: '/sobre', heading: 'Sobre o Media Tools' },
+  { path: '/sobre', heading: 'Sobre' },
   { path: '/imagens/converter', heading: 'Converter imagem' },
   { path: '/imagens/comprimir', heading: 'Comprimir imagem' },
   { path: '/imagens/redimensionar', heading: 'Redimensionar imagem' },

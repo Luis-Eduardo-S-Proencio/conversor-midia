@@ -61,6 +61,29 @@ export function useInstallMode(): InstallMode {
   return useSyncExternalStore(subscribe, currentMode)
 }
 
+/** iPhone ou iPad (o iPadOS se apresenta como Mac, mas tem toque). Lá não existe pedido de instalação. */
+export function isAppleMobile(userAgent = navigator.userAgent, maxTouchPoints = navigator.maxTouchPoints): boolean {
+  return /iPhone|iPad|iPod/.test(userAgent) || (/Macintosh/.test(userAgent) && maxTouchPoints > 1)
+}
+
+/**
+ * O que o botão "Instalar" faz aqui, ou `null` quando ele não deve aparecer:
+ * - `prompt`: abre o pedido de instalação do navegador (Chrome, Edge, Samsung Internet);
+ * - `guide`: no iPhone e no iPad, abre o passo a passo (Compartilhar → Adicionar à Tela de Início).
+ * Em navegadores que não instalam (Firefox no computador) e no app já instalado, o botão some.
+ */
+export type InstallOffer = 'prompt' | 'guide' | null
+
+export function installOfferFor(mode: InstallMode, appleMobile: boolean): InstallOffer {
+  if (mode === 'installed') return null
+  if (mode === 'prompt') return 'prompt'
+  return appleMobile ? 'guide' : null
+}
+
+export function useInstallOffer(): InstallOffer {
+  return installOfferFor(useInstallMode(), isAppleMobile())
+}
+
 /**
  * Abre o pedido de instalação do navegador. Chame direto no toque ou clique (o navegador exige um gesto)
  * e só com o modo `prompt`. Cada evento abre o pedido uma vez: recusado, o modo passa a `manual` até o

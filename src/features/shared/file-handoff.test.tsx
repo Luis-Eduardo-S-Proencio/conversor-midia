@@ -2,7 +2,7 @@ import { StrictMode, useState } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { render } from 'vitest-browser-react'
 import type { MediaKind } from '../../core/media-kind'
-import { clearHandOff, handOffFiles, peekHandOff, useHandedOffFiles } from './file-handoff'
+import { clearHandOff, handOffFiles, handOffOpenFiles, peekHandOff, useHandedOffFiles, useOpenFilesSource } from './file-handoff'
 
 /** Ferramenta de mentira: mostra os nomes recebidos e anota cada recebimento e cada desfazer. */
 function Receiver({ kind, log }: { kind: MediaKind; log: string[] }) {
@@ -63,6 +63,28 @@ describe('entrega de arquivos entre telas', () => {
     expect(peekHandOff('image')).toHaveLength(1)
 
     handOffFiles('image', [])
+    expect(peekHandOff('image')).toBeNull()
+  })
+
+  it('indo para outra ferramenta, os arquivos abertos vão junto, só se ela abre o mesmo tipo', async () => {
+    const photos = [new File(['a'], 'praia.jpg')]
+    function OpenTool() {
+      useOpenFilesSource('image', () => photos)
+      return <p>ferramenta de imagem aberta</p>
+    }
+    const screen = await render(<OpenTool />)
+
+    handOffOpenFiles('video') // ferramenta de vídeo: as fotos não servem
+    expect(peekHandOff('video')).toBeNull()
+    expect(peekHandOff('image')).toBeNull()
+
+    handOffOpenFiles('image')
+    expect(peekHandOff('image')?.map((file) => file.name)).toEqual(['praia.jpg'])
+
+    // Fechada a ferramenta, não há mais o que levar.
+    clearHandOff(peekHandOff('image') ?? [])
+    screen.unmount()
+    handOffOpenFiles('image')
     expect(peekHandOff('image')).toBeNull()
   })
 })

@@ -15,6 +15,7 @@ const TONES: Record<ToolTone, string> = {
 }
 
 const SIZES = {
+  sm: { box: 'size-8 rounded-sm', icon: 'sm', badge: 'size-4 -right-1 -bottom-1' },
   md: { box: 'size-10 rounded-md', icon: 'md', badge: 'size-4.5 -right-1 -bottom-1' },
   lg: { box: 'size-14 rounded-lg', icon: 'lg', badge: 'size-5.5 -right-1 -bottom-1' },
 } as const
@@ -30,14 +31,23 @@ interface ToolIconProps {
    * (Recortar imagem × Recortar vídeo), que usam o mesmo ícone.
    */
   media?: MediaKind
+  /**
+   * Nome de View Transition: o mesmo nome no cartão e no título da ferramenta faz o ícone "voar" de
+   * um para o outro na troca de página. Único por página.
+   */
+  transitionName?: string
   className?: string
 }
 
 /** Ícone de ferramenta num ladrilho da cor da categoria. Decorativo: o nome fica no texto ao lado. */
-export function ToolIcon({ icon, tone, size = 'md', media, className }: ToolIconProps) {
+export function ToolIcon({ icon, tone, size = 'md', media, transitionName, className }: ToolIconProps) {
   const dimensions = SIZES[size]
   return (
-    <span aria-hidden="true" className={cx('relative grid shrink-0 place-items-center', dimensions.box, TONES[tone], className)}>
+    <span
+      aria-hidden="true"
+      className={cx('relative grid shrink-0 place-items-center', dimensions.box, TONES[tone], className)}
+      style={transitionName ? { viewTransitionName: transitionName } : undefined}
+    >
       <Icon icon={icon} size={dimensions.icon} />
       {media && (
         <span

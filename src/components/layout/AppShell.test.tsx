@@ -1,9 +1,10 @@
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { page } from 'vitest/browser'
 import { render } from 'vitest-browser-react'
 import { AppShell } from './AppShell'
 import type { RouteHandle } from './route-handle'
+import { SIDEBAR_COLLAPSED_KEY } from './Sidebar'
 
 function renderShell(initialPath = '/') {
   const router = createMemoryRouter(
@@ -12,10 +13,11 @@ function renderShell(initialPath = '/') {
         path: '/',
         element: <AppShell />,
         children: [
-          { index: true, element: <h1>Página inicial</h1> },
-          { path: 'imagens', element: <h1>Imagens</h1> },
-          { path: 'sobre', element: <h1>Sobre o Media Tools</h1> },
-          { path: 'ferramenta', handle: { editor: true } satisfies RouteHandle, element: <h1>Ferramenta</h1> },
+          { index: true, handle: { layout: 'root' } satisfies RouteHandle, element: <h1>Página inicial</h1> },
+          { path: 'imagens', handle: { layout: 'root' } satisfies RouteHandle, element: <h1>Imagens</h1> },
+          { path: 'sobre', element: <h1>Sobre</h1> },
+          { path: 'imagens/converter', handle: { layout: 'tool' } satisfies RouteHandle, element: <h1>Converter imagem</h1> },
+          { path: 'editor', handle: { layout: 'editor' } satisfies RouteHandle, element: <h1>Editor</h1> },
         ],
       },
     ],
@@ -24,92 +26,134 @@ function renderShell(initialPath = '/') {
   return { router, screenPromise: render(<RouterProvider router={router} />) }
 }
 
+function linkTexts(nav: { getByRole: (role: 'link') => { elements: () => Element[] } }): string[] {
+  return nav
+    .getByRole('link')
+    .elements()
+    .map((link) => link.textContent?.trim() ?? '')
+}
+
+afterEach(() => {
+  localStorage.removeItem(SIDEBAR_COLLAPSED_KEY)
+})
+
 describe('AppShell no celular', () => {
-  it('mostra a barra inferior e marca a página atual', async () => {
+  it('telas raiz: cabeçalho com a marca e quatro abas, com a atual marcada', async () => {
     await page.viewport(390, 844)
     const { screenPromise } = renderShell('/imagens')
     const screen = await screenPromise
     const nav = screen.getByRole('navigation', { name: 'Principal' })
 
+    await expect.element(screen.getByRole('banner').getByRole('link', { name: 'Media Tools' })).toBeVisible()
     await expect.element(nav).toBeVisible()
+    expect(linkTexts(nav)).toEqual(['Início', 'Imagens', 'Vídeos', 'Sobre'])
     await expect.element(nav.getByRole('link', { name: 'Imagens' })).toHaveAttribute('aria-current', 'page')
     await expect.element(nav.getByRole('link', { name: 'Início' })).not.toHaveAttribute('aria-current')
-    expect(nav.getByRole('link').elements().map((link) => link.textContent)).toEqual(['Início', 'Imagens', 'Vídeos'])
-  })
-
-  it('o menu "Mais opções" do cabeçalho leva ao Sobre', async () => {
-    await page.viewport(390, 844)
-    const { router, screenPromise } = renderShell('/')
-    const screen = await screenPromise
-
-    await screen.getByRole('banner').getByRole('button', { name: 'Mais opções' }).click()
-    await screen.getByRole('link', { name: 'Sobre o Media Tools' }).click()
-    await expect.element(screen.getByRole('heading', { name: 'Sobre o Media Tools' })).toBeVisible()
-    expect(router.state.location.pathname).toBe('/sobre')
-  })
-
-  it('esconde a barra inferior em rotas de ferramenta', async () => {
-    await page.viewport(390, 844)
-    const { screenPromise } = renderShell('/ferramenta')
-    const screen = await screenPromise
-
-    await expect.element(screen.getByRole('heading', { name: 'Ferramenta' })).toBeVisible()
-    expect(screen.getByRole('navigation', { name: 'Principal' }).elements()).toHaveLength(0)
-  })
-})
-
-describe('AppShell no desktop', () => {
-  /** Largura da barra lateral, que envolve o menu principal. */
-  function sideWidth(nav: Element): number {
-    const bar = nav.parentElement
-    if (!bar) throw new Error('menu fora da barra lateral')
-    return bar.getBoundingClientRect().width
-  }
-
-  it('mostra o menu na barra lateral, à esquerda, em vez da barra inferior', async () => {
-    await page.viewport(1280, 800)
-    const { screenPromise } = renderShell('/')
-    const screen = await screenPromise
-    const navs = screen.getByRole('navigation', { name: 'Principal' })
-
-    expect(navs.elements()).toHaveLength(1)
-    await expect.element(navs.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
-    const nav = navs.element()
-    expect(nav.getBoundingClientRect().left).toBeLessThan(10)
-    expect(sideWidth(nav)).toBe(240)
-  })
-
-  it('a barra lateral leva a Início, Imagens e Vídeos; o Sobre fica no rodapé', async () => {
-    await page.viewport(1280, 800)
-    const { screenPromise } = renderShell('/')
-    const screen = await screenPromise
-    const nav = screen.getByRole('navigation', { name: 'Principal' })
-
-    await expect.element(nav).toBeVisible()
-    expect(nav.getByRole('link').elements().map((link) => link.textContent?.trim())).toEqual(['Início', 'Imagens', 'Vídeos'])
-    await expect.element(screen.getByRole('navigation', { name: 'Rodapé' }).getByRole('link', { name: 'Sobre', exact: true })).toBeVisible()
-    // O menu "Mais opções" é do cabeçalho do celular, que some a partir de 768 px.
+    // Nada de menu "Mais opções": instalar fica no cabeçalho, o Sobre nas abas.
     expect(screen.getByRole('button', { name: 'Mais opções' }).elements()).toHaveLength(0)
   })
 
-  it('nas telas de editor a barra lateral fica estreita, com os mesmos destinos', async () => {
-    await page.viewport(1280, 800)
-    const { screenPromise } = renderShell('/ferramenta')
+  it('o Sobre é uma aba (sem o cabeçalho das raízes, que dá lugar à barra com voltar da própria tela)', async () => {
+    await page.viewport(390, 844)
+    const { screenPromise } = renderShell('/sobre')
     const screen = await screenPromise
     const nav = screen.getByRole('navigation', { name: 'Principal' })
 
-    await expect.element(nav.getByRole('link', { name: 'Imagens' })).toBeVisible()
-    expect(sideWidth(nav.element())).toBe(80)
+    await expect.element(nav.getByRole('link', { name: 'Sobre' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('banner').elements()).toHaveLength(0)
   })
 
-  it('no tablet a barra lateral é estreita em todas as telas', async () => {
+  it('a barra inferior não cobre o fim da página', async () => {
+    await page.viewport(390, 844)
+    const { screenPromise } = renderShell('/')
+    const screen = await screenPromise
+    const column = screen.getByRole('main').element().parentElement
+    if (!column) throw new Error('coluna do conteúdo ausente')
+    // O espaço reservado embaixo é a altura da barra (64 px), fora a área da barra de gestos.
+    expect(Number.parseFloat(getComputedStyle(column).paddingBottom)).toBeGreaterThanOrEqual(64)
+  })
+
+  it('esconde as abas nas ferramentas (modo foco)', async () => {
+    await page.viewport(390, 844)
+    const { screenPromise } = renderShell('/imagens/converter')
+    const screen = await screenPromise
+
+    await expect.element(screen.getByRole('heading', { name: 'Converter imagem' })).toBeVisible()
+    expect(screen.getByRole('navigation', { name: 'Principal' }).elements()).toHaveLength(0)
+  })
+
+  it('o editor é tela cheia, sem nenhuma barra do site', async () => {
+    await page.viewport(1280, 800)
+    const { screenPromise } = renderShell('/editor')
+    const screen = await screenPromise
+
+    await expect.element(screen.getByRole('heading', { name: 'Editor' })).toBeVisible()
+    expect(screen.getByRole('navigation').elements()).toHaveLength(0)
+    expect(screen.getByRole('complementary').elements()).toHaveLength(0)
+  })
+})
+
+describe('AppShell no tablet', () => {
+  it('trilho de 72 px à esquerda com as mesmas quatro abas', async () => {
     await page.viewport(800, 1024)
     const { screenPromise } = renderShell('/')
     const screen = await screenPromise
     const nav = screen.getByRole('navigation', { name: 'Principal' })
 
-    await expect.element(nav.getByRole('link', { name: 'Início' })).toBeVisible()
-    expect(sideWidth(nav.element())).toBe(80)
+    await expect.element(nav.getByRole('link', { name: 'Início' })).toHaveAttribute('aria-current', 'page')
+    expect(linkTexts(nav)).toEqual(['Início', 'Imagens', 'Vídeos', 'Sobre'])
+    const rail = screen.getByRole('complementary', { name: 'Navegação' }).element()
+    expect(rail.getBoundingClientRect().width).toBe(72)
+    expect(rail.getBoundingClientRect().left).toBe(0)
+  })
+})
+
+describe('AppShell no computador', () => {
+  it('barra lateral de 248 px com Início, Imagens e Vídeos, todas as ferramentas e o Sobre no rodapé', async () => {
+    await page.viewport(1280, 800)
+    const { screenPromise } = renderShell('/')
+    const screen = await screenPromise
+    const sidebar = screen.getByRole('complementary', { name: 'Navegação' })
+
+    expect(sidebar.element().getBoundingClientRect().width).toBe(248)
+    expect(linkTexts(screen.getByRole('navigation', { name: 'Principal' }))).toEqual(['Início', 'Imagens', 'Vídeos'])
+    const tools = screen.getByRole('navigation', { name: 'Ferramentas' })
+    expect(tools.getByRole('link').elements()).toHaveLength(12)
+    await expect.element(tools.getByRole('link', { name: 'Converter imagem' })).toBeVisible()
+    await expect.element(tools.getByRole('link', { name: 'Converter vídeo' })).toBeVisible()
+    await expect.element(sidebar.getByRole('link', { name: 'Sobre', exact: true })).toBeVisible()
+    await expect.element(sidebar.getByRole('link', { name: 'Processamento local' })).toHaveAttribute('href', '/sobre#privacidade')
+  })
+
+  it('destaca a ferramenta atual e não mostra um segundo trilho', async () => {
+    await page.viewport(1280, 800)
+    const { screenPromise } = renderShell('/imagens/converter')
+    const screen = await screenPromise
+    const tools = screen.getByRole('navigation', { name: 'Ferramentas' })
+
+    await expect.element(tools.getByRole('link', { name: 'Converter imagem' })).toHaveAttribute('aria-current', 'page')
+    await expect.element(tools.getByRole('link', { name: 'Converter vídeo' })).not.toHaveAttribute('aria-current')
+    expect(screen.getByRole('complementary').elements()).toHaveLength(1)
+  })
+
+  it('recolhe para 72 px e lembra a escolha', async () => {
+    await page.viewport(1280, 800)
+    const first = renderShell('/')
+    const screen = await first.screenPromise
+    const sidebar = () => screen.getByRole('complementary', { name: 'Navegação' }).element()
+
+    const toggle = screen.getByRole('button', { name: 'Recolher a barra lateral' })
+    await expect.element(toggle).toHaveAttribute('aria-expanded', 'true')
+    await toggle.click()
+    await expect.element(screen.getByRole('button', { name: 'Expandir a barra lateral' })).toHaveAttribute('aria-expanded', 'false')
+    expect(sidebar().getBoundingClientRect().width).toBe(72)
+    // Recolhida, os nomes continuam para o leitor de tela.
+    await expect.element(screen.getByRole('navigation', { name: 'Ferramentas' }).getByRole('link', { name: 'Criar GIF' })).toBeInTheDocument()
+    expect(localStorage.getItem(SIDEBAR_COLLAPSED_KEY)).toBe('1')
+
+    screen.unmount()
+    const again = await renderShell('/').screenPromise
+    expect(again.getByRole('complementary', { name: 'Navegação' }).element().getBoundingClientRect().width).toBe(72)
   })
 })
 

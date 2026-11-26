@@ -1,18 +1,18 @@
-import { ArrowLeft, Eye, SlidersHorizontal, type LucideIcon } from 'lucide-react'
+import { Eye, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
-import { Link } from 'react-router'
-import { switcherTools } from '../../../app/tool-catalog'
+import { useLocation } from 'react-router'
+import { switcherTools, toolByPath } from '../../../app/tool-catalog'
 import { ActionBar } from '../../../components/layout/ActionBar'
+import { TopAppBar } from '../../../components/layout/TopAppBar'
 import { saveBlob } from '../../../components/tool/download'
 import { Dropzone } from '../../../components/tool/Dropzone'
 import { ToolSwitcher } from '../../../components/tool/ToolSwitcher'
 import { usePageFileDrop } from '../../../components/tool/usePageFileDrop'
 import { Alert } from '../../../components/ui/Alert'
 import { Button } from '../../../components/ui/Button'
-import { Icon } from '../../../components/ui/Icon'
 import type { Orientation } from '../../../core/image/orientation'
 import { supportsImageWorker } from '../../../workers/image-client'
-import { handOffFiles } from '../../shared/file-handoff'
+import { handOffOpenFiles, useOpenFilesSource } from '../../shared/file-handoff'
 import { BatchActions } from './BatchActions'
 import { BatchFiles } from './BatchFiles'
 import { BatchResult } from './BatchResult'
@@ -22,14 +22,6 @@ import type { ImageBatch } from './useImageBatch'
 
 const IMAGE_SWITCHER = switcherTools('image')
 
-function BackToImages() {
-  return (
-    <Link to="/imagens" className="inline-flex min-h-11 items-center gap-1.5 text-fg-muted transition-colors hover:text-fg pointer-fine:min-h-0">
-      <Icon icon={ArrowLeft} size="sm" />
-      Imagens
-    </Link>
-  )
-}
 
 interface ImageToolPageProps {
   title: string
@@ -77,10 +69,13 @@ export function ImageToolPage({
   const compareRef = useRef<HTMLDivElement>(null)
   const focusPickerWhenEmpty = useRef(false)
   const supported = supportsImageWorker()
+  const currentTool = toolByPath(useLocation().pathname)
   const [onlyItem] = items
   const singleResult = items.length === 1 && onlyItem?.status === 'done' && Boolean(onlyItem.output?.url)
 
   usePageFileDrop(batch.addFiles, supported && !summary.isProcessing)
+  // Indo para outra ferramenta de imagem (fileira de troca ou barra lateral), as imagens abertas vão junto.
+  useOpenFilesSource('image', batch.getOriginalFiles)
 
   // Ao terminar, leva o foco ao resultado, onde estão os botões de download.
   useEffect(() => {
@@ -140,21 +135,16 @@ export function ImageToolPage({
   return (
     <>
       <title>{`${title} · Media Tools`}</title>
-      {/* Editor: título no alto; ferramentas, palco com a imagem e painel de opções lado a lado a partir de 1024 px. */}
-      <div className="mx-auto grid w-full max-w-editor gap-4 px-(--gutter) pt-4 pb-6 lg:grid-cols-[6.5rem_minmax(0,1fr)_21rem] lg:gap-x-5 lg:pt-5">
-        <header className="grid gap-1 border-b border-border pb-4 lg:col-span-3">
-          <div className="text-sm">
-            <BackToImages />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-balance">{title}</h1>
-          <p className="max-w-3xl text-sm text-fg-muted">{description}</p>
-        </header>
+      <TopAppBar title={title} backTo="/imagens" tool={currentTool} />
+      {/* Prévia e painel de opções lado a lado a partir de 1024 px; a troca de ferramenta (chips) fica no celular e no tablet. */}
+      <div className="mx-auto grid w-full max-w-editor gap-4 px-(--gutter) pt-2 pb-6 lg:grid-cols-[minmax(0,1fr)_var(--panel-w)] lg:gap-x-6">
+        <p className="max-w-text text-secondary text-fg-muted lg:col-span-2">{description}</p>
 
         <ToolSwitcher
           label="Ferramentas de imagem"
           tools={IMAGE_SWITCHER}
-          onSwitch={() => handOffFiles('image', batch.getOriginalFiles())}
-          className="lg:sticky lg:top-5 lg:self-start"
+          onSwitch={() => handOffOpenFiles('image')}
+          className="lg:hidden"
         />
 
         {!supported ? (
@@ -200,7 +190,7 @@ export function ImageToolPage({
             <section
               aria-labelledby={summary.hasResults ? undefined : optionsHeadingId}
               aria-label={summary.hasResults ? 'Resultado' : undefined}
-              className="grid content-start gap-5 rounded-xl border border-border bg-surface-1 p-4 md:p-5 lg:sticky lg:top-5 lg:self-start"
+              className="grid content-start gap-5 rounded-xl border border-border bg-surface-1 p-4 md:p-5 lg:sticky lg:top-[calc(var(--header-h)+1rem)] lg:self-start"
             >
               {summary.hasResults ? (
                 <>

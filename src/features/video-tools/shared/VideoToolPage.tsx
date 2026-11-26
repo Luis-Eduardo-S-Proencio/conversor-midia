@@ -1,8 +1,9 @@
-import { ArrowLeft, CircleCheck, Download, Eye, Headphones, RefreshCw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
+import { CircleCheck, Download, Eye, Headphones, RefreshCw, SlidersHorizontal, type LucideIcon } from 'lucide-react'
 import { useEffect, useId, useRef, type ReactNode } from 'react'
-import { Link } from 'react-router'
-import { switcherTools } from '../../../app/tool-catalog'
+import { useLocation } from 'react-router'
+import { switcherTools, toolByPath } from '../../../app/tool-catalog'
 import { ActionBar } from '../../../components/layout/ActionBar'
+import { TopAppBar } from '../../../components/layout/TopAppBar'
 import { CompareView } from '../../../components/tool/CompareView'
 import { ResultAudio, ResultGif, ResultVideo } from '../../../components/tool/ResultMedia'
 import { saveBlob } from '../../../components/tool/download'
@@ -18,21 +19,13 @@ import { Icon } from '../../../components/ui/Icon'
 import { formatBytes } from '../../../core/format'
 import { ACCEPTED_VIDEO_TYPES } from '../../../core/video/formats'
 import { supportsVideoWorker } from '../../../workers/video-client'
-import { handOffFiles } from '../../shared/file-handoff'
+import { handOffOpenFiles, useOpenFilesSource } from '../../shared/file-handoff'
 import { VideoActions } from './VideoActions'
 import { outputTexts, purposeOf, type VideoTool, type VideoToolLabels, type VideoToolState } from './useVideoTool'
 import { describeVideo } from './video-meta'
 
 const VIDEO_SWITCHER = switcherTools('video')
 
-function BackToVideos() {
-  return (
-    <Link to="/videos" className="inline-flex min-h-11 items-center gap-1.5 text-fg-muted transition-colors hover:text-fg pointer-fine:min-h-0">
-      <Icon icon={ArrowLeft} size="sm" />
-      Vídeos
-    </Link>
-  )
-}
 
 interface ItemView {
   state: FileItemState
@@ -87,12 +80,18 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
   const compareRef = useRef<HTMLDivElement>(null)
   const focusPickerWhenEmpty = useRef(false)
   const supported = supportsVideoWorker()
+  const currentTool = toolByPath(useLocation().pathname)
   const texts = outputTexts(labels)
   const ResultMedia = labels.output === 'audio' ? ResultAudio : labels.output === 'gif' ? ResultGif : ResultVideo
   const busy = state.phase === 'processing'
   const opened = state.phase === 'ready' || state.phase === 'processing' || state.phase === 'done' || state.phase === 'failed'
 
   usePageFileDrop(tool.selectFiles, supported && !busy)
+  // Indo para outra ferramenta de vídeo (fileira de troca ou barra lateral), o vídeo aberto vai junto.
+  useOpenFilesSource('video', () => {
+    const source = tool.getSourceFile()
+    return source ? [source] : []
+  })
 
   // Ao terminar, leva o foco ao resultado, onde estão os botões de download.
   useEffect(() => {
@@ -143,24 +142,16 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
   return (
     <>
       <title>{`${title} · Media Tools`}</title>
-      {/* Editor: título no alto; ferramentas, palco com o vídeo e painel de opções lado a lado a partir de 1024 px. */}
-      <div className="mx-auto grid w-full max-w-editor gap-4 px-(--gutter) pt-4 pb-6 lg:grid-cols-[6.5rem_minmax(0,1fr)_21rem] lg:gap-x-5 lg:pt-5">
-        <header className="grid gap-1 border-b border-border pb-4 lg:col-span-3">
-          <div className="text-sm">
-            <BackToVideos />
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-balance">{title}</h1>
-          <p className="max-w-3xl text-sm text-fg-muted">{description}</p>
-        </header>
+      <TopAppBar title={title} backTo="/videos" tool={currentTool} />
+      {/* Prévia e painel de opções lado a lado a partir de 1024 px; a troca de ferramenta (chips) fica no celular e no tablet. */}
+      <div className="mx-auto grid w-full max-w-editor gap-4 px-(--gutter) pt-2 pb-6 lg:grid-cols-[minmax(0,1fr)_var(--panel-w)] lg:gap-x-6">
+        <p className="max-w-text text-secondary text-fg-muted lg:col-span-2">{description}</p>
 
         <ToolSwitcher
           label="Ferramentas de vídeo"
           tools={VIDEO_SWITCHER}
-          onSwitch={() => {
-            const source = tool.getSourceFile()
-            handOffFiles('video', source ? [source] : [])
-          }}
-          className="lg:sticky lg:top-5 lg:self-start"
+          onSwitch={() => handOffOpenFiles('video')}
+          className="lg:hidden"
         />
 
         {!supported ? (
@@ -238,7 +229,7 @@ export function VideoToolPage({ title, description, labels, actionIcon, tool, pr
             <section
               aria-labelledby={state.phase === 'done' ? undefined : optionsHeadingId}
               aria-label={state.phase === 'done' ? 'Resultado' : undefined}
-              className="grid content-start gap-5 rounded-xl border border-border bg-surface-1 p-4 md:p-5 lg:sticky lg:top-5 lg:self-start"
+              className="grid content-start gap-5 rounded-xl border border-border bg-surface-1 p-4 md:p-5 lg:sticky lg:top-[calc(var(--header-h)+1rem)] lg:self-start"
             >
               {state.phase === 'done' && state.file && state.result ? (
                 <div className="grid gap-4">

@@ -13,11 +13,14 @@ export interface ToolEntry extends NavListItem {
   shortTitle: string
   /** Uma palavra, para a troca de ferramenta dentro do editor ("Converter", "Tamanho"). */
   switchLabel: string
+  /** Nome na lista de ferramentas da barra lateral do computador ("Redimensionar", "Extrair áudio"). */
+  navLabel: string
 }
 
 export const IMAGE_TOOLS: readonly ToolEntry[] = [
   {
     id: 'image-convert',
+    navLabel: 'Converter',
     switchLabel: 'Converter',
     title: 'Converter imagem',
     shortTitle: 'Converter imagem',
@@ -29,6 +32,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'image-compress',
+    navLabel: 'Comprimir',
     switchLabel: 'Comprimir',
     title: 'Comprimir imagem',
     shortTitle: 'Comprimir imagem',
@@ -40,6 +44,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'image-resize',
+    navLabel: 'Redimensionar',
     switchLabel: 'Tamanho',
     title: 'Redimensionar imagem',
     shortTitle: 'Tamanho da imagem',
@@ -51,6 +56,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'image-crop',
+    navLabel: 'Recortar',
     switchLabel: 'Recortar',
     title: 'Recortar imagem',
     shortTitle: 'Recortar imagem',
@@ -62,6 +68,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'image-rotate-flip',
+    navLabel: 'Girar',
     switchLabel: 'Girar',
     title: 'Girar e espelhar',
     shortTitle: 'Girar e espelhar',
@@ -76,6 +83,7 @@ export const IMAGE_TOOLS: readonly ToolEntry[] = [
 export const VIDEO_TOOLS: readonly ToolEntry[] = [
   {
     id: 'video-edit',
+    navLabel: 'Editar',
     switchLabel: 'Editar',
     title: 'Editar vídeo',
     shortTitle: 'Editar vídeo',
@@ -87,6 +95,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-crop',
+    navLabel: 'Recortar',
     switchLabel: 'Recortar',
     title: 'Recortar vídeo',
     shortTitle: 'Recortar vídeo',
@@ -98,6 +107,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-compress',
+    navLabel: 'Comprimir',
     switchLabel: 'Comprimir',
     title: 'Comprimir vídeo',
     shortTitle: 'Comprimir vídeo',
@@ -109,6 +119,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-audio',
+    navLabel: 'Extrair áudio',
     switchLabel: 'Áudio',
     title: 'Extrair áudio',
     shortTitle: 'Extrair áudio',
@@ -120,6 +131,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-resize',
+    navLabel: 'Resolução',
     switchLabel: 'Resolução',
     title: 'Mudar resolução',
     shortTitle: 'Resolução do vídeo',
@@ -131,6 +143,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-convert',
+    navLabel: 'Converter',
     switchLabel: 'Converter',
     title: 'Converter vídeo',
     shortTitle: 'Converter vídeo',
@@ -142,6 +155,7 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
   },
   {
     id: 'video-gif',
+    navLabel: 'GIF',
     switchLabel: 'GIF',
     title: 'Criar GIF',
     shortTitle: 'Criar GIF',
@@ -156,6 +170,17 @@ export const VIDEO_TOOLS: readonly ToolEntry[] = [
 /** Ferramentas na forma da troca de ferramenta do editor. */
 export function switcherTools(media: MediaKind): SwitcherTool[] {
   return toolsFor(media).map(({ id, to, switchLabel, icon, tone }) => ({ id, to, label: switchLabel, icon, tone }))
+}
+
+/** Lista de ferramentas de cada tipo de arquivo: o "pai" das páginas de ferramenta (voltar e trilha). */
+export const MEDIA_PARENTS: Record<MediaKind, { to: string; label: string }> = {
+  image: { to: '/imagens', label: 'Imagens' },
+  video: { to: '/videos', label: 'Vídeos' },
+}
+
+/** A ferramenta deste endereço (ex.: "/videos/comprimir"), se houver. */
+export function toolByPath(pathname: string): ToolEntry | undefined {
+  return [...IMAGE_TOOLS, ...VIDEO_TOOLS].find((tool) => tool.to === pathname)
 }
 
 /** Ferramentas que abrem este tipo de arquivo. */

@@ -2,6 +2,8 @@ import { ArchiveX, AudioLines, Film, Image as ImageIcon, MonitorSmartphone, type
 import type { ReactNode } from 'react'
 import { LogoMark } from '../components/brand/Logo'
 import { Container } from '../components/layout/Container'
+import { SiteNote } from '../components/layout/SiteNote'
+import { TopAppBar } from '../components/layout/TopAppBar'
 import { cx } from '../components/ui/cx'
 import { Icon } from '../components/ui/Icon'
 import { formatBytes } from '../core/format'
@@ -86,19 +88,20 @@ export function AboutPage() {
   return (
     <>
       <title>Sobre · Media Tools</title>
-      <Container className="py-10 md:py-14">
+      <TopAppBar title="Sobre" backTo="/" />
+      <Container className="pt-4 pb-10 md:pb-14">
         <div className="grid max-w-3xl gap-10 text-pretty">
           <header className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
             <LogoMark className="size-14 md:size-16" />
             <div className="grid gap-1">
-              <h1 className="text-2xl font-bold tracking-tight text-balance md:text-3xl">Sobre o Media Tools</h1>
+              <p className="font-display text-2xl font-bold tracking-tight text-balance md:text-3xl">Media Tools</p>
               <p className="text-base text-fg-muted">
                 Ferramentas gratuitas para converter, comprimir e editar imagens e vídeos, sem criar conta.
               </p>
             </div>
           </header>
 
-          <Section id="processamento-local" title="Processamento local">
+          <Section id="privacidade" title="Processamento local">
             <ul className={PANEL}>
               <IconRow icon={MonitorSmartphone}>
                 <h3 className="font-semibold text-fg">Feito no seu aparelho</h3>
@@ -172,6 +175,7 @@ export function AboutPage() {
             </ul>
           </Section>
         </div>
+        <SiteNote className="mt-12 max-w-3xl" />
       </Container>
     </>
   )

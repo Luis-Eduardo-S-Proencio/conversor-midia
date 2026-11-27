@@ -104,8 +104,9 @@ export const LEGAL_LINK = 'text-accent underline underline-offset-4 transition-c
 /** Canal de contato do responsável pelo site, o mesmo nos dois documentos. */
 export const LEGAL_CONTACT = 'luis.eduardo.proencio@gmail.com'
 
-/** Data da versão atual dos dois documentos. */
-export const LEGAL_UPDATED = '26 de novembro de 2026'
+/** Data da versão atual de cada documento. */
+export const TERMS_UPDATED = '26 de novembro de 2026'
+export const PRIVACY_UPDATED = '27 de novembro de 2026'
 
 export function ContactLink() {
   return (

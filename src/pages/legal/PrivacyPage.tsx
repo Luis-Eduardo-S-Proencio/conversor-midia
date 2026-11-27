@@ -1,5 +1,5 @@
 import { TransitionLink } from '../../components/layout/TransitionLink'
-import { ContactLink, LEGAL_LINK, LEGAL_UPDATED, LegalDocument, LegalList, Strong, type LegalSection } from './LegalDocument'
+import { ContactLink, LEGAL_LINK, PRIVACY_UPDATED, LegalDocument, LegalList, Strong, type LegalSection } from './LegalDocument'
 
 const SECTIONS: readonly LegalSection[] = [
   {
@@ -85,10 +85,11 @@ const SECTIONS: readonly LegalSection[] = [
     title: 'Cookies e armazenamento',
     content: (
       <p>
-        O Media Tools <Strong>não usa cookies</Strong> nem guarda informações no armazenamento do navegador. As
-        fontes, os ícones e todo o código vêm do próprio site, sem serviços de terceiros que possam rastrear a
-        sua visita. Se você instalar o app, o sistema guarda apenas o atalho e os arquivos do site, como faz com
-        qualquer app.
+        O Media Tools <Strong>não usa cookies</Strong> nem guarda informações suas no armazenamento do navegador.
+        Para o site abrir mais rápido, o navegador guarda uma cópia dos arquivos do próprio site (código, fontes e
+        ícones), nunca as suas fotos e vídeos; ela some se você apagar os dados do site nas configurações do
+        navegador. As fontes, os ícones e todo o código vêm do próprio site, sem serviços de terceiros que possam
+        rastrear a sua visita. Se você instalar o app, o sistema também guarda o atalho, como faz com qualquer app.
       </p>
     ),
   },
@@ -196,7 +197,7 @@ export function PrivacyPage() {
   return (
     <LegalDocument
       title="Política de privacidade"
-      updated={LEGAL_UPDATED}
+      updated={PRIVACY_UPDATED}
       summary={
         <p>
           Como o Media Tools trata as suas informações. Em resumo: seus arquivos nunca saem do seu aparelho, não

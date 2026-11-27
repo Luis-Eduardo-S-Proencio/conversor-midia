@@ -24,5 +24,7 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src"],
+  /* O service worker tem tipos próprios (WebWorker, sem DOM): tsconfig.sw.json. */
+  "exclude": ["src/service-worker"]
 }

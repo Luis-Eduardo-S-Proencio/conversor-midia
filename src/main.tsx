@@ -5,9 +5,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router/dom'
 import { router } from './app/router'
+import { registerServiceWorker } from './app/service-worker'
 
 // A cada navegação, guarda a posição no histórico (para saber se o próximo popstate volta ou avança).
 router.subscribe(rememberHistoryIndex)
+registerServiceWorker()
 
 const container = document.getElementById('root')
 if (!container) throw new Error('Elemento #root não encontrado em index.html')

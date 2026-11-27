@@ -77,16 +77,6 @@ const FAQ: readonly AccordionItem[] = [
     ),
   },
   {
-    id: 'offline',
-    title: 'Funciona sem internet?',
-    content: (
-      <p>
-        Ainda não. O site precisa de internet para abrir e para carregar cada ferramenta na primeira vez. Depois de aberta, a
-        ferramenta trabalha no aparelho, sem enviar nada.
-      </p>
-    ),
-  },
-  {
     id: 'instalar',
     title: 'Como instalar no celular ou no computador?',
     content: (

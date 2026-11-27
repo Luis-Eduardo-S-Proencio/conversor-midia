@@ -1,5 +1,5 @@
 import { TransitionLink } from '../../components/layout/TransitionLink'
-import { ContactLink, LEGAL_LINK, LEGAL_UPDATED, LegalDocument, LegalList, Strong, type LegalSection } from './LegalDocument'
+import { ContactLink, LEGAL_LINK, TERMS_UPDATED, LegalDocument, LegalList, Strong, type LegalSection } from './LegalDocument'
 
 const SECTIONS: readonly LegalSection[] = [
   {
@@ -213,7 +213,7 @@ export function TermsPage() {
   return (
     <LegalDocument
       title="Termos de uso"
-      updated={LEGAL_UPDATED}
+      updated={TERMS_UPDATED}
       summary={
         <p>
           As regras para usar o Media Tools. Em resumo: é gratuito, seus arquivos são processados no seu aparelho

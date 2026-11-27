@@ -142,6 +142,12 @@ Marque ✔ ou ✘ e anote o que estranhar.
 66. Em Velocidade, escolha 2× e toque em Tocar: o vídeo anda duas vezes mais rápido, e o som também, sem ficar com voz fina. Escolha 0,5×: anda devagar, sem voz grossa.
 67. Com um filtro, um texto e 2×, salve, confira em "Como ficou" e baixe: o vídeo salvo tem as mesmas cores da prévia (o texto na cor dele, sem o filtro), dura a metade e o som acompanha a imagem até o fim. Anote o tempo de salvar e se a prévia ficou lenta ou travando com o filtro.
 
+### Sem internet (só no endereço https; não há aviso na interface)
+
+68. Abra o site com internet, espere alguns segundos e feche. Ligue o modo avião e abra de novo, pelo navegador e pelo ícone do app instalado: o Início aparece normalmente.
+69. Ainda no modo avião, converta uma foto em Converter imagem, corte um vídeo em Editar vídeo e extraia o som de um vídeo em MP3: tudo funciona e baixa como com internet. Anote qualquer tela em branco ou mensagem de erro.
+70. Depois de uma publicação nova do site, abra o app com internet, feche e abra de novo: a versão nova aparece (o número em Sobre muda, se a versão tiver mudado).
+
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.
@@ -161,6 +167,7 @@ Confirme se acontecem; não precisam ser tratados como erro.
 - Efeitos no Editar vídeo: com filtro ou ajustes, o vídeo é sempre refeito, e cada quadro passa pela conta das cores (mais lento que só o texto em vídeos grandes, como 4K). Em outra velocidade, o vídeo e o som são refeitos; no Firefox, que não gera o som AAC, mudar a velocidade de MP4 e MOV fica indisponível, com explicação. Acelerado, o vídeo não passa de 60 quadros por segundo; a 0,25×, um vídeo de 30 quadros por segundo fica com 7,5 (anda aos pulinhos, como em qualquer câmera lenta sem quadros inventados). No Safari, a prévia das cores usa um filtro que versões antigas podem não mostrar no vídeo: **anote se o vídeo não mudar de cor na prévia** (o arquivo salvo sai certo do mesmo jeito).
 - Texto no Editar vídeo: com texto, o vídeo é sempre refeito (mais lento que só cortar). No Safari, o texto do arquivo salvo pode sair numa fonte um pouco diferente da prévia (lá, a fonte do app não carrega na parte que salva o vídeo). **Anote se acontecer.**
 - Criar colagem: o arquivo sai em JPG, com até 2048 px no lado maior (menos, se as fotos forem pequenas). Sobre a prévia, arrastar move a foto e não rola a página: para rolar, toque fora da colagem.
+- Sem internet: o app precisa ter sido aberto uma vez com internet. Versão nova do site só chega com internet: ela é baixada numa abertura e aparece na seguinte. No iPhone, pelo Safari sem instalar, o sistema pode apagar a cópia guardada depois de algumas semanas sem uso; instalado na Tela de Início, não. Pelo endereço http da rede local, não funciona (o navegador só permite em https).
 - Criar GIF: o GIF não tem som e usa no máximo 256 cores (degradês podem aparecer em faixas). Com fundo parado ele fica leve; com a câmera em movimento, pesa vários MB (no computador, cerca de 2 MB para 5 s em 480 px).
 
 ## 5. Resultado

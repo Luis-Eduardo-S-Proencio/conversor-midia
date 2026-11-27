@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
+import { serviceWorker } from './scripts/service-worker-build.ts'
 
 interface VercelHeaderRule {
   source: string
@@ -46,7 +47,7 @@ const APP_VERSION = (JSON.parse(readFileSync(new URL('./package.json', import.me
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), preloadFonts()],
+  plugins: [react(), tailwindcss(), preloadFonts(), serviceWorker(new URL('./src/service-worker/sw.ts', import.meta.url))],
   define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   // Workers como módulos ES: permitem carregar bibliotecas sob demanda dentro deles (ex.: fflate).
   worker: { format: 'es' },

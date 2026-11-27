@@ -8,6 +8,7 @@ import {
   moveSelectionEdge,
   redo,
   removeSelection,
+  sourceTimeAt,
   savePlan,
   selectPiece,
   splitAt,
@@ -20,6 +21,8 @@ import {
   type Selection,
 } from '../../../core/video/timeline'
 import { TIME_TOLERANCE, availableTrimModes, canRemoveParts } from '../../../core/video/trim'
+import { TEXT_LIMITS, newText, setTextEdge, textsInRanges, type VideoText } from '../../../core/video/text'
+import type { VideoLook } from '../../../core/video/look'
 import { codecLabel } from '../../../core/video/formats'
 import { isAbortError } from '../../../workers/video-client'
 import { useVideoTool } from '../shared/useVideoTool'
@@ -33,12 +36,28 @@ export interface Thumbnails {
   height: number
 }
 
+/** O que se desfaz: os cortes e os textos, juntos. */
+interface EditorState {
+  cut: Edit
+  texts: VideoText[]
+  nextTextId: number
+}
+
 interface Session {
   fileId: number
-  history: History<Edit>
+  history: History<EditorState>
   /** A parte marcada para sair (as alças a ajustam; só "Excluir" muda o vídeo). */
   selection?: Selection
+  /** O texto aberto para editar. */
+  textId?: number
+  /**
+   * O texto aberto já mudou desde que foi aberto: as próximas mudanças (cada letra, cada arraste) ficam no
+   * mesmo passo de desfazer, em vez de um passo por letra.
+   */
+  textDirty?: boolean
 }
+
+const startEditor = (duration: number): History<EditorState> => startHistory({ cut: initialEdit(duration), texts: [], nextTextId: 1 })
 
 /**
  * Editar vídeo: um vídeo por vez. A pessoa marca na barra a parte que quer tirar (tocando num pedaço e
@@ -55,9 +74,10 @@ export function useEditTool() {
   // Vídeo novo: a edição recomeça com o vídeo inteiro.
   const session = useMemo<Session | undefined>(() => {
     if (!info) return undefined
-    return stored?.fileId === fileId ? stored : { fileId, history: startHistory(initialEdit(info.duration)) }
+    return stored?.fileId === fileId ? stored : { fileId, history: startEditor(info.duration) }
   }, [info, fileId, stored])
-  const edit = session?.history.present
+  const edit = session?.history.present.cut
+  const texts = session?.history.present.texts
   const duration = info?.duration ?? 0
 
   // Miniaturas da barra, geradas logo depois de abrir. Sem elas (vídeo que o navegador não lê), a barra funciona igual.
@@ -91,33 +111,39 @@ export function useEditTool() {
     [session, invalidateResult],
   )
 
+  /** Um passo novo de desfazer com os cortes mudados (os textos continuam). */
+  const commitCut = useCallback(
+    (cut: Edit) => update((current) => ({ ...current, history: commit(current.history, { ...current.history.present, cut }), selection: undefined, textDirty: false })),
+    [update],
+  )
+
   const split = useCallback(
     (editedTime: number) => {
       if (!session) return
-      const next = splitAt(session.history.present, editedTime)
+      const next = splitAt(session.history.present.cut, editedTime)
       if (!next) return
-      update((current) => ({ ...current, history: commit(current.history, next), selection: undefined }))
+      commitCut(next)
       setAnnouncement(`Dividido em ${formatTime(editedTime)}. Toque num pedaço para marcá-lo.`)
     },
-    [session, update, setAnnouncement],
+    [session, commitCut, setAnnouncement],
   )
 
   /** Tira do vídeo a parte marcada (um passo para desfazer). */
   const remove = useCallback(() => {
     if (!session?.selection) return
     const { start, end } = session.selection
-    const next = removeSelection(session.history.present, session.selection)
+    const next = removeSelection(session.history.present.cut, session.selection)
     if (!next) return
-    update((current) => ({ ...current, history: commit(current.history, next), selection: undefined }))
+    commitCut(next)
     setAnnouncement(`Parte de ${formatTime(start)} a ${formatTime(end)} excluída. O vídeo agora tem ${formatTime(editedDuration(next.pieces))}.`)
-  }, [session, update, setAnnouncement])
+  }, [session, commitCut, setAnnouncement])
 
   /** Tocar num pedaço marca ele inteiro; tocar de novo no marcado desmarca. */
   const select = useCallback(
     (id: number | undefined) => {
       if (!session) return
-      const selection = id === undefined || session.selection?.id === id ? undefined : selectPiece(session.history.present, id)
-      setStored({ ...session, selection })
+      const selection = id === undefined || session.selection?.id === id ? undefined : selectPiece(session.history.present.cut, id)
+      setStored({ ...session, selection, textId: undefined, textDirty: false })
     },
     [session],
   )
@@ -126,54 +152,170 @@ export function useEditTool() {
   const moveSelection = useCallback(
     (edge: Edge, sourceTime: number) => {
       if (!session?.selection) return
-      setStored({ ...session, selection: moveSelectionEdge(session.history.present, session.selection, edge, sourceTime) })
+      setStored({ ...session, selection: moveSelectionEdge(session.history.present.cut, session.selection, edge, sourceTime) })
     },
     [session],
   )
 
+  /* Textos */
+
+  /** Texto novo no ponto da linha, já aberto para escrever (um passo para desfazer). */
+  const addText = useCallback(
+    (editedTime: number) => {
+      if (!session) return
+      const present = session.history.present
+      if (present.texts.length >= TEXT_LIMITS.maxTexts) {
+        setAnnouncement(`O limite é de ${TEXT_LIMITS.maxTexts} textos por vídeo.`)
+        return
+      }
+      const start = sourceTimeAt(present.cut.pieces, editedTime).time
+      const text = newText(present.nextTextId, start, duration)
+      update((current) => ({
+        ...current,
+        history: commit(current.history, { ...present, texts: [...present.texts, text], nextTextId: present.nextTextId + 1 }),
+        selection: undefined,
+        textId: text.id,
+        // Escrever no texto novo faz parte do mesmo passo: desfazer tira o texto inteiro.
+        textDirty: true,
+      }))
+      setAnnouncement(`Texto novo, de ${formatTime(text.start)} a ${formatTime(text.end)} do vídeo original. Escreva no campo Texto.`)
+    },
+    [session, duration, update, setAnnouncement],
+  )
+
+  const selectText = useCallback(
+    (id: number | undefined) => {
+      if (!session || session.textId === id) return
+      setStored({ ...session, textId: id, selection: undefined, textDirty: false })
+    },
+    [session],
+  )
+
+  /**
+   * Muda o texto aberto. A primeira mudança abre um passo de desfazer; as seguintes (cada letra, cada
+   * arraste) ficam nele, até a pessoa fechar o texto ou abrir outro.
+   */
+  const changeText = useCallback(
+    (id: number, change: (text: VideoText) => VideoText) => {
+      if (!session) return
+      const present = session.history.present
+      const next = { ...present, texts: present.texts.map((text) => (text.id === id ? change(text) : text)) }
+      const history = session.textDirty && session.textId === id ? { ...session.history, present: next } : commit(session.history, next)
+      setStored({ ...session, history, textId: id, textDirty: true, selection: undefined })
+      invalidateResult()
+    },
+    [session, invalidateResult],
+  )
+
+  const setTextTime = useCallback(
+    (id: number, edge: 'start' | 'end', sourceTime: number) => changeText(id, (text) => setTextEdge(text, edge, sourceTime, duration)),
+    [changeText, duration],
+  )
+
+  const removeText = useCallback(
+    (id: number) => {
+      if (!session) return
+      const present = session.history.present
+      update((current) => ({
+        ...current,
+        history: commit(current.history, { ...present, texts: present.texts.filter((text) => text.id !== id) }),
+        textId: undefined,
+        textDirty: false,
+      }))
+      setAnnouncement('Texto excluído.')
+    },
+    [session, update, setAnnouncement],
+  )
+
+  /** Cópia do texto, um pouco abaixo, aberta para editar. */
+  const duplicateText = useCallback(
+    (id: number) => {
+      if (!session) return
+      const present = session.history.present
+      const original = present.texts.find((text) => text.id === id)
+      if (!original || present.texts.length >= TEXT_LIMITS.maxTexts) return
+      const copy = { ...original, id: present.nextTextId, y: Math.min(0.95, original.y + 0.1) }
+      update((current) => ({
+        ...current,
+        history: commit(current.history, { ...present, texts: [...present.texts, copy], nextTextId: present.nextTextId + 1 }),
+        textId: copy.id,
+        textDirty: true,
+      }))
+      setAnnouncement('Texto duplicado.')
+    },
+    [session, update, setAnnouncement],
+  )
+
   const undoEdit = useCallback(() => {
-    update((current) => ({ ...current, history: undo(current.history), selection: undefined }))
+    update((current) => ({ ...current, history: undo(current.history), selection: undefined, textDirty: false }))
     setAnnouncement('Desfeito.')
   }, [update, setAnnouncement])
 
   const redoEdit = useCallback(() => {
-    update((current) => ({ ...current, history: redo(current.history), selection: undefined }))
+    update((current) => ({ ...current, history: redo(current.history), selection: undefined, textDirty: false }))
     setAnnouncement('Refeito.')
   }, [update, setAnnouncement])
 
   const plan = useMemo<SavePlan | undefined>(() => (edit ? savePlan(edit, duration) : undefined), [edit, duration])
 
+  /** Os textos que vão para o arquivo: com letras e aparecendo em alguma parte que fica. */
+  const look = useMemo<VideoLook | undefined>(() => {
+    if (!plan || !texts) return undefined
+    const ranges = plan.kind === 'trim' ? [plan.range] : plan.kind === 'join' ? plan.ranges : [{ start: 0, end: duration }]
+    const kept = textsInRanges(texts, ranges)
+    return kept.length > 0 ? { texts: kept } : undefined
+  }, [plan, texts, duration])
+
   /** Por que este navegador não consegue salvar a edição atual; `undefined` quando consegue. */
   const saveBlocker = useMemo(() => {
-    if (!info || !plan || plan.kind === 'unchanged') return undefined
+    if (!info || !plan || (plan.kind === 'unchanged' && !look)) return undefined
     const codec = codecLabel(info.codec)
+    if (look && !info.canTranscodeVideo) {
+      return `Para salvar com texto, o vídeo é refeito, e este navegador não consegue refazer vídeos ${codec}. Tente no Chrome, no Edge ou no Safari.`
+    }
     if (plan.kind === 'join' && !canRemoveParts(info)) {
       return info.canTranscodeVideo
         ? 'Para salvar mais de um pedaço, o som também é refeito, e este navegador não consegue refazer o som deste vídeo. Tente no Chrome, no Edge ou no Safari.'
         : `Para salvar mais de um pedaço, o vídeo é refeito, e este navegador não consegue refazer vídeos ${codec}. Aqui dá para tirar só o final do vídeo.`
     }
     // Um trecho que começa no início é copiado sem refazer; começando no meio, pode precisar refazer.
-    if (plan.kind === 'trim' && plan.range.start > TIME_TOLERANCE && !availableTrimModes(info).exact) {
+    if (plan.kind === 'trim' && !look && plan.range.start > TIME_TOLERANCE && !availableTrimModes(info).exact) {
       return `Começar depois do início refaz o vídeo, e este navegador não consegue refazer vídeos ${codec}. Aqui dá para tirar só o final do vídeo.`
     }
     return undefined
-  }, [info, plan])
+  }, [info, plan, look])
+
+  /** Há o que salvar: cortes ou textos. */
+  const canSave = plan !== undefined && (plan.kind !== 'unchanged' || look !== undefined) && !saveBlocker
 
   const apply = useCallback(() => {
-    if (!info || !plan || plan.kind === 'unchanged' || saveBlocker) return
+    if (!info || !plan || !canSave) return
     const deliver = (output: { blob: Blob }, original: File) => ({ blob: output.blob, name: videoOutputName(original.name, info.format, EDIT_SUFFIX) })
-    if (plan.kind === 'trim') {
-      const { start, end } = plan.range
-      void run((file) => ({ kind: 'trim', file, start, end, mode: 'exact' }), deliver)
-    } else {
+    if (plan.kind === 'join') {
       const { ranges } = plan
-      void run((file) => ({ kind: 'join', file, ranges }), deliver)
+      void run((file) => ({ kind: 'join', file, ranges, look }), deliver)
+      return
     }
-  }, [info, plan, saveBlocker, run])
+    // Sem cortes, só com textos: o vídeo inteiro, refeito com eles.
+    const { start, end } = plan.kind === 'trim' ? plan.range : { start: 0, end: info.duration }
+    void run((file) => ({ kind: 'trim', file, start, end, mode: 'exact', look }), deliver)
+  }, [info, plan, canSave, look, run])
+
+  const selectedText = texts?.find((text) => text.id === session?.textId)
 
   return {
     tool,
     edit,
+    texts: texts ?? [],
+    selectedText,
+    look,
+    canSave,
+    addText,
+    selectText,
+    changeText,
+    setTextTime,
+    removeText,
+    duplicateText,
     selection: session?.selection,
     canUndo: (session?.history.past.length ?? 0) > 0,
     canRedo: (session?.history.future.length ?? 0) > 0,

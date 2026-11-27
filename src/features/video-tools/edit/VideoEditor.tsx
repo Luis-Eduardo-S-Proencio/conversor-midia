@@ -2,10 +2,12 @@ import { Pause, Play, Redo2, SquareSplitHorizontal, Trash2, Undo2, ZoomIn, ZoomO
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import { Button, IconButton } from '../../../components/ui/Button'
 import { formatTime } from '../../../core/video/time'
+import type { VideoText } from '../../../core/video/text'
 import {
   canRemoveSelection,
   canSplitAt,
   editedDuration,
+  editedTimeAt,
   pieceOffsets,
   selectionLimits,
   sourceTimeAt,
@@ -15,6 +17,8 @@ import {
   type Selection,
 } from '../../../core/video/timeline'
 import { EditTimeline } from './EditTimeline'
+import { TextLayer } from './TextLayer'
+import { TextButton, TextPanel } from './TextPanel'
 import { ZOOM_LEVELS, initialZoom } from './settings'
 import type { Thumbnails } from './useEditTool'
 
@@ -42,6 +46,15 @@ interface VideoEditorProps {
   onRedo: () => void
   onSelect: (id: number) => void
   onSelectionEdge: (edge: Edge, sourceTime: number) => void
+  /** Textos sobre o vídeo e o aberto para editar. */
+  texts: readonly VideoText[]
+  selectedText?: VideoText
+  onAddText: (editedTime: number) => void
+  onSelectText: (id: number | undefined) => void
+  onChangeText: (id: number, change: (text: VideoText) => VideoText) => void
+  onTextTime: (id: number, edge: Edge, sourceTime: number) => void
+  onDuplicateText: (id: number) => void
+  onDeleteText: (id: number) => void
   disabled?: boolean
 }
 
@@ -57,7 +70,7 @@ function pieceIndexAt(pieces: readonly Piece[], sourceTime: number): number {
  * tira essa parte. "Dividir" corta o vídeo em dois pedaços no ponto da linha; os outros botões desfazem e mudam o zoom.
  */
 export function VideoEditor(props: VideoEditorProps) {
-  const { src, name, duration, edit, selection, thumbnails, canUndo, canRedo, disabled = false } = props
+  const { src, name, duration, edit, selection, thumbnails, canUndo, canRedo, texts, selectedText, disabled = false } = props
   const video = useRef<HTMLVideoElement>(null)
   const wrapper = useRef<HTMLDivElement>(null)
   const playing = useRef(false)
@@ -168,25 +181,45 @@ export function VideoEditor(props: VideoEditorProps) {
     if (video.current) video.current.currentTime = value
   }
 
+  /** Abrir um texto que não aparece no ponto da linha leva a linha até o começo dele (para ele aparecer no player). */
+  function openText(id: number) {
+    const text = texts.find((item) => item.id === id)
+    const now = sourceTimeAt(edit.pieces, shown).time
+    if (text && !(now >= text.start && now < text.end)) scrub(Math.min(total, editedTimeAt(edit.pieces, text.start) + 0.001))
+    props.onSelectText(id)
+  }
+
+  const sourceNow = sourceTimeAt(edit.pieces, shown).time
   const zoomIndex = ZOOM_LEVELS.findIndex((level) => level === zoom)
   const canSplit = canSplitAt(edit, shown)
   const canDelete = canRemoveSelection(edit, selection)
 
   return (
     <div ref={wrapper} className="grid min-w-0 grid-cols-1 gap-3">
-      <video
-        ref={video}
-        src={src}
-        playsInline
-        preload="auto"
-        aria-label={`Vídeo ${name}, como está ficando`}
-        onClick={() => (isPlaying ? pause() : play())}
-        onPause={() => {
-          if (playing.current) pause() // pausado pelo sistema (ex.: outra aba tocando)
-        }}
-        onError={() => setUnplayable(true)}
-        className="max-h-[50dvh] w-full rounded-lg border border-border bg-bg"
-      />
+      <div className="relative min-w-0">
+        <video
+          ref={video}
+          src={src}
+          playsInline
+          preload="auto"
+          aria-label={`Vídeo ${name}, como está ficando`}
+          onClick={() => (isPlaying ? pause() : play())}
+          onPause={() => {
+            if (playing.current) pause() // pausado pelo sistema (ex.: outra aba tocando)
+          }}
+          onError={() => setUnplayable(true)}
+          className="max-h-[50dvh] w-full rounded-lg border border-border bg-bg"
+        />
+        <TextLayer
+          video={video}
+          texts={texts}
+          sourceTime={sourceNow}
+          selectedId={selectedText?.id}
+          onSelect={openText}
+          onMove={(id, x, y) => props.onChangeText(id, (text) => ({ ...text, x, y }))}
+          disabled={disabled}
+        />
+      </div>
       {unplayable && (
         <p className="text-sm text-fg-muted">Este navegador não consegue mostrar este vídeo, mas você ainda pode editá-lo pela barra abaixo.</p>
       )}
@@ -205,6 +238,7 @@ export function VideoEditor(props: VideoEditorProps) {
         <Button icon={Trash2} onClick={props.onDelete} disabled={disabled || !canDelete}>
           Excluir
         </Button>
+        <TextButton onClick={() => props.onAddText(shown)} disabled={disabled} />
         <div className="ml-auto flex gap-1">
           <IconButton icon={Undo2} label="Desfazer" onClick={props.onUndo} disabled={disabled || !canUndo} />
           <IconButton icon={Redo2} label="Refazer" onClick={props.onRedo} disabled={disabled || !canRedo} />
@@ -218,6 +252,20 @@ export function VideoEditor(props: VideoEditorProps) {
         </div>
       </div>
 
+      {selectedText && (
+        <TextPanel
+          key={selectedText.id}
+          text={selectedText}
+          sourceTime={sourceNow}
+          onChange={(change) => props.onChangeText(selectedText.id, change)}
+          onTime={(edge, time) => props.onTextTime(selectedText.id, edge, time)}
+          onDuplicate={() => props.onDuplicateText(selectedText.id)}
+          onDelete={() => props.onDeleteText(selectedText.id)}
+          onClose={() => props.onSelectText(undefined)}
+          disabled={disabled}
+        />
+      )}
+
       <EditTimeline
         edit={edit}
         duration={duration}
@@ -230,6 +278,15 @@ export function VideoEditor(props: VideoEditorProps) {
         onSelectionEdge={handleSelectionEdge}
         disabled={disabled}
         hintId={hintId}
+        texts={texts}
+        selectedTextId={selectedText?.id}
+        onSelectText={openText}
+        onTextEdge={(id, edge, value) => {
+          pause()
+          props.onTextTime(id, edge, value)
+          // O player mostra o quadro da ponta movida, como nas alças do corte.
+          if (video.current) video.current.currentTime = value
+        }}
       />
       <div className="flex justify-between gap-3 text-xs tabular-nums">
         <span className="text-fg">{formatTime(shown)}</span>
@@ -240,7 +297,8 @@ export function VideoEditor(props: VideoEditorProps) {
       </p>
       <p id={hintId} className="text-xs text-fg-muted">
         Para tirar uma parte: toque no vídeo na barra, arraste as alças ‹ e › até cobrir só o que quer tirar e toque em
-        Excluir. Arrastar a barra (ou as setas) leva a linha branca a um ponto; Dividir corta o vídeo ali em dois pedaços.
+        Excluir. Arrastar a barra (ou as setas) leva a linha branca a um ponto; Dividir corta o vídeo ali em dois pedaços. O T põe um
+        texto no ponto da linha: arraste o texto no vídeo para mudar o lugar e as pontas do bloco dele, na barra, para mudar quando aparece.
       </p>
     </div>
   )

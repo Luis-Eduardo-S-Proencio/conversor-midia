@@ -39,7 +39,10 @@ export function LicensesPage() {
               </p>
             </li>
             <li className="px-4 py-4">
-              <p>A fonte Inter usa a licença OFL, e os ícones Lucide, a licença ISC.</p>
+              <p>
+                As fontes Inter, Dancing Script, Playfair Display, Courier Prime, Fredoka, Bebas Neue e Caveat usam a licença OFL, e os
+                ícones Lucide, a licença ISC.
+              </p>
             </li>
           </ul>
         </div>

@@ -1,14 +1,34 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Type } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { Icon } from '../../../components/ui/Icon'
 import { cx } from '../../../components/ui/cx'
 import { formatDuration, formatTime } from '../../../core/video/time'
-import { editedDuration, pieceOffsets, selectionLimits, thumbnailCell, visibleTiles, type Edge, type Edit, type Selection } from '../../../core/video/timeline'
+import { laneRows, textEdgeLimits, type VideoText } from '../../../core/video/text'
+import {
+  editedDuration,
+  editedTimeAt,
+  pieceOffsets,
+  selectionLimits,
+  sourceTimeAt,
+  thumbnailCell,
+  visibleTiles,
+  type Edge,
+  type Edit,
+  type Piece,
+  type Selection,
+} from '../../../core/video/timeline'
 import { STRIP_HEIGHT, keyStep, rulerStep } from './settings'
 import type { Thumbnails } from './useEditTool'
 
 /** Largura visível das alças das pontas (o mínimo da WCAG 2.2); a área de toque se estende além dela. */
 const HANDLE_WIDTH = 24
+
+/** Altura de cada linha da faixa de textos (o bloco tem 44 px, o alvo de toque do projeto). */
+const LANE_ROW = 48
+const LANE_BLOCK = 44
+
+/** Onde a faixa de textos começa: embaixo das miniaturas e da régua. */
+const LANE_TOP = STRIP_HEIGHT + 28
 
 /** Marca da régua: segundos inteiros como "0:04"; meios segundos, "0:04,5". */
 const tickLabel = (tick: number) => (Number.isInteger(tick) ? formatDuration(tick) : formatTime(tick).replace(/0$/, ''))
@@ -39,6 +59,11 @@ interface EditTimelineProps {
   disabled?: boolean
   /** Explica como usar a barra (leitores de tela). */
   hintId: string
+  /** Textos sobre o vídeo, como blocos numa faixa embaixo da barra. */
+  texts: readonly VideoText[]
+  selectedTextId?: number
+  onSelectText: (id: number) => void
+  onTextEdge: (id: number, edge: Edge, sourceTime: number) => void
 }
 
 /**
@@ -58,6 +83,10 @@ export function EditTimeline({
   onSelectionEdge,
   disabled = false,
   hintId,
+  texts,
+  selectedTextId,
+  onSelectText,
+  onTextEdge,
 }: EditTimelineProps) {
   const scroller = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
@@ -162,6 +191,13 @@ export function EditTimeline({
   const ticks: number[] = []
   for (let tick = firstTick; tick <= total && tick * pixelsPerSecond <= viewEnd; tick += step) ticks.push(tick)
   const selectedIndex = selection ? pieces.findIndex((piece) => piece.id === selection.id) : -1
+  // Blocos dos textos no vídeo editado, em ordem; texto que cai todo numa parte excluída não aparece.
+  const spans = texts
+    .map((text) => ({ text, start: editedTimeAt(pieces, text.start), end: editedTimeAt(pieces, text.end) }))
+    .filter((span) => span.end - span.start > 0.01)
+    .sort((a, b) => a.start - b.start)
+  const rows = laneRows(spans)
+  const laneHeight = spans.length > 0 ? (Math.max(...rows) + 1) * LANE_ROW + 4 : 0
 
   return (
     // A largura vem do espaço disponível, nunca do conteúdo (que é a barra inteira): sem isso, medir a barra
@@ -186,7 +222,7 @@ export function EditTimeline({
         onPointerMove={handlePointerMove}
         className="overflow-x-auto overflow-y-hidden rounded-md bg-bg [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
-        <div className="relative" style={{ width: total * pixelsPerSecond + width, height: STRIP_HEIGHT + 28 }}>
+        <div className="relative" style={{ width: total * pixelsPerSecond + width, height: LANE_TOP + laneHeight }}>
           {pieces.map((piece, index) => {
             const left = pad + (offsets[index] ?? 0) * pixelsPerSecond
             const pieceWidth = (piece.end - piece.start) * pixelsPerSecond
@@ -261,6 +297,58 @@ export function EditTimeline({
               )
             })}
 
+          {spans.map((span, index) => {
+            const { text } = span
+            const selected = text.id === selectedTextId
+            const label = text.text.trim() || 'sem texto'
+            const left = pad + span.start * pixelsPerSecond
+            const blockWidth = Math.max(LANE_BLOCK, (span.end - span.start) * pixelsPerSecond)
+            const top = LANE_TOP + (rows[index] ?? 0) * LANE_ROW
+            return (
+              <div key={text.id}>
+                <button
+                  type="button"
+                  aria-pressed={selected}
+                  // O nome começa pelo que está escrito no bloco (WCAG 2.5.3); o tempo vem depois.
+                  aria-label={`${label}, texto de ${formatTime(text.start)} a ${formatTime(text.end)} do vídeo original`}
+                  disabled={disabled}
+                  onClick={() => {
+                    if (swallowClick.current) {
+                      swallowClick.current = false
+                      return
+                    }
+                    onSelectText(text.id)
+                  }}
+                  className={cx(
+                    'absolute flex items-center gap-1.5 overflow-hidden rounded-md border px-2.5 text-left text-xs font-medium whitespace-nowrap outline-offset-[-2px] transition-colors duration-(--dur-2)',
+                    selected ? 'z-10 border-accent bg-accent-soft text-accent' : 'border-border-strong bg-surface-3 text-fg hover:pointer-fine:bg-surface-hover',
+                  )}
+                  style={{ left, top, width: blockWidth, height: LANE_BLOCK }}
+                >
+                  <Icon icon={Type} size="sm" />
+                  <span className="min-w-0 truncate">{label}</span>
+                </button>
+                {selected &&
+                  (['start', 'end'] as const).map((edge) => (
+                    <TextEdgeHandle
+                      key={edge}
+                      edge={edge}
+                      text={text}
+                      editedValue={span[edge]}
+                      left={pad + span[edge] * pixelsPerSecond - HANDLE_WIDTH / 2}
+                      top={top}
+                      pieces={pieces}
+                      total={total}
+                      duration={duration}
+                      pixelsPerSecond={pixelsPerSecond}
+                      onChange={(value) => onTextEdge(text.id, edge, value)}
+                      disabled={disabled}
+                    />
+                  ))}
+              </div>
+            )
+          })}
+
           <div aria-hidden="true" className="absolute inset-x-0" style={{ top: STRIP_HEIGHT + 6 }}>
             {ticks.map((tick) => (
               <span
@@ -281,6 +369,76 @@ export function EditTimeline({
         style={{ height: STRIP_HEIGHT }}
       />
     </div>
+  )
+}
+
+interface TextEdgeHandleProps {
+  edge: Edge
+  text: VideoText
+  /** Onde a ponta está no vídeo editado (o arraste parte dela). */
+  editedValue: number
+  left: number
+  top: number
+  pieces: readonly Piece[]
+  total: number
+  duration: number
+  pixelsPerSecond: number
+  onChange: (sourceTime: number) => void
+  disabled: boolean
+}
+
+/**
+ * Alça de uma ponta do bloco de um texto: arrastar muda quando ele começa ou termina; as setas também
+ * (0,1 s; com Shift, 1 s). O arraste anda no vídeo editado, e o tempo guardado é o do original.
+ */
+function TextEdgeHandle({ edge, text, editedValue, left, top, pieces, total, duration, pixelsPerSecond, onChange, disabled }: TextEdgeHandleProps) {
+  const start = useRef<{ x: number; edited: number } | null>(null)
+  const value = text[edge]
+  const limits = textEdgeLimits(text, edge, duration)
+  const toSource = (edited: number) => sourceTimeAt(pieces, Math.min(total, Math.max(0, edited))).time
+
+  function handleKeyDown(event: KeyboardEvent<HTMLSpanElement>) {
+    const step = keyStep(event.shiftKey)
+    const next = event.key === 'ArrowLeft' ? value - step : event.key === 'ArrowRight' ? value + step : null
+    if (next === null || disabled) return
+    event.preventDefault()
+    onChange(Math.min(limits.max, Math.max(limits.min, next)))
+  }
+
+  return (
+    <span
+      role="slider"
+      tabIndex={disabled ? -1 : 0}
+      aria-label={`${edge === 'start' ? 'Começo' : 'Fim'} do texto`}
+      aria-valuemin={limits.min}
+      aria-valuemax={limits.max}
+      aria-valuenow={value}
+      aria-valuetext={`${formatTime(value)} do vídeo original`}
+      aria-disabled={disabled || undefined}
+      onKeyDown={handleKeyDown}
+      onPointerDown={(event) => {
+        if (disabled) return
+        event.stopPropagation() // não arrasta a barra
+        event.currentTarget.setPointerCapture(event.pointerId)
+        start.current = { x: event.clientX, edited: editedValue }
+      }}
+      onPointerMove={(event) => {
+        if (!start.current) return
+        onChange(toSource(start.current.edited + (event.clientX - start.current.x) / pixelsPerSecond))
+      }}
+      onPointerUp={(event) => {
+        if (!start.current) return
+        onChange(toSource(start.current.edited + (event.clientX - start.current.x) / pixelsPerSecond))
+        start.current = null
+      }}
+      className={cx(
+        "absolute z-20 grid cursor-ew-resize touch-none place-items-center rounded-full bg-accent text-on-accent shadow-2 before:absolute before:inset-y-0 before:-inset-x-2.5 before:content-['']",
+        disabled && 'opacity-50',
+      )}
+      style={{ left, top: top + (LANE_BLOCK - 32) / 2, width: HANDLE_WIDTH, height: 32 }}
+    >
+      <Icon icon={edge === 'start' ? ChevronLeft : ChevronRight} size="sm" />
+    </span>
   )
 }
 

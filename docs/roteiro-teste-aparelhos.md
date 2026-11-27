@@ -128,6 +128,13 @@ Marque ✔ ou ✘ e anote o que estranhar.
 58. Em Estilo, escolha "Livre": as fotos aparecem espalhadas, com moldura branca e sombra. Arraste uma foto, use a alça do canto para girar e aumentar e, se der, dois dedos na foto. Crie e baixe: o arquivo é igual à prévia.
 59. Com uma foto só, aparece "Falta pelo menos mais uma foto" e o botão de criar fica desligado. Com 10 fotos, a 10ª fica de fora com aviso.
 
+### Texto no Editar vídeo
+
+60. Abra um vídeo em Editar vídeo e toque no "T": aparece um texto no meio do vídeo e o campo para escrever (o teclado abre). Escreva uma frase com acentos: ela aparece no vídeo enquanto você escreve.
+61. Em Estilo, experimente vários (Tarja, Neon, Bolha, Retrô...) e, em Cor, algumas cores: o vídeo muda na hora. Em Fonte, troque entre Cursiva, Máquina, Caneta e as outras. Em Ajustes, aumente o tamanho. Arraste o texto no vídeo para outro lugar.
+62. Na barra, embaixo das miniaturas, aparece o bloco do texto: arraste as alças das pontas para o texto aparecer por menos tempo. Toque em Tocar: o texto aparece e some nos pontos certos.
+63. Salve, confira em "Como ficou" e baixe: no vídeo salvo, o texto aparece no mesmo lugar, com o mesmo estilo e no mesmo tempo. Num vídeo gravado em pé, o texto sai em pé. Anote o tempo de salvar.
+
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.
@@ -144,6 +151,7 @@ Confirme se acontecem; não precisam ser tratados como erro.
 - O limite é de 1 GB por vídeo. Num celular com pouca memória, vídeos bem menores que isso podem falhar com a mensagem de memória. **Anote o tamanho e a duração se acontecer.**
 - Extrair áudio: o M4A copiado é instantâneo; o MP3 é refeito e leva mais tempo (no computador, cerca de 10 s para cada 3 minutos de som). O som de vídeos WEBM sai em WEBM, que iPhones mais antigos podem não tocar: para eles, existem M4A e MP3.
 - Converter vídeo: entre MP4 e MOV, um vídeo H.264 só é copiado (instantâneo). Para WEBM, ou de WEBM para MP4 e MOV, o vídeo é refeito e demora em vídeos longos. Um vídeo pequeno e já bem comprimido pode sair um pouco maior ao ser refeito. No Firefox, MP4 e MOV ficam indisponíveis quando o som precisa ser refeito (o Firefox não gera AAC).
+- Texto no Editar vídeo: com texto, o vídeo é sempre refeito (mais lento que só cortar). No Safari, o texto do arquivo salvo pode sair numa fonte um pouco diferente da prévia (lá, a fonte do app não carrega na parte que salva o vídeo). **Anote se acontecer.**
 - Criar colagem: o arquivo sai em JPG, com até 2048 px no lado maior (menos, se as fotos forem pequenas). Sobre a prévia, arrastar move a foto e não rola a página: para rolar, toque fora da colagem.
 - Criar GIF: o GIF não tem som e usa no máximo 256 cores (degradês podem aparecer em faixas). Com fundo parado ele fica leve; com a câmera em movimento, pesa vários MB (no computador, cerca de 2 MB para 5 s em 480 px).
 

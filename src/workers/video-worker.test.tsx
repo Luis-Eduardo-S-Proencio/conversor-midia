@@ -13,6 +13,7 @@ import segundosWebmUrl from '../../tests/fixtures/videos/segundos.webm?url'
 import soAudioUrl from '../../tests/fixtures/videos/so-audio.mp4?url'
 import somPcmUrl from '../../tests/fixtures/videos/som-pcm.mov?url'
 import textoUrl from '../../tests/fixtures/videos/texto.mp4?url'
+import type { VideoText } from '../core/video/text'
 import { audioPackets, measureTone, readAudio } from '../test/audio-reader'
 import { decodeGif } from '../test/format-readers'
 import { classify, fixtureBlob, readVideo, videoPackets } from '../test/video-reader'
@@ -799,5 +800,104 @@ describe('Worker de vídeo: converter', () => {
       const malformed = { kind: 'convert', file, ...job } as unknown as ConvertJob
       await expect(client.run(malformed)).rejects.toEqual(new VideoJobError('unexpected'))
     }
+  })
+})
+
+describe('Worker de vídeo: textos (Editar vídeo)', () => {
+  // Bolha grande: o fundo dela passa bem acima das letras, onde a cor é lida (0,85 da altura da letra acima do centro).
+  const bubble = (overrides: Partial<VideoText> = {}): VideoText => ({
+    id: 1,
+    text: 'aaa',
+    style: 'bolha',
+    color: '#ffd60a',
+    size: 0.16,
+    align: 'center',
+    x: 0.5,
+    y: 0.5,
+    start: 0,
+    end: 1.5,
+    ...overrides,
+  })
+  /** Ponto dentro da bolha, acima das letras: a letra tem 16% do lado menor do quadro. */
+  const aboveLetters = (centerY: number, shortSide: number) => Math.round(centerY - 0.85 * 0.16 * shortSide)
+
+  it('num corte, o vídeo é refeito com o texto nos quadros, só no tempo dele, e o som continua', SLOW, async () => {
+    const result = await client.run({ kind: 'trim', file: await fixtureBlob(segundosMp4Url), start: 0, end: 4, mode: 'exact', look: { texts: [bubble()] } })
+    expect(result.copied).toBe(false)
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ format: 'MP4', videoCodec: 'avc', audioCodec: 'aac', width: 320, height: 240 })
+      expect(video.duration).toBeCloseTo(4, 1)
+      const y = aboveLetters(120, 240)
+      expect(await video.colorAt(0.5, 160, y)).toBe('yellow') // a bolha, sobre o vermelho
+      expect(await video.colorAt(0.5, 10, 10)).toBe('red') // longe do texto, o vídeo como era
+      expect(await video.colorAt(1.7, 160, y)).toBe('green') // depois de 1,5 s, o texto sumiu
+    } finally {
+      video.dispose()
+    }
+  })
+
+  it('juntando pedaços, o texto aparece no tempo do vídeo original', SLOW, async (context) => {
+    if (!(await canEncodeAac())) context.skip()
+    // Fica 0–1 s (vermelho) e 2–4 s (azul, amarelo); o texto está em 2–2,9 s do original: 1–1,9 s do resultado.
+    const result = await client.run({
+      kind: 'join',
+      file: await fixtureBlob(segundosMp4Url),
+      ranges: [
+        { start: 0, end: 1 },
+        { start: 2, end: 4 },
+      ],
+      look: { texts: [bubble({ color: '#32d74b', start: 2, end: 2.9 })] },
+    })
+    const video = await readVideo(result.blob)
+    try {
+      expect(video.duration).toBeCloseTo(3, 1)
+      const y = aboveLetters(120, 240)
+      expect(await video.colorAt(0.5, 160, y)).toBe('red') // 0,5 s do original: sem texto
+      expect(await video.colorAt(1.5, 160, y)).toBe('green') // 2,5 s do original: a bolha verde sobre o azul
+      expect(await video.colorAt(1.5, 10, 10)).toBe('blue')
+    } finally {
+      video.dispose()
+    }
+  })
+
+  it('vídeo gravado em pé: o texto sai em pé, no mesmo lugar da prévia, e o arquivo fica sem rotação', SLOW, async () => {
+    const result = await client.run({
+      kind: 'trim',
+      file: await fixtureBlob(giradoUrl),
+      start: 0,
+      end: 0.5,
+      mode: 'exact',
+      look: { texts: [bubble({ y: 0.25, color: '#32d74b', end: 1 })] },
+    })
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ width: 240, height: 320, rotation: 0 })
+      expect(await video.colorAt(0.2, 120, aboveLetters(80, 240))).toBe('green')
+    } finally {
+      video.dispose()
+    }
+  })
+
+  it('com outra fonte (carregada do próprio site pelo Worker), o texto sai do mesmo jeito', SLOW, async () => {
+    const result = await client.run({ kind: 'trim', file: await fixtureBlob(segundosMp4Url), start: 0, end: 1, mode: 'exact', look: { texts: [bubble({ font: 'condensada' })] } })
+    const video = await readVideo(result.blob)
+    try {
+      expect(await video.colorAt(0.5, 160, aboveLetters(120, 240))).toBe('yellow')
+    } finally {
+      video.dispose()
+    }
+  })
+
+  it('texto inválido é ignorado: sem nada válido, o corte segue como antes (copiando)', SLOW, async () => {
+    const result = await client.run({
+      kind: 'trim',
+      file: await fixtureBlob(segundosMp4Url),
+      start: 0,
+      end: 2,
+      mode: 'exact',
+      look: { texts: [bubble({ color: 'vermelho' })] },
+    })
+    expect(result.copied).toBe(true)
   })
 })

@@ -18,7 +18,7 @@ import {
   type GridLayout,
 } from '../../../core/image/collage'
 import { ACCEPTED_TYPES } from '../shared/constants'
-import { ChoiceGrid } from './ChoiceGrid'
+import { ChoiceGrid } from '../../../components/ui/ChoiceGrid'
 import type { Collage } from './useCollage'
 
 type OptionsTab = 'layout' | 'border' | 'photos'
@@ -52,7 +52,7 @@ const TILE =
   'aria-checked:border-accent aria-checked:bg-accent-soft aria-checked:text-accent forced-colors:aria-checked:outline'
 
 const SWATCH =
-  'grid h-11 place-items-center rounded-full transition-shadow duration-(--dur-2) ' +
+  'grid size-11 justify-self-center place-items-center rounded-full transition-shadow duration-(--dur-2) ' +
   'aria-checked:ring-2 aria-checked:ring-accent aria-checked:ring-offset-2 aria-checked:ring-offset-surface-1 forced-colors:aria-checked:outline'
 
 /** Desenho do layout na proporção escolhida: os espaços como blocos, como nos apps de colagem. */

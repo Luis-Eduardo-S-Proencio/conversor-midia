@@ -2,6 +2,7 @@ import type { CropRect } from '../core/image/crop'
 import type { AudioFormat } from '../core/video/audio'
 import type { TrackAction, VideoMode } from '../core/video/convert'
 import type { VideoFormat } from '../core/video/formats'
+import type { VideoLook } from '../core/video/look'
 import type { GifFrameRate } from '../core/video/gif'
 import type { VideoErrorCode } from '../core/video/messages'
 import type { TrimMode, TrimRange } from '../core/video/trim'
@@ -23,6 +24,8 @@ export interface TrimJob {
   start: number
   end: number
   mode: TrimMode
+  /** Textos desenhados nos quadros (Editar vídeo): com eles, o vídeo é sempre refeito. */
+  look?: VideoLook
 }
 
 /**
@@ -33,6 +36,8 @@ export interface JoinJob {
   kind: 'join'
   file: Blob
   ranges: TrimRange[]
+  /** Textos desenhados nos quadros (Editar vídeo). */
+  look?: VideoLook
 }
 
 /** Mantém só a área pedida, em pixels do quadro como ele aparece (rotação já aplicada). */

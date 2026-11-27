@@ -33,7 +33,7 @@ import {
   type InputVideoTrack,
   type OutputFormat,
   type VideoCodec,
-  type VideoSample,
+  VideoSample,
 } from 'mediabunny'
 import { isCropWithin, type CropRect } from '../core/image/crop'
 import { GIF_END, GIF_MAX_COLORS, GifFrameEncoder, gifHeader } from '../core/image/encode/gif'
@@ -45,6 +45,9 @@ import { MIN_VIDEO_CROP_SIDE, encodableCrop, encodableSize } from '../core/video
 import { VIDEO_FORMATS, type VideoFormat } from '../core/video/formats'
 import { GIF_FRAME_RATES, MAX_GIF_SECONDS, gifDelays, gifFrameTimes, gifPaletteTimes } from '../core/video/gif'
 import { cappedVideoBitrate } from '../core/video/sizing'
+import { sanitizeLook, type VideoLook } from '../core/video/look'
+import { canvasMeasure, drawText, layoutText, textsAt, type TextCanvas } from '../core/video/text'
+import { textFontLoader } from './text-font-files'
 import type { VideoErrorCode } from '../core/video/messages'
 import { joinSegments, keptPieces, segmentAt, type JoinSegment } from '../core/video/remove'
 import { TIME_TOLERANCE, type TrimRange } from '../core/video/trim'
@@ -456,12 +459,78 @@ async function inspect(job: InspectJob): Promise<InspectOutput> {
   }
 }
 
+/**
+ * As fontes dos textos, do próprio site, para saírem iguais à prévia. Sem suporte a fontes no Worker (alguns
+ * Safari), fica a reserva de cada uma: o texto sai, com outra fonte.
+ */
+const loadTextFont = textFontLoader((self as unknown as { fonts?: { add(face: FontFace): unknown } }).fonts)
+
+/**
+ * Desenha os textos que aparecem num quadro (pelo tempo dele no vídeo original). Um canvas só, reaproveitado:
+ * o quadro desenhado vira um VideoSample novo (cópia) antes do próximo.
+ */
+function lookPainter(look: VideoLook) {
+  let surface: { canvas: OffscreenCanvas; context: OffscreenCanvasRenderingContext2D } | undefined
+  return (sample: VideoSample, sourceTime: number): VideoSample => {
+    const visible = textsAt(look.texts, sourceTime)
+    if (visible.length === 0) return sample
+    const width = sample.displayWidth
+    const height = sample.displayHeight
+    if (!surface || surface.canvas.width !== width || surface.canvas.height !== height) {
+      const canvas = new OffscreenCanvas(width, height)
+      const context = canvas.getContext('2d')
+      if (!context) throw new JobError('memory')
+      surface = { canvas, context }
+    }
+    const { canvas, context } = surface
+    context.clearRect(0, 0, width, height)
+    sample.draw(context, 0, 0, width, height)
+    const target = context as unknown as TextCanvas
+    const measure = canvasMeasure(target)
+    for (const text of visible) drawText(target, text, layoutText(text, { width, height }, measure))
+    const painted = new VideoSample(canvas, { timestamp: sample.timestamp, duration: sample.duration })
+    sample.close()
+    return painted
+  }
+}
+
+/**
+ * Opções do vídeo refeito com os textos. O quadro chega em pé (a rotação vai para os pixels, não para os
+ * metadados), como na prévia. `keep` decide antes se o quadro fica (e para onde anda), ao juntar pedaços.
+ */
+async function lookVideoOptions(
+  opened: OpenedVideo,
+  look: VideoLook,
+  originOf: (sample: VideoSample) => number,
+  keep?: (sample: VideoSample) => VideoSample | null,
+): Promise<ConversionVideoOptions> {
+  await Promise.all([...new Set(look.texts.map((text) => text.font ?? 'inter'))].map((id) => loadTextFont(id)))
+  const paint = lookPainter(look)
+  return {
+    ...(await reading(transcodeOptions(opened))),
+    allowTransformationMetadata: false,
+    process: (sample) => {
+      // O tempo no original vem antes de o quadro andar para encostar no pedaço anterior.
+      const origin = originOf(sample)
+      const kept = keep ? keep(sample) : sample
+      return kept ? paint(kept, origin) : null
+    },
+  }
+}
+
 async function trim(job: TrimJob, onProgress: ProgressReporter): Promise<TrimOutput> {
   const opened = await openVideo(job.file)
   try {
     const duration = await reading(opened.input.computeDuration(selectedTracks(opened)))
     if (!(job.start >= 0 && job.end > job.start && job.start < duration)) throw new JobError('unexpected')
     const end = Math.min(job.end, duration)
+    const look = sanitizeLook(job.look, duration)
+    if (look) {
+      // Com textos, cada quadro é redesenhado: não há o que copiar.
+      const video = await lookVideoOptions(opened, look, (sample) => job.start + sample.timestamp)
+      const blob = await convert(opened, { trim: { start: job.start, end }, video }, onProgress)
+      return { kind: 'trim', blob, copied: false }
+    }
     // WEBM não guarda quadros antes do zero: lá o corte rápido não existe e o exato vale sempre.
     const exact = job.mode === 'exact' || opened.format === 'webm'
     const keyStart = exact ? await reading(copyableStart(opened.video, job.start)) : job.start
@@ -528,10 +597,10 @@ async function join(job: JoinJob, onProgress: ProgressReporter): Promise<JoinOut
     if (!first || !last) throw new JobError('unexpected')
     // O Mediabunny entrega os quadros já com o tempo contado a partir do início do primeiro pedaço.
     const segments = joinSegments(ranges)
-    const video: ConversionVideoOptions = {
-      ...(await reading(transcodeOptions(opened))),
-      process: (sample) => joinVideoSample(segments, sample),
-    }
+    const look = sanitizeLook(job.look, duration)
+    const video: ConversionVideoOptions = look
+      ? await lookVideoOptions(opened, look, (sample) => first.start + sample.timestamp, (sample) => joinVideoSample(segments, sample))
+      : { ...(await reading(transcodeOptions(opened))), process: (sample) => joinVideoSample(segments, sample) }
     // Som refeito perto da taxa do original, para o arquivo não crescer à toa.
     const audioRate = opened.audio ? await reading(audioBitrate(opened.audio)) : null
     const audio: ConversionAudioOptions = {

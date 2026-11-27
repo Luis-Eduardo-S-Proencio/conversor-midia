@@ -232,3 +232,104 @@ test.describe('Editar vídeo', () => {
     expect(await smallTouchTargets(page)).toEqual([])
   })
 })
+
+test.describe('Editar vídeo: textos', () => {
+  const textField = (page: Page) => page.getByRole('textbox', { name: 'Texto', exact: true })
+  /** Ponto dentro da bolha, acima das letras (a letra no maior tamanho tem 16% do lado menor do quadro, 240 px). */
+  const aboveLetters = (centerY: number) => Math.round(centerY - 0.85 * 0.16 * 240)
+
+  async function addBubble(page: Page) {
+    await button(page, 'Adicionar texto').click()
+    await expect(textField(page)).toBeFocused()
+    await textField(page).fill('Oi')
+    await page.getByRole('radio', { name: 'Bolha', exact: true }).click()
+    await page.getByRole('tab', { name: 'Fonte' }).click()
+    await page.getByRole('radio', { name: 'Cursiva', exact: true }).click()
+    await expect(page.getByRole('radio', { name: 'Cursiva', exact: true })).toHaveAttribute('aria-checked', 'true')
+    await page.getByRole('tab', { name: 'Cor' }).click()
+    await page.getByRole('radio', { name: 'Verde', exact: true }).click()
+    await page.getByRole('tab', { name: 'Ajustes' }).click()
+    await page.getByRole('slider', { name: 'Tamanho' }).fill('100')
+  }
+
+  test('o T põe um texto no ponto da linha; estilo, cor e lugar saem no vídeo salvo, só no tempo dele', async ({ page }) => {
+    await openWithDecoding(page)
+    await load(page)
+    await addBubble(page)
+    // O texto aparece no player e na faixa da barra, de 0 a 3 s.
+    await expect(page.getByRole('button', { name: 'Texto: Oi' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Oi, texto de 0:00,00 a 0:03,00 do vídeo original' })).toBeVisible()
+    await expect(page.getByText('De 0:00,00 a 0:03,00 do vídeo original', { exact: true })).toBeVisible()
+    await expect(detail(page, 'Textos')).toHaveText('1')
+
+    // Pelo teclado, o texto sobe 10% do quadro (Shift + seta: 5% por vez).
+    await page.getByRole('button', { name: 'Texto: Oi' }).focus()
+    await page.keyboard.press('Shift+ArrowUp')
+    await page.keyboard.press('Shift+ArrowUp')
+    await button(page, 'Concluir o texto').click()
+    await expect(textField(page)).toHaveCount(0)
+
+    await save(page)
+    const result = await download(page, button(page, 'Baixar vídeo'))
+    expectVideoFormat(result.bytes, 'mp4')
+    const probe = await probeVideo(result.bytes)
+    expect(probe.duration).toBeCloseTo(4, 1)
+    // A bolha verde ficou com o centro em 40% da altura (96 px), sobre o vermelho; depois de 3 s, sumiu.
+    expect(await frameColors(page, result.bytes, 0.5, [[160, aboveLetters(96)], [10, 10]])).toEqual(['green', 'red'])
+    expect(await frameColors(page, result.bytes, 3.5, [[160, aboveLetters(96)]])).toEqual(['yellow'])
+  })
+
+  test('as pontas do bloco na barra mudam quando o texto aparece; Desfazer tira o texto', async ({ page }) => {
+    await openWithDecoding(page)
+    await load(page)
+    await button(page, 'Adicionar texto').click()
+    await textField(page).fill('Olá')
+    const end = page.getByRole('slider', { name: 'Fim do texto' })
+    await end.focus()
+    await page.keyboard.press('Shift+ArrowLeft') // 1 s antes
+    await expect(end).toHaveAttribute('aria-valuetext', '0:02,00 do vídeo original')
+    await page.getByRole('tab', { name: 'Ajustes' }).click()
+    await expect(page.getByText('De 0:00,00 a 0:02,00 do vídeo original', { exact: true })).toBeVisible()
+
+    // Escrever e mexer no texto aberto é um passo só: desfazer volta ao vídeo sem o texto.
+    await button(page, 'Desfazer').click()
+    await expect(page.getByRole('button', { name: /, texto de / })).toHaveCount(0)
+    await expect(button(page, 'Salvar vídeo')).toBeDisabled()
+    await button(page, 'Refazer').click()
+    await expect(page.getByRole('button', { name: 'Olá, texto de 0:00,00 a 0:02,00 do vídeo original' })).toBeVisible()
+  })
+
+  test('texto com corte: o texto acompanha o tempo do original e o arquivo sai com os dois', async ({ page }) => {
+    await openWithDecoding(page)
+    await load(page)
+    // Texto de 0 a 3 s; depois, tira o primeiro segundo (vermelho).
+    await addBubble(page)
+    await button(page, 'Concluir o texto').click()
+    await splitAt(page, 1)
+    await selectPiece(page, 1, 2)
+    await button(page, 'Excluir').click()
+    await expect(detail(page, 'Vídeo final')).toHaveText('0:03,01')
+    await save(page)
+    const result = await download(page, button(page, 'Baixar vídeo'))
+    expect((await probeVideo(result.bytes)).duration).toBeCloseTo(3, 1)
+    // 0,5 s do resultado = 1,5 s do original (verde, com a bolha); 2,5 s = 3,5 s do original, sem texto.
+    expect(await frameColors(page, result.bytes, 0.5, [[10, 10]])).toEqual(['green'])
+    expect(await frameColors(page, result.bytes, 2.5, [[160, aboveLetters(120)]])).toEqual(['yellow'])
+  })
+
+  test('texto aberto: sem violações de acessibilidade, sem rolagem lateral e alvos de 44 px no celular', async ({ page }, testInfo) => {
+    test.skip(!['desktop', 'mobile'].includes(testInfo.project.name), 'conferido no Chromium em duas larguras')
+    await openWithDecoding(page)
+    await load(page)
+    await addBubble(page)
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await expectNoAxeViolations(page)
+    expect(await horizontalOverflow(page)).toBe(0)
+    if (testInfo.project.name === 'mobile') {
+      for (const tab of ['Estilo', 'Cor', 'Ajustes']) {
+        await page.getByRole('tab', { name: tab }).click()
+        expect(await smallTouchTargets(page)).toEqual([])
+      }
+    }
+  })
+})

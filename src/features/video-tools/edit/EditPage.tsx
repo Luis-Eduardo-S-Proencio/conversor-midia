@@ -17,11 +17,11 @@ export function EditPage() {
   return (
     <VideoToolPage
       title="Editar vídeo"
-      description="Marque na barra as partes que não quer, exclua e veja na hora como fica."
+      description="Tire as partes que não quer e ponha textos, vendo na hora como fica."
       labels={EDIT_LABELS}
       actionIcon={Save}
       tool={tool}
-      canStart={plan !== undefined && plan.kind !== 'unchanged' && !editor.saveBlocker}
+      canStart={editor.canSave}
       onStart={editor.apply}
       preview={
         state.sourceUrl &&
@@ -43,6 +43,14 @@ export function EditPage() {
             onRedo={editor.redo}
             onSelect={editor.select}
             onSelectionEdge={editor.moveSelection}
+            texts={editor.texts}
+            selectedText={editor.selectedText}
+            onAddText={editor.addText}
+            onSelectText={editor.selectText}
+            onChangeText={editor.changeText}
+            onTextTime={editor.setTextTime}
+            onDuplicateText={editor.duplicateText}
+            onDeleteText={editor.removeText}
             disabled={busy}
           />
         )
@@ -55,6 +63,7 @@ export function EditPage() {
             edit={edit}
             selection={editor.selection}
             plan={plan}
+            texts={editor.look?.texts.length ?? 0}
             saveBlocker={editor.saveBlocker}
             extraTracks={info.extraTracks}
           />

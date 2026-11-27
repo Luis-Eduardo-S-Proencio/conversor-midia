@@ -901,3 +901,96 @@ describe('Worker de vídeo: textos (Editar vídeo)', () => {
     expect(result.copied).toBe(true)
   })
 })
+
+describe('Worker de vídeo: efeitos (Editar vídeo)', () => {
+  const pb = { filter: 'pb' as const, intensity: 100, adjust: { brightness: 0, contrast: 0, saturation: 0, warmth: 0 } }
+
+  it('filtro P&B: o vídeo é refeito em cinza, e o texto por cima continua na cor dele', SLOW, async () => {
+    const text: VideoText = { id: 1, text: 'aaa', style: 'bolha', color: '#32d74b', size: 0.16, align: 'center', x: 0.5, y: 0.5, start: 0, end: 4 }
+    const result = await client.run({ kind: 'trim', file: await fixtureBlob(segundosMp4Url), start: 0, end: 4, mode: 'exact', look: { texts: [text], color: pb } })
+    expect(result.copied).toBe(false)
+    const video = await readVideo(result.blob)
+    try {
+      expect(video).toMatchObject({ videoCodec: 'avc', audioCodec: 'aac', width: 320, height: 240 })
+      expect(await video.colorAt(0.5, 10, 10)).toBe('gray') // era vermelho
+      expect(await video.colorAt(1.5, 10, 10)).toBe('gray') // era verde
+      expect(await video.colorAt(3.5, 10, 10)).toBe('gray') // era amarelo
+      expect(await video.colorAt(0.5, 160, Math.round(120 - 0.85 * 0.16 * 240))).toBe('green') // a bolha, sem filtro
+    } finally {
+      video.dispose()
+    }
+  })
+
+  it('só com cor (sem texto), o vídeo também é refeito', SLOW, async () => {
+    const result = await client.run({ kind: 'trim', file: await fixtureBlob(segundosMp4Url), start: 0, end: 2, mode: 'exact', look: { texts: [], color: pb } })
+    expect(result.copied).toBe(false)
+    const video = await readVideo(result.blob)
+    try {
+      expect(await video.colorAt(0.5, 160, 120)).toBe('gray')
+    } finally {
+      video.dispose()
+    }
+  })
+
+  it('cor que não muda nada é ignorada: o corte segue copiando', SLOW, async () => {
+    const result = await client.run({ kind: 'trim', file: await fixtureBlob(segundosMp4Url), start: 0, end: 2, mode: 'exact', look: { texts: [], color: { ...pb, intensity: 0 } } })
+    expect(result.copied).toBe(true)
+  })
+
+  it('2×: o vídeo dura a metade, as cores chegam na metade do tempo e o som fica no mesmo tom', SLOW, async (context) => {
+    if (!(await canEncodeAac())) context.skip()
+    const result = await client.run({ kind: 'join', file: await fixtureBlob(segundosMp4Url), ranges: [{ start: 0, end: 4 }], speed: 2 })
+    const video = await readVideo(result.blob)
+    try {
+      expect(video.duration).toBeCloseTo(2, 1)
+      expect(video.audioDuration).toBeCloseTo(2, 1)
+      expect(await video.colorAt(0.25, 160, 120)).toBe('red') // 0,5 s do original
+      expect(await video.colorAt(0.75, 160, 120)).toBe('green') // 1,5 s
+      expect(await video.colorAt(1.25, 160, 120)).toBe('blue') // 2,5 s
+      expect(await video.colorAt(1.75, 160, 120)).toBe('yellow') // 3,5 s
+    } finally {
+      video.dispose()
+    }
+    const tone = await measureTone(result.blob, 0.2, 1.8)
+    expect(tone.frequency).toBeGreaterThan(440 * 0.95)
+    expect(tone.frequency).toBeLessThan(440 * 1.05)
+    expect(tone.rms).toBeGreaterThan(0.1)
+  })
+
+  it('0,5× juntando pedaços: dura o dobro do que ficou, e o som acompanha a imagem até o fim', SLOW, async (context) => {
+    if (!(await canEncodeAac())) context.skip()
+    // Ficam 0–1 s (vermelho) e 2–3 s (azul): 2 s, que a 0,5× viram 4 s.
+    const result = await client.run({
+      kind: 'join',
+      file: await fixtureBlob(segundosMp4Url),
+      ranges: [
+        { start: 0, end: 1 },
+        { start: 2, end: 3 },
+      ],
+      speed: 0.5,
+      look: { texts: [], color: pb },
+    })
+    const video = await readVideo(result.blob)
+    try {
+      expect(video.duration).toBeCloseTo(4, 1)
+      expect(video.audioDuration).toBeCloseTo(4, 1)
+      expect(await video.colorAt(1, 160, 120)).toBe('gray') // vermelho, em P&B
+    } finally {
+      video.dispose()
+    }
+    const tone = await measureTone(result.blob, 0.3, 3.7)
+    expect(tone.frequency).toBeGreaterThan(440 * 0.95)
+    expect(tone.frequency).toBeLessThan(440 * 1.05)
+  })
+
+  it('velocidade fora das oferecidas é a normal', SLOW, async (context) => {
+    if (!(await canEncodeAac())) context.skip()
+    const result = await client.run({ kind: 'join', file: await fixtureBlob(segundosMp4Url), ranges: [{ start: 0, end: 2 }], speed: 7 })
+    const video = await readVideo(result.blob)
+    try {
+      expect(video.duration).toBeCloseTo(2, 1)
+    } finally {
+      video.dispose()
+    }
+  })
+})

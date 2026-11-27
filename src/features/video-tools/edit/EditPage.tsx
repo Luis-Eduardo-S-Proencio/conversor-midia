@@ -1,6 +1,5 @@
 import { Save } from 'lucide-react'
 import { formatTime } from '../../../core/video/time'
-import { editedDuration } from '../../../core/video/timeline'
 import { VideoToolPage } from '../shared/VideoToolPage'
 import { EditOptions } from './EditOptions'
 import { EDIT_LABELS } from './settings'
@@ -17,7 +16,7 @@ export function EditPage() {
   return (
     <VideoToolPage
       title="Editar vídeo"
-      description="Tire as partes que não quer e ponha textos, vendo na hora como fica."
+      description="Tire as partes que não quer, ponha textos e efeitos, vendo na hora como fica."
       labels={EDIT_LABELS}
       actionIcon={Save}
       tool={tool}
@@ -51,6 +50,8 @@ export function EditPage() {
             onTextTime={editor.setTextTime}
             onDuplicateText={editor.duplicateText}
             onDeleteText={editor.removeText}
+            effects={editor.effects}
+            onChangeEffects={editor.changeEffects}
             disabled={busy}
           />
         )
@@ -64,6 +65,8 @@ export function EditPage() {
             selection={editor.selection}
             plan={plan}
             texts={editor.look?.texts.length ?? 0}
+            effects={editor.effects}
+            finalDuration={editor.finalDuration}
             saveBlocker={editor.saveBlocker}
             extraTracks={info.extraTracks}
           />
@@ -73,7 +76,7 @@ export function EditPage() {
         edit && (
           <dl className="flex items-baseline justify-between gap-3 text-sm">
             <dt className="text-fg-muted">Vídeo final</dt>
-            <dd className="tabular-nums text-fg">{formatTime(editedDuration(edit.pieces))}</dd>
+            <dd className="tabular-nums text-fg">{formatTime(editor.finalDuration)}</dd>
           </dl>
         )
       }

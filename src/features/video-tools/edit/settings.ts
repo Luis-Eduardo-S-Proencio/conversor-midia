@@ -38,3 +38,6 @@ export function rulerStep(pixelsPerSecond: number): number {
 
 /** Passo das setas na barra e nas pontas: 0,1 s; com Shift, 1 s. */
 export const keyStep = (shift: boolean) => (shift ? 1 : 0.1)
+
+/** Base dos ids dos filtros de cor: o `useId` devolve caracteres que não valem num `url(#…)` do CSS. */
+export const filterIdBase = (id: string) => `fx-${id.replace(/[^\w-]/g, '')}`

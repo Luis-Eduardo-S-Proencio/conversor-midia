@@ -23,6 +23,7 @@ import {
 import { TIME_TOLERANCE, availableTrimModes, canRemoveParts } from '../../../core/video/trim'
 import { TEXT_LIMITS, newText, setTextEdge, textsInRanges, type VideoText } from '../../../core/video/text'
 import type { VideoLook } from '../../../core/video/look'
+import { NO_EFFECTS, hasColorChange, type VideoEffects } from '../../../core/video/effects'
 import { codecLabel } from '../../../core/video/formats'
 import { isAbortError } from '../../../workers/video-client'
 import { useVideoTool } from '../shared/useVideoTool'
@@ -36,11 +37,12 @@ export interface Thumbnails {
   height: number
 }
 
-/** O que se desfaz: os cortes e os textos, juntos. */
+/** O que se desfaz: os cortes, os textos e os efeitos, juntos. */
 interface EditorState {
   cut: Edit
   texts: VideoText[]
   nextTextId: number
+  effects: VideoEffects
 }
 
 interface Session {
@@ -55,9 +57,14 @@ interface Session {
    * mesmo passo de desfazer, em vez de um passo por letra.
    */
   textDirty?: boolean
+  /**
+   * O último passo dos efeitos e o controle que o fez: mexer seguido no mesmo controle deslizante (cada passo
+   * do arraste, cada seta) fica nesse passo, em vez de um passo de desfazer por valor.
+   */
+  effectsStep?: { key: string; state: EditorState }
 }
 
-const startEditor = (duration: number): History<EditorState> => startHistory({ cut: initialEdit(duration), texts: [], nextTextId: 1 })
+const startEditor = (duration: number): History<EditorState> => startHistory({ cut: initialEdit(duration), texts: [], nextTextId: 1, effects: NO_EFFECTS })
 
 /**
  * Editar vídeo: um vídeo por vez. A pessoa marca na barra a parte que quer tirar (tocando num pedaço e
@@ -78,6 +85,8 @@ export function useEditTool() {
   }, [info, fileId, stored])
   const edit = session?.history.present.cut
   const texts = session?.history.present.texts
+  const effects = session?.history.present.effects ?? NO_EFFECTS
+  const { speed } = effects
   const duration = info?.duration ?? 0
 
   // Miniaturas da barra, geradas logo depois de abrir. Sem elas (vídeo que o navegador não lê), a barra funciona igual.
@@ -246,6 +255,25 @@ export function useEditTool() {
     [session, update, setAnnouncement],
   )
 
+  /* Efeitos */
+
+  /**
+   * Muda os efeitos (um passo de desfazer). Com `key` (um controle deslizante), as mudanças seguidas no mesmo
+   * controle ficam no mesmo passo.
+   */
+  const changeEffects = useCallback(
+    (change: (current: VideoEffects) => VideoEffects, key?: string) => {
+      if (!session) return
+      const present = session.history.present
+      const next = { ...present, effects: change(present.effects) }
+      const continuing = key !== undefined && session.effectsStep?.key === key && session.effectsStep.state === present
+      const history = continuing ? { ...session.history, present: next } : commit(session.history, next)
+      setStored({ ...session, history, effectsStep: key === undefined ? undefined : { key, state: next }, selection: undefined, textDirty: false })
+      invalidateResult()
+    },
+    [session, invalidateResult],
+  )
+
   const undoEdit = useCallback(() => {
     update((current) => ({ ...current, history: undo(current.history), selection: undefined, textDirty: false }))
     setAnnouncement('Desfeito.')
@@ -258,20 +286,31 @@ export function useEditTool() {
 
   const plan = useMemo<SavePlan | undefined>(() => (edit ? savePlan(edit, duration) : undefined), [edit, duration])
 
-  /** Os textos que vão para o arquivo: com letras e aparecendo em alguma parte que fica. */
+  /** O que vai para os quadros: os textos com letras que aparecem em alguma parte que fica e a cor, se muda algo. */
   const look = useMemo<VideoLook | undefined>(() => {
     if (!plan || !texts) return undefined
     const ranges = plan.kind === 'trim' ? [plan.range] : plan.kind === 'join' ? plan.ranges : [{ start: 0, end: duration }]
     const kept = textsInRanges(texts, ranges)
-    return kept.length > 0 ? { texts: kept } : undefined
-  }, [plan, texts, duration])
+    const color = hasColorChange(effects.color) ? effects.color : undefined
+    if (kept.length === 0 && !color) return undefined
+    return color ? { texts: kept, color } : { texts: kept }
+  }, [plan, texts, duration, effects.color])
+
+  /** Há o que salvar além do vídeo como era. */
+  const changed = plan !== undefined && (plan.kind !== 'unchanged' || look !== undefined || speed !== 1)
 
   /** Por que este navegador não consegue salvar a edição atual; `undefined` quando consegue. */
   const saveBlocker = useMemo(() => {
-    if (!info || !plan || (plan.kind === 'unchanged' && !look)) return undefined
+    if (!info || !plan || !changed) return undefined
     const codec = codecLabel(info.codec)
     if (look && !info.canTranscodeVideo) {
-      return `Para salvar com texto, o vídeo é refeito, e este navegador não consegue refazer vídeos ${codec}. Tente no Chrome, no Edge ou no Safari.`
+      const reason = look.texts.length > 0 ? 'Para salvar com texto' : 'Com filtro ou ajustes'
+      return `${reason}, o vídeo é refeito, e este navegador não consegue refazer vídeos ${codec}. Tente no Chrome, no Edge ou no Safari.`
+    }
+    if (speed !== 1 && !canRemoveParts(info)) {
+      return info.canTranscodeVideo
+        ? 'Para mudar a velocidade, o som também é refeito, e este navegador não consegue refazer o som deste vídeo. Tente no Chrome, no Edge ou no Safari.'
+        : `Para mudar a velocidade, o vídeo é refeito, e este navegador não consegue refazer vídeos ${codec}. Tente no Chrome, no Edge ou no Safari.`
     }
     if (plan.kind === 'join' && !canRemoveParts(info)) {
       return info.canTranscodeVideo
@@ -283,23 +322,24 @@ export function useEditTool() {
       return `Começar depois do início refaz o vídeo, e este navegador não consegue refazer vídeos ${codec}. Aqui dá para tirar só o final do vídeo.`
     }
     return undefined
-  }, [info, plan, look])
+  }, [info, plan, look, speed, changed])
 
-  /** Há o que salvar: cortes ou textos. */
-  const canSave = plan !== undefined && (plan.kind !== 'unchanged' || look !== undefined) && !saveBlocker
+  /** Há o que salvar (cortes, textos ou efeitos) e este navegador consegue. */
+  const canSave = changed && !saveBlocker
 
   const apply = useCallback(() => {
     if (!info || !plan || !canSave) return
     const deliver = (output: { blob: Blob }, original: File) => ({ blob: output.blob, name: videoOutputName(original.name, info.format, EDIT_SUFFIX) })
-    if (plan.kind === 'join') {
-      const { ranges } = plan
-      void run((file) => ({ kind: 'join', file, ranges, look }), deliver)
+    // Em outra velocidade, o som é sempre refeito: mesmo um trecho só vai pelo juntar.
+    if (plan.kind === 'join' || speed !== 1) {
+      const ranges = plan.kind === 'join' ? plan.ranges : plan.kind === 'trim' ? [plan.range] : [{ start: 0, end: info.duration }]
+      void run((file) => ({ kind: 'join', file, ranges, look, ...(speed !== 1 && { speed }) }), deliver)
       return
     }
-    // Sem cortes, só com textos: o vídeo inteiro, refeito com eles.
+    // Sem cortes, só com textos ou cor: o vídeo inteiro, refeito com eles.
     const { start, end } = plan.kind === 'trim' ? plan.range : { start: 0, end: info.duration }
     void run((file) => ({ kind: 'trim', file, start, end, mode: 'exact', look }), deliver)
-  }, [info, plan, canSave, look, run])
+  }, [info, plan, canSave, look, speed, run])
 
   const selectedText = texts?.find((text) => text.id === session?.textId)
 
@@ -309,6 +349,10 @@ export function useEditTool() {
     texts: texts ?? [],
     selectedText,
     look,
+    effects,
+    changeEffects,
+    /** Duração do vídeo salvo: o que fica, na velocidade escolhida. */
+    finalDuration: edit ? editedDuration(edit.pieces) / speed : 0,
     canSave,
     addText,
     selectText,

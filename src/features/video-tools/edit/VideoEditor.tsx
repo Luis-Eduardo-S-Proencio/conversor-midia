@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from
 import { Button, IconButton } from '../../../components/ui/Button'
 import { formatTime } from '../../../core/video/time'
 import type { VideoText } from '../../../core/video/text'
+import { colorMatrix, hasColorChange, type VideoEffects } from '../../../core/video/effects'
 import {
   canRemoveSelection,
   canSplitAt,
@@ -17,9 +18,10 @@ import {
   type Selection,
 } from '../../../core/video/timeline'
 import { EditTimeline } from './EditTimeline'
+import { ColorFilterDefs, EffectsButton, EffectsPanel } from './EffectsPanel'
 import { TextLayer } from './TextLayer'
 import { TextButton, TextPanel } from './TextPanel'
-import { ZOOM_LEVELS, initialZoom } from './settings'
+import { ZOOM_LEVELS, filterIdBase, initialZoom } from './settings'
 import type { Thumbnails } from './useEditTool'
 
 /** A emenda é tratada um pouco antes do fim do pedaço: o player avança aos saltos de um quadro. */
@@ -55,6 +57,9 @@ interface VideoEditorProps {
   onTextTime: (id: number, edge: Edge, sourceTime: number) => void
   onDuplicateText: (id: number) => void
   onDeleteText: (id: number) => void
+  /** Filtros, ajustes e velocidade do vídeo inteiro. */
+  effects: VideoEffects
+  onChangeEffects: (change: (current: VideoEffects) => VideoEffects, key?: string) => void
   disabled?: boolean
 }
 
@@ -70,7 +75,7 @@ function pieceIndexAt(pieces: readonly Piece[], sourceTime: number): number {
  * tira essa parte. "Dividir" corta o vídeo em dois pedaços no ponto da linha; os outros botões desfazem e mudam o zoom.
  */
 export function VideoEditor(props: VideoEditorProps) {
-  const { src, name, duration, edit, selection, thumbnails, canUndo, canRedo, texts, selectedText, disabled = false } = props
+  const { src, name, duration, edit, selection, thumbnails, canUndo, canRedo, texts, selectedText, effects, disabled = false } = props
   const video = useRef<HTMLVideoElement>(null)
   const wrapper = useRef<HTMLDivElement>(null)
   const playing = useRef(false)
@@ -80,7 +85,12 @@ export function VideoEditor(props: VideoEditorProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [zoom, setZoom] = useState<number>(ZOOM_LEVELS[0])
   const [unplayable, setUnplayable] = useState(false)
+  const [effectsOpen, setEffectsOpen] = useState(false)
   const hintId = useId()
+  const effectsPanelId = useId()
+  const lookFilterId = `${filterIdBase(useId())}-look`
+  const matrix = colorMatrix(effects.color)
+  const { speed } = effects
   const total = editedDuration(edit.pieces)
   const shown = Math.min(time, total)
 
@@ -106,6 +116,14 @@ export function VideoEditor(props: VideoEditorProps) {
     video.current?.pause()
   }, [])
 
+  // A prévia toca na velocidade escolhida; o navegador mantém o tom do som, como o arquivo salvo.
+  useEffect(() => {
+    const element = video.current
+    if (!element) return
+    element.defaultPlaybackRate = speed
+    element.playbackRate = speed
+  }, [speed])
+
   // Excluir, desfazer ou ajustar uma ponta muda o vídeo editado: o player já mostra como ficou no ponto da linha.
   // Só quando os pedaços mudam: mover a linha já busca o quadro por conta própria.
   useEffect(() => {
@@ -123,7 +141,8 @@ export function VideoEditor(props: VideoEditorProps) {
       let index = pieceIndexAt(pieces, element.currentTime)
       let piece = pieces[index]
       if (piece && element.currentTime < piece.start) element.currentTime = piece.start
-      if (piece && element.currentTime >= piece.end - SEAM_MARGIN) {
+      // Acelerado, o player anda mais entre dois quadros de tela: a emenda é tratada antes, na mesma proporção.
+      if (piece && element.currentTime >= piece.end - SEAM_MARGIN * Math.max(1, element.playbackRate)) {
         index += 1
         piece = pieces[index]
         if (piece) element.currentTime = piece.start
@@ -186,7 +205,14 @@ export function VideoEditor(props: VideoEditorProps) {
     const text = texts.find((item) => item.id === id)
     const now = sourceTimeAt(edit.pieces, shown).time
     if (text && !(now >= text.start && now < text.end)) scrub(Math.min(total, editedTimeAt(edit.pieces, text.start) + 0.001))
+    setEffectsOpen(false)
     props.onSelectText(id)
+  }
+
+  /** Um painel aberto por vez: abrir os efeitos fecha o texto aberto. */
+  function toggleEffects() {
+    if (!effectsOpen) props.onSelectText(undefined)
+    setEffectsOpen(!effectsOpen)
   }
 
   const sourceNow = sourceTimeAt(edit.pieces, shown).time
@@ -197,6 +223,7 @@ export function VideoEditor(props: VideoEditorProps) {
   return (
     <div ref={wrapper} className="grid min-w-0 grid-cols-1 gap-3">
       <div className="relative min-w-0">
+        {matrix && <ColorFilterDefs filters={[{ id: lookFilterId, matrix }]} />}
         <video
           ref={video}
           src={src}
@@ -209,6 +236,8 @@ export function VideoEditor(props: VideoEditorProps) {
           }}
           onError={() => setUnplayable(true)}
           className="max-h-[50dvh] w-full rounded-lg border border-border bg-bg"
+          // A cor dos efeitos só no vídeo: os textos, desenhados por cima, ficam na cor deles, como no arquivo.
+          style={matrix ? { filter: `url(#${lookFilterId})` } : undefined}
         />
         <TextLayer
           video={video}
@@ -238,7 +267,20 @@ export function VideoEditor(props: VideoEditorProps) {
         <Button icon={Trash2} onClick={props.onDelete} disabled={disabled || !canDelete}>
           Excluir
         </Button>
-        <TextButton onClick={() => props.onAddText(shown)} disabled={disabled} />
+        <TextButton
+          onClick={() => {
+            setEffectsOpen(false)
+            props.onAddText(shown)
+          }}
+          disabled={disabled}
+        />
+        <EffectsButton
+          active={hasColorChange(effects.color) || speed !== 1}
+          aria-expanded={effectsOpen && !selectedText}
+          aria-controls={effectsOpen && !selectedText ? effectsPanelId : undefined}
+          onClick={toggleEffects}
+          disabled={disabled}
+        />
         <div className="ml-auto flex gap-1">
           <IconButton icon={Undo2} label="Desfazer" onClick={props.onUndo} disabled={disabled || !canUndo} />
           <IconButton icon={Redo2} label="Refazer" onClick={props.onRedo} disabled={disabled || !canRedo} />
@@ -264,6 +306,21 @@ export function VideoEditor(props: VideoEditorProps) {
           onClose={() => props.onSelectText(undefined)}
           disabled={disabled}
         />
+      )}
+
+      {effectsOpen && !selectedText && (
+        <div id={effectsPanelId}>
+          <EffectsPanel
+            effects={effects}
+            onChange={props.onChangeEffects}
+            onClose={() => setEffectsOpen(false)}
+            thumbnails={thumbnails}
+            duration={duration}
+            sourceTime={sourceNow}
+            editedDuration={total}
+            disabled={disabled}
+          />
+        </div>
       )}
 
       <EditTimeline
@@ -298,7 +355,8 @@ export function VideoEditor(props: VideoEditorProps) {
       <p id={hintId} className="text-xs text-fg-muted">
         Para tirar uma parte: toque no vídeo na barra, arraste as alças ‹ e › até cobrir só o que quer tirar e toque em
         Excluir. Arrastar a barra (ou as setas) leva a linha branca a um ponto; Dividir corta o vídeo ali em dois pedaços. O T põe um
-        texto no ponto da linha: arraste o texto no vídeo para mudar o lugar e as pontas do bloco dele, na barra, para mudar quando aparece.
+        texto no ponto da linha: arraste o texto no vídeo para mudar o lugar e as pontas do bloco dele, na barra, para mudar quando aparece. Efeitos muda as cores e a
+        velocidade do vídeo inteiro.
       </p>
     </div>
   )

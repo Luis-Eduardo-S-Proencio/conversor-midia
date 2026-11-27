@@ -4,7 +4,7 @@
  */
 import { ALL_FORMATS, BlobSource, CanvasSink, EncodedPacketSink, Input } from 'mediabunny'
 
-export type Color = 'red' | 'green' | 'blue' | 'yellow' | 'other'
+export type Color = 'red' | 'green' | 'blue' | 'yellow' | 'gray' | 'other'
 
 /**
  * Cor dominante de um pixel. Codificar vídeo altera as cores (e o Firefox converte cores de outro
@@ -17,6 +17,8 @@ export function classify([red = 0, green = 0, blue = 0]: readonly number[]): Col
   if (low(red) && high(green) && low(blue)) return 'green'
   if (low(red) && low(green) && high(blue)) return 'blue'
   if (high(red) && high(green) && low(blue)) return 'yellow'
+  // Os três canais quase iguais: cinza (ex.: o filtro P&B), do preto ao branco.
+  if (Math.max(red, green, blue) - Math.min(red, green, blue) < 30) return 'gray'
   return 'other'
 }
 

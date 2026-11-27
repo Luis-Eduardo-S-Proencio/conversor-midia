@@ -135,6 +135,13 @@ Marque ✔ ou ✘ e anote o que estranhar.
 62. Na barra, embaixo das miniaturas, aparece o bloco do texto: arraste as alças das pontas para o texto aparecer por menos tempo. Toque em Tocar: o texto aparece e some nos pontos certos.
 63. Salve, confira em "Como ficou" e baixe: no vídeo salvo, o texto aparece no mesmo lugar, com o mesmo estilo e no mesmo tempo. Num vídeo gravado em pé, o texto sai em pé. Anote o tempo de salvar.
 
+### Efeitos no Editar vídeo
+
+64. Abra um vídeo em Editar vídeo e toque em Efeitos. Em Filtros, toque em vários (Vívido, P&B, Vintage, Cinema...): o vídeo muda de cor na hora, e as miniaturas mostram o quadro do ponto da linha com cada filtro. Diminua a Força do filtro: o efeito fica mais leve.
+65. Em Ajustes, mexa em Brilho, Contraste, Saturação e Temperatura: o vídeo muda enquanto você arrasta. Toque duas vezes num controle: ele volta ao zero. Toque em Desfazer: o último controle mexido volta de uma vez.
+66. Em Velocidade, escolha 2× e toque em Tocar: o vídeo anda duas vezes mais rápido, e o som também, sem ficar com voz fina. Escolha 0,5×: anda devagar, sem voz grossa.
+67. Com um filtro, um texto e 2×, salve, confira em "Como ficou" e baixe: o vídeo salvo tem as mesmas cores da prévia (o texto na cor dele, sem o filtro), dura a metade e o som acompanha a imagem até o fim. Anote o tempo de salvar e se a prévia ficou lenta ou travando com o filtro.
+
 ## 4. Comportamentos já conhecidos
 
 Confirme se acontecem; não precisam ser tratados como erro.
@@ -151,6 +158,7 @@ Confirme se acontecem; não precisam ser tratados como erro.
 - O limite é de 1 GB por vídeo. Num celular com pouca memória, vídeos bem menores que isso podem falhar com a mensagem de memória. **Anote o tamanho e a duração se acontecer.**
 - Extrair áudio: o M4A copiado é instantâneo; o MP3 é refeito e leva mais tempo (no computador, cerca de 10 s para cada 3 minutos de som). O som de vídeos WEBM sai em WEBM, que iPhones mais antigos podem não tocar: para eles, existem M4A e MP3.
 - Converter vídeo: entre MP4 e MOV, um vídeo H.264 só é copiado (instantâneo). Para WEBM, ou de WEBM para MP4 e MOV, o vídeo é refeito e demora em vídeos longos. Um vídeo pequeno e já bem comprimido pode sair um pouco maior ao ser refeito. No Firefox, MP4 e MOV ficam indisponíveis quando o som precisa ser refeito (o Firefox não gera AAC).
+- Efeitos no Editar vídeo: com filtro ou ajustes, o vídeo é sempre refeito, e cada quadro passa pela conta das cores (mais lento que só o texto em vídeos grandes, como 4K). Em outra velocidade, o vídeo e o som são refeitos; no Firefox, que não gera o som AAC, mudar a velocidade de MP4 e MOV fica indisponível, com explicação. Acelerado, o vídeo não passa de 60 quadros por segundo; a 0,25×, um vídeo de 30 quadros por segundo fica com 7,5 (anda aos pulinhos, como em qualquer câmera lenta sem quadros inventados). No Safari, a prévia das cores usa um filtro que versões antigas podem não mostrar no vídeo: **anote se o vídeo não mudar de cor na prévia** (o arquivo salvo sai certo do mesmo jeito).
 - Texto no Editar vídeo: com texto, o vídeo é sempre refeito (mais lento que só cortar). No Safari, o texto do arquivo salvo pode sair numa fonte um pouco diferente da prévia (lá, a fonte do app não carrega na parte que salva o vídeo). **Anote se acontecer.**
 - Criar colagem: o arquivo sai em JPG, com até 2048 px no lado maior (menos, se as fotos forem pequenas). Sobre a prévia, arrastar move a foto e não rola a página: para rolar, toque fora da colagem.
 - Criar GIF: o GIF não tem som e usa no máximo 256 cores (degradês podem aparecer em faixas). Com fundo parado ele fica leve; com a câmera em movimento, pesa vários MB (no computador, cerca de 2 MB para 5 s em 480 px).

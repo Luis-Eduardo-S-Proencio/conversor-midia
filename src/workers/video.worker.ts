@@ -24,7 +24,7 @@ import {
   getFirstEncodableAudioCodec,
   getFirstEncodableVideoCodec,
   type AudioCodec,
-  type AudioSample,
+  AudioSample,
   type ConversionAudioOptions,
   type ConversionVideoOptions,
   type DiscardedTrack,
@@ -45,7 +45,9 @@ import { MIN_VIDEO_CROP_SIDE, encodableCrop, encodableSize } from '../core/video
 import { VIDEO_FORMATS, type VideoFormat } from '../core/video/formats'
 import { GIF_FRAME_RATES, MAX_GIF_SECONDS, gifDelays, gifFrameTimes, gifPaletteTimes } from '../core/video/gif'
 import { cappedVideoBitrate } from '../core/video/sizing'
+import { applyColorMatrix, colorMatrix, sanitizeSpeed } from '../core/video/effects'
 import { sanitizeLook, type VideoLook } from '../core/video/look'
+import { createTimeStretcher, type TimeStretcher } from '../core/video/time-stretch'
 import { canvasMeasure, drawText, layoutText, textsAt, type TextCanvas } from '../core/video/text'
 import { textFontLoader } from './text-font-files'
 import type { VideoErrorCode } from '../core/video/messages'
@@ -466,25 +468,33 @@ async function inspect(job: InspectJob): Promise<InspectOutput> {
 const loadTextFont = textFontLoader((self as unknown as { fonts?: { add(face: FontFace): unknown } }).fonts)
 
 /**
- * Desenha os textos que aparecem num quadro (pelo tempo dele no vídeo original). Um canvas só, reaproveitado:
- * o quadro desenhado vira um VideoSample novo (cópia) antes do próximo.
+ * Desenha num quadro a cor (filtro e ajustes, no quadro inteiro) e, por cima, os textos que aparecem nele
+ * (pelo tempo dele no vídeo original). Um canvas só, reaproveitado: o quadro desenhado vira um VideoSample
+ * novo (cópia) antes do próximo.
  */
 function lookPainter(look: VideoLook) {
+  const matrix = look.color ? colorMatrix(look.color) : null
   let surface: { canvas: OffscreenCanvas; context: OffscreenCanvasRenderingContext2D } | undefined
   return (sample: VideoSample, sourceTime: number): VideoSample => {
     const visible = textsAt(look.texts, sourceTime)
-    if (visible.length === 0) return sample
+    if (visible.length === 0 && !matrix) return sample
     const width = sample.displayWidth
     const height = sample.displayHeight
     if (!surface || surface.canvas.width !== width || surface.canvas.height !== height) {
       const canvas = new OffscreenCanvas(width, height)
-      const context = canvas.getContext('2d')
+      // Com cor, todo quadro é lido de volta: o navegador guarda o canvas na memória comum, não na da placa de vídeo.
+      const context = canvas.getContext('2d', { willReadFrequently: matrix !== null })
       if (!context) throw new JobError('memory')
       surface = { canvas, context }
     }
     const { canvas, context } = surface
     context.clearRect(0, 0, width, height)
     sample.draw(context, 0, 0, width, height)
+    if (matrix) {
+      const image = context.getImageData(0, 0, width, height)
+      applyColorMatrix(image.data, matrix)
+      context.putImageData(image, 0, 0)
+    }
     const target = context as unknown as TextCanvas
     const measure = canvasMeasure(target)
     for (const text of visible) drawText(target, text, layoutText(text, { width, height }, measure))
@@ -571,6 +581,68 @@ function joinAudioSample(segments: readonly JoinSegment[], sample: AudioSample):
   return parts.length > 0 ? parts : null
 }
 
+/** Acelerado, o vídeo não passa de 60 quadros por segundo: os quadros a mais saem, como em qualquer vídeo acelerado. */
+const MAX_SPEED_FRAME_RATE = 60
+
+/** Quadro já no tempo do resultado, passando `speed` vezes mais depressa. */
+function speedVideo(speed: number) {
+  let lastKept = Number.NEGATIVE_INFINITY
+  return (sample: VideoSample): VideoSample | null => {
+    const timestamp = sample.timestamp / speed
+    if (timestamp < lastKept + 1 / MAX_SPEED_FRAME_RATE - 1e-6) return null
+    lastKept = timestamp
+    sample.setTimestamp(timestamp)
+    sample.setDuration(sample.duration / speed)
+    return sample
+  }
+}
+
+/** Folga para reconhecer o último bloco de som (o que chega ao fim do último pedaço). */
+const AUDIO_END_TOLERANCE = 0.001
+
+/**
+ * Som do resultado em outra velocidade, sem mudar o tom (`core/video/time-stretch.ts`). Recebe, a cada bloco
+ * do original, as partes que ficam (já emendadas) e devolve o som esticado, contínuo a partir do zero. No
+ * bloco que chega a `end` (o fim do último pedaço, no tempo dos blocos), entrega o resto.
+ */
+function speedAudio(speed: number, end: number) {
+  let stretcher: TimeStretcher | undefined
+  let layout: { channels: number; rate: number } | undefined
+  let written = 0
+  let finished = false
+  const toSample = (planes: Float32Array[]): AudioSample | null => {
+    const length = planes[0]?.length ?? 0
+    if (!layout || length === 0) return null
+    const data = new Float32Array(length * planes.length)
+    planes.forEach((plane, channel) => data.set(plane, channel * length))
+    const sample = new AudioSample({ data, format: 'f32-planar', numberOfChannels: layout.channels, sampleRate: layout.rate, timestamp: written / layout.rate })
+    written += length
+    return sample
+  }
+  return (source: AudioSample, parts: AudioSample[] | null): AudioSample[] | null => {
+    if (finished) return null
+    const output: AudioSample[] = []
+    for (const part of parts ?? []) {
+      layout ??= { channels: part.numberOfChannels, rate: part.sampleRate }
+      stretcher ??= createTimeStretcher(layout.channels, layout.rate, speed)
+      const planes = Array.from({ length: layout.channels }, (_, channel) => {
+        const plane = new Float32Array(part.numberOfFrames)
+        part.copyTo(plane, { planeIndex: Math.min(channel, part.numberOfChannels - 1), format: 'f32-planar' })
+        return plane
+      })
+      part.close()
+      const ready = toSample(stretcher.push(planes))
+      if (ready) output.push(ready)
+    }
+    if (stretcher && source.timestamp + source.duration >= end - AUDIO_END_TOLERANCE) {
+      finished = true
+      const rest = toSample(stretcher.flush())
+      if (rest) output.push(rest)
+    }
+    return output.length > 0 ? output : null
+  }
+}
+
 /** Trechos em ordem, sem sobreposição, dentro do vídeo. */
 function validRanges(ranges: readonly TrimRange[], duration: number): boolean {
   return (
@@ -598,15 +670,26 @@ async function join(job: JoinJob, onProgress: ProgressReporter): Promise<JoinOut
     // O Mediabunny entrega os quadros já com o tempo contado a partir do início do primeiro pedaço.
     const segments = joinSegments(ranges)
     const look = sanitizeLook(job.look, duration)
+    // Na velocidade normal, o pedaço só encosta no anterior; em outra, o tempo do resultado anda mais depressa ou mais devagar.
+    const speed = sanitizeSpeed(job.speed)
+    const retime = speed === 1 ? null : speedVideo(speed)
+    const keep = (sample: VideoSample) => {
+      const kept = joinVideoSample(segments, sample)
+      return kept && retime ? retime(kept) : kept
+    }
     const video: ConversionVideoOptions = look
-      ? await lookVideoOptions(opened, look, (sample) => first.start + sample.timestamp, (sample) => joinVideoSample(segments, sample))
-      : { ...(await reading(transcodeOptions(opened))), process: (sample) => joinVideoSample(segments, sample) }
+      ? await lookVideoOptions(opened, look, (sample) => first.start + sample.timestamp, keep)
+      : { ...(await reading(transcodeOptions(opened))), process: keep }
     // Som refeito perto da taxa do original, para o arquivo não crescer à toa.
     const audioRate = opened.audio ? await reading(audioBitrate(opened.audio)) : null
+    const stretch = speed === 1 ? null : speedAudio(speed, last.end - first.start)
     const audio: ConversionAudioOptions = {
       ...(opened.format !== 'webm' && { codec: 'aac' as const }),
       quality: new Quality({ bitrate: reencodedAudioBitrate(audioRate) }),
-      process: (sample) => joinAudioSample(segments, sample),
+      process: (sample) => {
+        const parts = joinAudioSample(segments, sample)
+        return stretch ? stretch(sample, parts) : parts
+      },
     }
     const blob = await convert(opened, { trim: { start: first.start, end: last.end }, video, audio }, onProgress)
     return { kind: 'join', blob }

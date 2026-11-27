@@ -24,7 +24,7 @@ export interface TrimJob {
   start: number
   end: number
   mode: TrimMode
-  /** Textos desenhados nos quadros (Editar vídeo): com eles, o vídeo é sempre refeito. */
+  /** Textos e cor desenhados nos quadros (Editar vídeo): com eles, o vídeo é sempre refeito. */
   look?: VideoLook
 }
 
@@ -36,8 +36,13 @@ export interface JoinJob {
   kind: 'join'
   file: Blob
   ranges: TrimRange[]
-  /** Textos desenhados nos quadros (Editar vídeo). */
+  /** Textos e cor desenhados nos quadros (Editar vídeo). */
   look?: VideoLook
+  /**
+   * Velocidade do resultado (Editar vídeo; uma das de `SPEEDS`, 1 quando ausente): o vídeo anda mais depressa
+   * ou mais devagar, e o som acompanha sem mudar o tom.
+   */
+  speed?: number
 }
 
 /** Mantém só a área pedida, em pixels do quadro como ele aparece (rotação já aplicada). */

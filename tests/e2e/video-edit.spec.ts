@@ -45,6 +45,17 @@ async function load(page: Page, name = 'segundos.mp4') {
   await expect(timeline(page)).toBeVisible({ timeout: OPEN_TIMEOUT })
 }
 
+/**
+ * Sem AAC (Firefox), salvar vários pedaços refaria o som num codec que o navegador não gera: a tela explica
+ * e o botão fica desligado. Confere isso e diz se o teste para aqui.
+ */
+async function joinBlocked(page: Page): Promise<boolean> {
+  const note = page.getByText(/^Para salvar mais de um pedaço, o som também é refeito/)
+  if (!(await note.isVisible())) return false
+  await expect(button(page, 'Salvar vídeo')).toBeDisabled()
+  return true
+}
+
 /** Leva a linha a um ponto do vídeo editado, em segundos inteiros. */
 async function lineAt(page: Page, seconds: number) {
   await timeline(page).focus()
@@ -96,6 +107,7 @@ test.describe('Editar vídeo', () => {
     await expect(detail(page, 'Vídeo final')).toHaveText('0:03,01')
     await expect(detail(page, 'Pedaços')).toHaveText('2')
     await expect.poll(() => player(page).evaluate((video: HTMLVideoElement) => video.currentTime)).toBeCloseTo(3, 1)
+    if (await joinBlocked(page)) return
     await expect(page.getByText(/^Para juntar os pedaços, o vídeo é refeito/)).toBeVisible()
     await save(page)
 
@@ -169,6 +181,7 @@ test.describe('Editar vídeo', () => {
     await expect(detail(page, 'Pedaços')).toHaveText('2')
     await expect(page.getByRole('status')).toContainText('Parte de 0:01,00 a 0:02,01 excluída')
 
+    if (await joinBlocked(page)) return
     await save(page)
     const result = await download(page, button(page, 'Baixar vídeo'))
     const probe = await probeVideo(result.bytes)
@@ -330,6 +343,109 @@ test.describe('Editar vídeo: textos', () => {
         await page.getByRole('tab', { name: tab }).click()
         expect(await smallTouchTargets(page)).toEqual([])
       }
+    }
+  })
+})
+
+test.describe('Editar vídeo: efeitos', () => {
+  const effectsPanel = (page: Page) => page.getByRole('region', { name: 'Efeitos' })
+
+  async function openEffects(page: Page) {
+    await button(page, 'Efeitos').click()
+    await expect(effectsPanel(page)).toBeVisible()
+  }
+
+  test('filtro P&B: a prévia muda na hora e o vídeo salvo sai em cinza', async ({ page }) => {
+    await openWithDecoding(page)
+    await load(page)
+    await openEffects(page)
+    await page.getByRole('radio', { name: 'P&B', exact: true }).click()
+    await expect(page.getByRole('radio', { name: 'P&B', exact: true })).toHaveAttribute('aria-checked', 'true')
+    await expect(page.getByRole('slider', { name: 'Força do filtro' })).toHaveValue('100')
+    // A prévia: o player ganha o filtro de cor (os textos ficam fora dele).
+    await expect.poll(() => player(page).evaluate((video: HTMLVideoElement) => getComputedStyle(video).filter)).toMatch(/^url\(/)
+    await expect(detail(page, 'Filtro')).toHaveText('P&B')
+    await expect(page.getByText(/^Com texto, filtro ou ajustes, o vídeo é refeito/)).toBeVisible()
+    await button(page, 'Concluir os efeitos').click()
+    await expect(effectsPanel(page)).toHaveCount(0)
+
+    await save(page)
+    const result = await download(page, button(page, 'Baixar vídeo'))
+    expectVideoFormat(result.bytes, 'mp4')
+    expect((await probeVideo(result.bytes)).duration).toBeCloseTo(4, 1)
+    expect(await frameColors(page, result.bytes, 0.5, [[160, 120]])).toEqual(['gray']) // era vermelho
+    expect(await frameColors(page, result.bytes, 3.5, [[160, 120]])).toEqual(['gray']) // era amarelo
+  })
+
+  test('ajustes: mexer seguido no mesmo controle é um passo só de desfazer', async ({ page }) => {
+    await openWithDecoding(page)
+    await load(page)
+    await openEffects(page)
+    await page.getByRole('tab', { name: 'Ajustes' }).click()
+    const brightness = page.getByRole('slider', { name: 'Brilho' })
+    await brightness.focus()
+    for (let step = 0; step < 5; step += 1) await page.keyboard.press('ArrowRight')
+    await expect(brightness).toHaveValue('5')
+    await expect(detail(page, 'Ajustes')).toHaveText('Brilho')
+    await expect(button(page, 'Salvar vídeo')).toBeEnabled()
+
+    await button(page, 'Desfazer').click()
+    await expect(brightness).toHaveValue('0')
+    await expect(button(page, 'Desfazer')).toBeDisabled()
+    await expect(button(page, 'Salvar vídeo')).toBeDisabled()
+    await button(page, 'Refazer').click()
+    await expect(brightness).toHaveValue('5')
+  })
+
+  test('2×: o player toca mais rápido e o vídeo salvo dura a metade; sem AAC (Firefox), fica indisponível com explicação', async ({ page }) => {
+    await openWithDecoding(page)
+    await load(page)
+    await openEffects(page)
+    await page.getByRole('tab', { name: 'Velocidade' }).click()
+    await page.getByRole('radio', { name: '2×', exact: true }).click()
+    await expect(page.getByText('A 2×, o vídeo fica com 0:02,01 (era 0:04,01). O som acompanha sem mudar o tom.')).toBeVisible()
+    await expect.poll(() => player(page).evaluate((video: HTMLVideoElement) => video.playbackRate)).toBe(2)
+    await expect(detail(page, 'Velocidade')).toHaveText('2×')
+    await expect(detail(page, 'Vídeo final')).toHaveText('0:02,01') // 4,01 s ÷ 2
+
+    const blocked = page.getByText(/^Para mudar a velocidade, o som também é refeito/)
+    if (await blocked.isVisible()) {
+      await expect(button(page, 'Salvar vídeo')).toBeDisabled()
+      return
+    }
+    await save(page)
+    const result = await download(page, button(page, 'Baixar vídeo'))
+    expectVideoFormat(result.bytes, 'mp4')
+    const probe = await probeVideo(result.bytes)
+    expect(probe.duration).toBeCloseTo(2, 1)
+    expect(await frameColors(page, result.bytes, 0.25, [[160, 120]])).toEqual(['red']) // 0,5 s do original
+    expect(await frameColors(page, result.bytes, 1.25, [[160, 120]])).toEqual(['blue']) // 2,5 s do original
+  })
+
+  test('um painel por vez: abrir os efeitos fecha o texto, e o T fecha os efeitos', async ({ page }) => {
+    await openWithDecoding(page)
+    await load(page)
+    await button(page, 'Adicionar texto').click()
+    await expect(page.getByRole('textbox', { name: 'Texto', exact: true })).toBeVisible()
+    await openEffects(page)
+    await expect(page.getByRole('textbox', { name: 'Texto', exact: true })).toHaveCount(0)
+    await expect(button(page, 'Efeitos')).toHaveAttribute('aria-expanded', 'true')
+    await button(page, 'Adicionar texto').click()
+    await expect(effectsPanel(page)).toHaveCount(0)
+  })
+
+  test('efeitos abertos: sem violações de acessibilidade, sem rolagem lateral e alvos de 44 px no celular', async ({ page }, testInfo) => {
+    test.skip(!['desktop', 'mobile'].includes(testInfo.project.name), 'conferido no Chromium em duas larguras')
+    await openWithDecoding(page)
+    await load(page)
+    await openEffects(page)
+    await page.getByRole('radio', { name: 'Vívido', exact: true }).click()
+    for (const tab of ['Filtros', 'Ajustes', 'Velocidade']) {
+      await page.getByRole('tab', { name: tab }).click()
+      await page.evaluate(() => window.scrollTo(0, 0))
+      await expectNoAxeViolations(page)
+      expect(await horizontalOverflow(page)).toBe(0)
+      if (testInfo.project.name === 'mobile') expect(await smallTouchTargets(page)).toEqual([])
     }
   })
 })

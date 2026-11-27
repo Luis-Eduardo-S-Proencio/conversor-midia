@@ -2,6 +2,8 @@ import { Check, RotateCcw, Sparkles } from 'lucide-react'
 import { useId, useState, type ComponentProps } from 'react'
 import { Button, IconButton } from '../../../components/ui/Button'
 import { ChoiceGrid } from '../../../components/ui/ChoiceGrid'
+import { Icon } from '../../../components/ui/Icon'
+import { cx } from '../../../components/ui/cx'
 import { Slider } from '../../../components/ui/Slider'
 import { Tabs } from '../../../components/ui/Tabs'
 import {
@@ -44,18 +46,32 @@ export function ColorFilterDefs({ filters }: { filters: readonly { id: string; m
   )
 }
 
-/** "Efeitos": abre os filtros, os ajustes e a velocidade do vídeo inteiro. */
-export function EffectsButton({ active, ...props }: Omit<ComponentProps<'button'>, 'children'> & { active: boolean }) {
+/**
+ * Efeitos: abre os filtros, os ajustes e a velocidade do vídeo inteiro. Quadrado como o "T", só com o símbolo
+ * de brilho; com algum efeito em uso, um ponto no acento no canto.
+ */
+export function EffectsButton({ active, className, ...props }: Omit<ComponentProps<'button'>, 'children'> & { active: boolean }) {
   return (
-    <Button icon={Sparkles} className="relative" {...props}>
-      Efeitos
-      {active && (
-        <>
-          <span aria-hidden="true" className="absolute -top-1 -right-1 size-2.5 rounded-full bg-accent-solid ring-2 ring-surface-1" />
-          <span className="sr-only">(em uso)</span>
-        </>
+    <button
+      type="button"
+      aria-label="Efeitos"
+      className={cx(
+        'group/fx pressable relative grid size-11 shrink-0 place-items-center rounded-md border border-border-strong bg-surface-3 text-fg shadow-1',
+        'transition-colors duration-(--dur-2) not-disabled:hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-40',
+        'aria-expanded:border-accent',
+        className,
       )}
-    </Button>
+      {...props}
+    >
+      <Icon icon={Sparkles} size="lg" />
+      {active && <span aria-hidden="true" className="absolute -top-1 -right-1 size-3 rounded-full bg-accent-solid shadow-1 ring-2 ring-surface-1" />}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-full z-40 mt-2 hidden rounded-sm border border-border-strong bg-surface-3 px-2 py-1 text-caption font-medium whitespace-nowrap text-fg shadow-2 pointer-fine:group-hover/fx:block pointer-fine:group-focus-visible/fx:block"
+      >
+        {active ? 'Efeitos (em uso)' : 'Efeitos'}
+      </span>
+    </button>
   )
 }
 
